@@ -8,35 +8,27 @@ import {
   sendVerficationCode,
   verifyForgotPasswordCode,
   verifyVerificationCode,
-} from "../controllers/adminController.js";
-import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
+} from "../../controllers/userController.js";
+import { jwtMiddleware } from "../../middlewares/jwt.js";
 
 const router = express.Router();
 
 router.post("/register", register);
 router.post("/login", login);
-router.post("/logout", jwtMiddlewareAdmin, logout);
+router.post("/logout", jwtMiddleware, logout);
 
-router.patch(
-  "/send-verification-code",
-  jwtMiddlewareAdmin,
-  sendVerficationCode
-);
+router.patch("/send-verification-code", jwtMiddleware, sendVerficationCode);
 router.patch(
   "/verify-verification-code",
-  jwtMiddlewareAdmin,
+  jwtMiddleware,
   verifyVerificationCode
 );
 
-router.patch("/change-password", jwtMiddlewareAdmin, changePassword);
-router.patch(
-  "/send-forgot-password-code",
-  jwtMiddlewareAdmin,
-  sendForgotPassword
-);
+router.patch("/change-password", jwtMiddleware, changePassword);
+router.patch("/send-forgot-password-code", jwtMiddleware, sendForgotPassword);
 router.patch(
   "/verify-forgot-password-code",
-  jwtMiddlewareAdmin,
+  jwtMiddleware,
   verifyForgotPasswordCode
 );
 export default router;
