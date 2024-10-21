@@ -6,13 +6,16 @@ import { connectDB } from "./config/db.js";
 import dotenv from "dotenv";
 import authRouter from "./routers/authRouter.js";
 import userRouter from "./routers/users/userRouter.js";
-import adminRouter from "./routers/admin.Router.js";
+import adminRouter from "./routers/adminRouter.js";
 import categoryRouter from "./routers/categoryRouter.js";
+import productRouter from "./routers/productRouter.js";
 import Admin from "./models/adminModel.js";
 import { jwtMiddlewareAdmin } from "./middlewares/admin_jwt.js";
+import { ensureUploadsDirExists } from "./utils/helper.js";
 
 dotenv.config();
 
+ensureUploadsDirExists();
 const app = express();
 
 app.use(cors());
@@ -25,6 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/adm/auth", authRouter);
 app.use("/api/adm", adminRouter);
 app.use("/api", categoryRouter);
+app.use("/api", productRouter);
 app.use("/auth", userRouter);
 
 app.get("/", (req, res) => {
