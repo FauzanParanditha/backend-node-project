@@ -6,6 +6,7 @@ import { connectDB } from "./config/db.js";
 import dotenv from "dotenv";
 import authRouter from "./routers/authRouter.js";
 import userRouter from "./routers/users/userRouter.js";
+import adminRouter from "./routers/admin.Router.js";
 import categoryRouter from "./routers/categoryRouter.js";
 import Admin from "./models/adminModel.js";
 import { jwtMiddlewareAdmin } from "./middlewares/admin_jwt.js";
@@ -22,6 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 
 //route
 app.use("/adm/auth", authRouter);
+app.use("/api/adm", adminRouter);
 app.use("/api", categoryRouter);
 app.use("/auth", userRouter);
 
