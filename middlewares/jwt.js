@@ -29,11 +29,11 @@ export const jwtMiddleware = (req, res, next) => {
       throw new Error("error in the token ");
     }
   } catch (error) {
-    console.log(error);
-    res.status(500).json({
+    console.error("Error jwtMiddleware:", error.message);
+    return res.status(500).json({
       success: false,
       code: 500,
-      message: error,
+      message: error.message,
     });
   }
 };

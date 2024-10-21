@@ -5,7 +5,7 @@ import {
   changePasswordSchema,
   loginSchema,
   registerSchema,
-} from "../middlewares/validator.js";
+} from "../validators/authValidator.js";
 import User from "../models/userModel.js";
 import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
 import transport from "../middlewares/sendMail.js";
@@ -48,11 +48,11 @@ export const register = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({
+    console.error("Error register:", error.message);
+    return res.status(500).json({
       success: false,
       code: 500,
-      message: error,
+      message: error.message,
     });
   }
 };
@@ -113,11 +113,11 @@ export const login = async (req, res) => {
         token,
       });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({
+    console.error("Error login:", error.message);
+    return res.status(500).json({
       success: false,
       code: 500,
-      message: error,
+      message: error.message,
     });
   }
 };
@@ -178,11 +178,11 @@ export const sendVerficationCode = async (req, res) => {
       });
     }
   } catch (error) {
-    console.log(error);
-    res.status(500).json({
+    console.error("Error send verification code:", error.message);
+    return res.status(500).json({
       success: false,
       code: 500,
-      message: error,
+      message: error.message,
     });
   }
 };
@@ -261,11 +261,11 @@ export const verifyVerificationCode = async (req, res) => {
       });
     }
   } catch (error) {
-    console.log(error);
-    res.status(500).json({
+    console.error("Error verify verification code:", error.message);
+    return res.status(500).json({
       success: false,
       code: 500,
-      message: error,
+      message: error.message,
     });
   }
 };
@@ -322,11 +322,12 @@ export const changePassword = async (req, res) => {
       message: "successfuly change password!",
     });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({
+    console.error("Error send forgot password:", error.message);
+    console.error("Error change password:", error.message);
+    return res.status(500).json({
       success: false,
       code: 500,
-      message: error,
+      message: error.message,
     });
   }
 };
@@ -371,11 +372,11 @@ export const sendForgotPassword = async (req, res) => {
       });
     }
   } catch (error) {
-    console.log(error);
-    res.status(500).json({
+    console.error("Error send forgot password:", error.message);
+    return res.status(500).json({
       success: false,
       code: 500,
-      message: error,
+      message: error.message,
     });
   }
 };
@@ -448,11 +449,11 @@ export const verifyForgotPasswordCode = async (req, res) => {
       });
     }
   } catch (error) {
-    console.log(error);
-    res.status(500).json({
+    console.error("Error verify forgot password:", error.message);
+    return res.status(500).json({
       success: false,
       code: 500,
-      message: error,
+      message: error.message,
     });
   }
 };
