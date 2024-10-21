@@ -16,3 +16,7 @@ export const hmacProcess = (value, key) => {
   const result = createHmac("sha256", key).update(value).digest("hex");
   return result;
 };
+
+export const escapeRegExp = (string) => {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
