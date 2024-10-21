@@ -8,7 +8,7 @@ import {
   sendVerficationCode,
   verifyForgotPasswordCode,
   verifyVerificationCode,
-} from "../controllers/adminController.js";
+} from "../controllers/authController.js";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
 
 const router = express.Router();
