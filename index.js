@@ -10,6 +10,7 @@ import adminRouter from "./routers/adminRouter.js";
 import categoryRouter from "./routers/categoryRouter.js";
 import productRouter from "./routers/productRouter.js";
 import orderRouter from "./routers/orderRouter.js";
+import paymentRouter from "./routers/paymentRouter.js";
 import Admin from "./models/adminModel.js";
 import { jwtMiddlewareAdmin } from "./middlewares/admin_jwt.js";
 import { ensureUploadsDirExists } from "./utils/helper.js";
@@ -31,6 +32,7 @@ app.use("/api/adm", adminRouter);
 app.use("/api", categoryRouter);
 app.use("/api", productRouter);
 app.use("/api", orderRouter);
+app.use("/api", paymentRouter);
 app.use("/auth", userRouter);
 
 app.get("/", (req, res) => {

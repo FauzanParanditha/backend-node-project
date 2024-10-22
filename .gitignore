@@ -130,3 +130,6 @@ dist
 .pnp.*
 
 uploads/
+rsakey.pem
+private-key.pem
+public-key.pem

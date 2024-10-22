@@ -1,9 +1,9 @@
 import express from "express";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
-import { orders } from "../controllers/orderController.js";
+import { createPaymentLink } from "../controllers/paymentController.js";
 
 const router = express.Router();
 
-router.get("/orders", jwtMiddlewareAdmin, orders);
+router.post("/payment/createLink", jwtMiddlewareAdmin, createPaymentLink);
 
 export default router;
