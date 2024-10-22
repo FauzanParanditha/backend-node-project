@@ -2,9 +2,9 @@ import Joi from "joi";
 
 export const validateCreateLinkRequest = (data) => {
   const schema = Joi.object({
-    // merchantId: Joi.string().max(20).required(),
-    // merchantTradeNo: Joi.string().max(32).required(),
-    // requestId: Joi.string().max(64).required(),
+    merchantId: Joi.string().max(20).required(),
+    merchantTradeNo: Joi.string().max(32).required(),
+    requestId: Joi.string().max(64).required(),
     amount: Joi.number().precision(2).required(),
     phoneNumber: Joi.string().max(20).required(),
     productName: Joi.string().max(100).required(),

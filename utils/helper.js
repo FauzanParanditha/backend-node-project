@@ -112,3 +112,15 @@ export const createSignature = (httpMethod, endpointUrl, body, timestamp) => {
 
   return signature;
 };
+
+export const calculateTotal = (products) => {
+  let total = 0;
+
+  products.forEach((product) => {
+    const productTotal = product.price * product.quantity;
+    const discountAmount = productTotal * (product.discount / 100);
+    total += productTotal - discountAmount;
+  });
+
+  return total;
+};

@@ -2,40 +2,73 @@ import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema(
   {
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    size: {
-      required: false,
+    orderId: {
       type: String,
-    },
-    color: {
-      required: false,
-      type: String,
-    },
-    quantities: {
       required: true,
+      unique: true,
+    },
+    buyerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    products: [
+      {
+        productId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
+          required: true,
+        },
+        title: {
+          type: String,
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+        },
+        price: {
+          type: Number,
+          required: true,
+        },
+        discount: {
+          required: true,
+          type: Number,
+        },
+        colors: [
+          {
+            color: { type: String, required: true },
+            _id: false,
+          },
+        ],
+        sizes: [
+          {
+            size: { type: String, required: true },
+            _id: false,
+          },
+        ],
+        _id: false,
+      },
+    ],
+    totalAmount: {
       type: Number,
-    },
-    address: {
       required: true,
-      type: Map,
     },
-    status: {
-      default: false,
-      type: Boolean,
+    phoneNumber: {
+      type: String,
+      required: true,
     },
-    received: {
-      default: false,
-      type: Boolean,
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "completed", "failed"],
+      default: "pending",
     },
-    review: {
-      default: false,
-      type: Boolean,
+    paymentMethod: {
+      type: String,
+      required: true,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 const Order = mongoose.model("Order", orderSchema);
