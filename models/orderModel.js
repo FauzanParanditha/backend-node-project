@@ -1,5 +1,74 @@
 import mongoose from "mongoose";
 
+const paymentXenditSchema = new mongoose.Schema(
+  {
+    paymentId: {
+      type: String,
+      required: true,
+    },
+    status: {
+      type: String,
+      required: true,
+    },
+    created: {
+      type: Date,
+      required: true,
+    },
+    isHigh: {
+      type: Boolean,
+      default: false,
+    },
+    paidAt: {
+      type: Date,
+    },
+    currency: {
+      type: String,
+      required: true,
+    },
+    bankCode: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+      required: true,
+    },
+    externalId: {
+      type: String,
+      required: true,
+    },
+    paidAmount: {
+      type: Number,
+      required: true,
+    },
+    payerEmail: {
+      type: String,
+      required: true,
+    },
+    merchantName: {
+      type: String,
+      required: true,
+    },
+    paymentChannel: {
+      type: String,
+      required: true,
+    },
+    paymentDestination: {
+      type: String,
+      required: true,
+    },
+    failureRedirectUrl: {
+      type: String,
+      required: true,
+    },
+    successRedirectUrl: {
+      type: String,
+      required: true,
+    },
+  },
+  { _id: false }
+);
+
 const orderSchema = new mongoose.Schema(
   {
     orderId: {
@@ -60,13 +129,14 @@ const orderSchema = new mongoose.Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ["pending", "completed", "failed"],
+      enum: ["pending", "paid", "failed", "expired"],
       default: "pending",
     },
     paymentMethod: {
       type: String,
       required: true,
     },
+    payment: paymentXenditSchema,
   },
   { timestamps: true }
 );

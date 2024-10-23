@@ -4,6 +4,9 @@ import Product from "../models/productModel.js";
 import { calculateTotal, escapeRegExp } from "../utils/helper.js";
 import { orderSchema } from "../validators/orderValidator.js";
 import { createPaymentLink } from "./paymentController.js";
+import User from "../models/userModel.js";
+import { createXenditPaymentLink } from "./xenditController.js";
+import mongoose from "mongoose";
 
 export const orders = async (req, res) => {
   const {
@@ -54,7 +57,7 @@ export const orders = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      code: 200,
+
       message: "all orders",
       data: orders,
       pagination: {
@@ -69,7 +72,7 @@ export const orders = async (req, res) => {
     console.error("Error fetching orders:", error.message);
     return res.status(500).json({
       success: false,
-      code: 500,
+
       message: error.message,
     });
   }
@@ -77,25 +80,6 @@ export const orders = async (req, res) => {
 
 export const createOrder = async (req, res) => {
   try {
-    // // Check if products are present in the body
-    // if (!req.body.products) {
-    //   return res
-    //     .status(400)
-    //     .json({ success: false, message: '"products" is required' });
-    // }
-
-    // if (!Array.isArray(req.body.products)) {
-    //   return res
-    //     .status(400)
-    //     .json({ success: false, message: '"products" must be an array' });
-    // }
-
-    // if (req.body.products.length === 0) {
-    //   return res
-    //     .status(400)
-    //     .json({ success: false, message: '"products" cannot be empty' });
-    // }
-
     // Validate the request body using Joi
     const validatedOrder = await orderSchema.validateAsync(req.body, {
       abortEarly: false,
@@ -136,7 +120,6 @@ export const createOrder = async (req, res) => {
         console.log(`Product not found: ${product.productId}`);
         return res.status(400).json({
           success: false,
-          code: 400,
           message: `Product not found: ${product.productId}`,
         });
       }
@@ -151,6 +134,16 @@ export const createOrder = async (req, res) => {
 
     const requestId = uuid4();
 
+    const buyerObjectId = new mongoose.Types.ObjectId(validatedOrder.userId);
+    const existUser = await User.findOne({ _id: buyerObjectId });
+    if (!existUser) {
+      return res.status(404).json({
+        success: false,
+
+        message: "user not registerd!",
+      });
+    }
+
     // Save the order to the database
     const temporaryOrder = {
       orderId: requestId,
@@ -159,11 +152,22 @@ export const createOrder = async (req, res) => {
       totalAmount: calculateTotal(validProducts),
       phoneNumber: validatedOrder.phoneNumber,
       paymentStatus: "pending",
-      paymentMethod: "paylabs",
+      paymentMethod: validatedOrder.paymentMethod,
     };
 
-    // Pass the order details to paymentController to initiate payment
-    const paymentLink = await createPaymentLink(temporaryOrder);
+    let paymentLink;
+
+    if (temporaryOrder.paymentMethod === "xendit") {
+      paymentLink = await createXenditPaymentLink(temporaryOrder);
+    } else if (temporaryOrder.paymentMethod === "paylabs") {
+      // Pass the order details to paymentController to initiate payment
+      paymentLink = await createPaymentLink(temporaryOrder);
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "paymentMethod is not support",
+      });
+    }
 
     if (!paymentLink) {
       return res.status(400).json({
@@ -175,7 +179,7 @@ export const createOrder = async (req, res) => {
     // Now that we have a payment link, save the order
     const savedOrder = await Order.create({
       ...temporaryOrder,
-      paymentLink, // Include the payment link here
+      paymentLink,
     });
 
     // Return the payment link to the frontend
