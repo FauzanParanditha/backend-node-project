@@ -55,7 +55,7 @@ export const products = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      code: 200,
+
       message: "all products",
       data: products,
       pagination: {
@@ -70,7 +70,7 @@ export const products = async (req, res) => {
     console.error("Error fetching products:", error.message);
     return res.status(500).json({
       success: false,
-      code: 500,
+
       message: error.message,
     });
   }
@@ -96,7 +96,6 @@ export const createProduct = async (req, res) => {
   if (!req.file) {
     return res.status(400).json({
       success: false,
-      code: 400,
       message: "Image is required",
     });
   }
@@ -119,13 +118,13 @@ export const createProduct = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      code: 201,
+
       message: "successfully create product",
     });
   } catch (err) {
     return res.status(500).json({
       success: false,
-      code: 500,
+
       message: "An error occurred",
       error: err.message,
     });
@@ -143,13 +142,13 @@ export const product = async (req, res) => {
     if (!existProduct) {
       return res.status(404).json({
         success: false,
-        code: 404,
+
         message: "product not found",
       });
     }
     return res.status(200).json({
       success: true,
-      code: 200,
+
       message: "product",
       data: existProduct,
     });
@@ -157,7 +156,7 @@ export const product = async (req, res) => {
     console.error("Error fetching product:", error.message);
     return res.status(500).json({
       success: false,
-      code: 500,
+
       message: error.message,
     });
   }
@@ -176,7 +175,6 @@ export const updateProduct = async (req, res) => {
   if (error) {
     return res.status(400).json({
       success: false,
-      code: 400,
       errors: error.details.map((err) => err.message),
     });
   }
@@ -186,14 +184,14 @@ export const updateProduct = async (req, res) => {
     if (!existingProduct) {
       return res.status(404).json({
         success: false,
-        code: 404,
+
         message: "Product not found",
       });
     }
     if (existingProduct.adminId.toString() != adminId) {
       return res.status(403).json({
         success: false,
-        code: 403,
+
         message: "unatuhorized",
       });
     }
@@ -231,13 +229,13 @@ export const updateProduct = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      code: 200,
+
       message: "Product updated successfully",
     });
   } catch (err) {
     return res.status(500).json({
       success: false,
-      code: 500,
+
       message: "An error occurred",
       error: err.message,
     });
@@ -253,7 +251,7 @@ export const deleteProduct = async (req, res) => {
     if (!product) {
       return res.status(404).json({
         success: false,
-        code: 404,
+
         message: "Product not found",
       });
     }
@@ -271,14 +269,14 @@ export const deleteProduct = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      code: 200,
+
       message: "Product successfully deleted",
     });
   } catch (err) {
     console.error("Error deleting product:", err);
     return res.status(500).json({
       success: false,
-      code: 500,
+
       message: "An error occurred while deleting the product",
       error: err.message,
     });

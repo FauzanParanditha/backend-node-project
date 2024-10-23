@@ -18,7 +18,7 @@ export const register = async (req, res) => {
     if (error) {
       return res.status(401).json({
         success: false,
-        code: 401,
+
         message: error.details[0].message,
       });
     }
@@ -28,7 +28,7 @@ export const register = async (req, res) => {
     if (existAdmin) {
       return res.status(401).json({
         success: false,
-        code: 401,
+
         message: "admin is alredy exist!",
       });
     }
@@ -43,7 +43,7 @@ export const register = async (req, res) => {
     result.password = undefined;
     res.status(201).json({
       success: true,
-      code: 201,
+
       message: "register successfully",
       data: result,
     });
@@ -51,7 +51,7 @@ export const register = async (req, res) => {
     console.error("Error register:", error.message);
     return res.status(500).json({
       success: false,
-      code: 500,
+
       message: error.message,
     });
   }
@@ -64,7 +64,7 @@ export const login = async (req, res) => {
     if (error) {
       return res.status(401).json({
         success: false,
-        code: 401,
+
         message: error.details[0].message,
       });
     }
@@ -75,7 +75,7 @@ export const login = async (req, res) => {
     if (!existAdmin) {
       return res.status(401).json({
         success: false,
-        code: 401,
+
         message: "admin is not exist!",
       });
     }
@@ -84,7 +84,7 @@ export const login = async (req, res) => {
     if (!result) {
       return res.status(401).json({
         success: false,
-        code: 401,
+
         message: "invalid credentials!",
       });
     }
@@ -110,7 +110,7 @@ export const login = async (req, res) => {
       .status(200)
       .json({
         success: true,
-        code: 200,
+
         message: "login is successfully",
         token,
       });
@@ -118,7 +118,7 @@ export const login = async (req, res) => {
     console.error("Error login:", error.message);
     return res.status(500).json({
       success: false,
-      code: 500,
+
       message: error.message,
     });
   }
@@ -127,7 +127,7 @@ export const login = async (req, res) => {
 export const logout = async (req, res) => {
   res.clearCookie("Authorization").status(200).json({
     success: true,
-    code: 200,
+
     message: "logout is successfully",
   });
 };
@@ -139,14 +139,13 @@ export const sendVerficationCode = async (req, res) => {
     if (!existAdmin) {
       return res.status(404).json({
         success: false,
-        code: 404,
+
         message: "admin is not exist!",
       });
     }
     if (existAdmin.verified) {
       return res.status(400).json({
         success: false,
-        code: 400,
         message: "admin is verified!",
       });
     }
@@ -169,13 +168,12 @@ export const sendVerficationCode = async (req, res) => {
       await existAdmin.save();
       return res.status(200).json({
         success: true,
-        code: 200,
+
         message: "code sent",
       });
     } else {
       return res.status(400).json({
         success: false,
-        code: 400,
         message: "code sent failed!",
       });
     }
@@ -183,7 +181,7 @@ export const sendVerficationCode = async (req, res) => {
     console.error("Error send verification code:", error.message);
     return res.status(500).json({
       success: false,
-      code: 500,
+
       message: error.message,
     });
   }
@@ -199,7 +197,7 @@ export const verifyVerificationCode = async (req, res) => {
     if (error) {
       return res.status(401).json({
         success: false,
-        code: 401,
+
         message: error.details[0].message,
       });
     }
@@ -211,7 +209,7 @@ export const verifyVerificationCode = async (req, res) => {
     if (!existAdmin) {
       return res.status(401).json({
         success: false,
-        code: 401,
+
         message: "admin is not exist!",
       });
     }
@@ -219,7 +217,6 @@ export const verifyVerificationCode = async (req, res) => {
     if (existAdmin.verified) {
       return res.status(400).json({
         success: false,
-        code: 400,
         message: "admin is verified!",
       });
     }
@@ -230,7 +227,6 @@ export const verifyVerificationCode = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        code: 400,
         message: "something is wrong with the code!",
       });
     }
@@ -238,7 +234,6 @@ export const verifyVerificationCode = async (req, res) => {
     if (Date.now() - existAdmin.verificationCodeValidation > 5 * 60 * 1000) {
       return res.status(400).json({
         success: false,
-        code: 400,
         message: "code has been expired!",
       });
     }
@@ -255,13 +250,12 @@ export const verifyVerificationCode = async (req, res) => {
       await existAdmin.save();
       return res.status(200).json({
         success: true,
-        code: 200,
+
         message: "successfully verified!",
       });
     } else {
       return res.status(400).json({
         success: false,
-        code: 400,
         message: "unexpected occured!",
       });
     }
@@ -269,7 +263,7 @@ export const verifyVerificationCode = async (req, res) => {
     console.error("Error verify verification code:", error.message);
     return res.status(500).json({
       success: false,
-      code: 500,
+
       message: error.message,
     });
   }
@@ -287,7 +281,6 @@ export const changePassword = async (req, res) => {
     if (error) {
       return res.status(400).json({
         success: false,
-        code: 400,
         message: error.details[0].message,
       });
     }
@@ -295,7 +288,7 @@ export const changePassword = async (req, res) => {
     if (!verified) {
       return res.status(401).json({
         success: false,
-        code: 401,
+
         message: "admin not verified!",
       });
     }
@@ -306,7 +299,7 @@ export const changePassword = async (req, res) => {
     if (!existAdmin) {
       return res.status(401).json({
         success: false,
-        code: 401,
+
         message: "admin is not exist!",
       });
     }
@@ -315,7 +308,7 @@ export const changePassword = async (req, res) => {
     if (!result) {
       return res.status(401).json({
         success: false,
-        code: 401,
+
         message: "invalid credentials!",
       });
     }
@@ -325,14 +318,14 @@ export const changePassword = async (req, res) => {
     await existAdmin.save();
     return res.status(200).json({
       success: true,
-      code: 200,
+
       message: "successfuly change password!",
     });
   } catch (error) {
     console.error("Error change password:", error.message);
     return res.status(500).json({
       success: false,
-      code: 500,
+
       message: error.message,
     });
   }
@@ -345,7 +338,7 @@ export const sendForgotPassword = async (req, res) => {
     if (!existAdmin) {
       return res.status(404).json({
         success: false,
-        code: 404,
+
         message: "admin is not exist",
       });
     }
@@ -367,13 +360,12 @@ export const sendForgotPassword = async (req, res) => {
       await existAdmin.save();
       return res.status(200).json({
         success: true,
-        code: 200,
+
         message: "code sent!",
       });
     } else {
       return res.status(400).json({
         success: false,
-        code: 400,
         message: "code sent failed!",
       });
     }
@@ -381,7 +373,7 @@ export const sendForgotPassword = async (req, res) => {
     console.error("Error send forgot password:", error.message);
     return res.status(500).json({
       success: false,
-      code: 500,
+
       message: error.message,
     });
   }
@@ -398,7 +390,7 @@ export const verifyForgotPasswordCode = async (req, res) => {
     if (error) {
       return res.status(401).json({
         success: false,
-        code: 401,
+
         message: error.details[0].message,
       });
     }
@@ -410,7 +402,7 @@ export const verifyForgotPasswordCode = async (req, res) => {
     if (existAdmin) {
       return res.status(401).json({
         success: false,
-        code: 401,
+
         message: "admin is not exist!",
       });
     }
@@ -420,7 +412,7 @@ export const verifyForgotPasswordCode = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        code: 401,
+
         message: "something is wrong with the code!",
       });
     }
@@ -428,7 +420,6 @@ export const verifyForgotPasswordCode = async (req, res) => {
     if (Date.now() - existAdmin.forgotPasswordCodeValidation > 5 * 60 * 1000) {
       return res.status(400).json({
         success: false,
-        code: 400,
         message: "code has been expired!",
       });
     }
@@ -444,13 +435,12 @@ export const verifyForgotPasswordCode = async (req, res) => {
       await existAdmin.save();
       return res.status(200).json({
         success: true,
-        code: 200,
+
         message: "successfully update password",
       });
     } else {
       return res.status(400).json({
         success: false,
-        code: 400,
         message: "unexpected occured!",
       });
     }
@@ -458,7 +448,7 @@ export const verifyForgotPasswordCode = async (req, res) => {
     console.error("Error verify forgot password:", error.message);
     return res.status(500).json({
       success: false,
-      code: 500,
+
       message: error.message,
     });
   }

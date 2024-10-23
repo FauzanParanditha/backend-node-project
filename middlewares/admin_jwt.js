@@ -11,7 +11,7 @@ export const jwtMiddlewareAdmin = (req, res, next) => {
   if (!token) {
     return res.status(403).json({
       success: false,
-      code: 403,
+
       message: "unauthorized!",
     });
   }
@@ -32,7 +32,7 @@ export const jwtMiddlewareAdmin = (req, res, next) => {
     console.error("Error jwtMiddleware:", error.message);
     return res.status(500).json({
       success: false,
-      code: 500,
+
       message: error.message,
     });
   }
