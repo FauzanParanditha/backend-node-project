@@ -11,9 +11,11 @@ import categoryRouter from "./routers/categoryRouter.js";
 import productRouter from "./routers/productRouter.js";
 import orderRouter from "./routers/orderRouter.js";
 import paymentRouter from "./routers/paymentRouter.js";
+import ipWhitelistRouter from "./routers/ipWhitelistRouter.js";
 import Admin from "./models/adminModel.js";
 import { jwtMiddlewareAdmin } from "./middlewares/admin_jwt.js";
 import { ensureUploadsDirExists } from "./utils/helper.js";
+import apiLogger from "./middlewares/apiLog.js";
 
 dotenv.config();
 
@@ -25,10 +27,12 @@ app.use(helmet());
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(apiLogger);
 
 //route
 app.use("/adm/auth", authRouter);
 app.use("/api/adm", adminRouter);
+app.use("/api", ipWhitelistRouter);
 app.use("/api", categoryRouter);
 app.use("/api", productRouter);
 app.use("/api", orderRouter);

@@ -1,7 +1,10 @@
 import jwt from "jsonwebtoken";
+import IPWhitelist from "../models/ipWhitelistModel.js";
 
-export const jwtMiddlewareAdmin = (req, res, next) => {
+export const jwtMiddlewareAdmin = async (req, res, next) => {
   let token;
+  const clientIP = req.ip;
+
   if (req.headers.client === "not-browser") {
     token = req.headers.authorization;
   } else {
@@ -13,6 +16,15 @@ export const jwtMiddlewareAdmin = (req, res, next) => {
       success: false,
 
       message: "unauthorized!",
+    });
+  }
+
+  const whitelistedIP = await IPWhitelist.findOne({ ipAddress: clientIP });
+
+  if (!whitelistedIP) {
+    return res.status(403).json({
+      success: false,
+      message: "Access forbidden: Your IP address is not whitelisted.",
     });
   }
 
