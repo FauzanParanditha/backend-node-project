@@ -7,24 +7,33 @@ const apiLogger = async (req, res, next) => {
     endpoint: req.originalUrl,
     headers: req.headers,
     body: req.body,
+    statusCode: null,
     ipAddress: req.ip || req.connection.remoteAddress,
   };
 
-  const { error } = validateLog(logData);
+  const originalSend = res.send.bind(res);
 
-  if (!error) {
-    try {
-      const log = new ApiLog(logData);
-      await log.save();
-    } catch (error) {
-      console.error("Error logging API request:", error.message);
+  res.send = async function (...args) {
+    logData.statusCode = res.statusCode;
+
+    const { error } = validateLog(logData);
+
+    if (!error) {
+      try {
+        const log = new ApiLog(logData);
+        await log.save();
+      } catch (error) {
+        console.error("Error logging API request:", error.message);
+      }
+    } else {
+      console.error(
+        "Log validation failed:",
+        error.details.map((e) => e.message)
+      );
     }
-  } else {
-    console.error(
-      "Log validation failed:",
-      error.details.map((e) => e.message)
-    );
-  }
+
+    return originalSend(...args);
+  };
 
   next();
 };

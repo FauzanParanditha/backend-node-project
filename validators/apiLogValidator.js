@@ -1,11 +1,12 @@
-import Joi from "joi";
+import joi from "joi";
 
-const logSchema = Joi.object({
-  method: Joi.string().required(),
-  endpoint: Joi.string().required(),
-  headers: Joi.object().required(),
-  body: Joi.object(),
-  ipAddress: Joi.string().required(),
+const logSchema = joi.object({
+  method: joi.string().required(),
+  endpoint: joi.string().required(),
+  headers: joi.object().required(),
+  body: joi.object(),
+  statusCode: joi.number().required(),
+  ipAddress: joi.string().required(),
 });
 
 export const validateLog = (log) => {
