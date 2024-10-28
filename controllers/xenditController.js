@@ -79,7 +79,7 @@ export const xenditCallback = async (req, res) => {
       });
     }
 
-    if (order.status === "paid") {
+    if (order.paymentStatus === "paid") {
       return res.status(200).json({
         success: true,
         message: "payment has been already processed",
