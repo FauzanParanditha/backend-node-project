@@ -195,7 +195,7 @@ export const createOrder = async (req, res) => {
     // Return the payment link to the frontend
     return res.status(200).json({
       success: true,
-      paymentLink: paymentLink.invoiceUrl,
+      paymentLink: paymentLinkUrl,
       orderId: savedOrder._id,
       // paymentLink,
     });
