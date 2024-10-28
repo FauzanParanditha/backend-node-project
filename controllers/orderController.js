@@ -117,7 +117,6 @@ export const createOrder = async (req, res) => {
               : sizes.map((s) => ({ size: s })),
         });
       } else {
-        console.log(`Product not found: ${product.productId}`);
         return res.status(400).json({
           success: false,
           message: `Product not found: ${product.productId}`,
@@ -168,7 +167,18 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    if (!paymentLink.invoiceUrl || !paymentLink.url) {
+    const paymentLinkUrl =
+      temporaryOrder.paymentMethod === "xendit"
+        ? paymentLink.invoiceUrl
+        : paymentLink.url;
+
+    const paymentId =
+      temporaryOrder.paymentMethod === "xendit"
+        ? paymentLink.id
+        : paymentLink.requestId;
+
+    // Check if the payment link URL is valid
+    if (!paymentLinkUrl) {
       return res.status(400).json({
         success: false,
         message: "Failed to create payment link.",
@@ -178,8 +188,8 @@ export const createOrder = async (req, res) => {
     // Now that we have a payment link, save the order
     const savedOrder = await Order.create({
       ...temporaryOrder,
-      paymentLink: paymentLink.invoiceUrl || paymentLink.url,
-      paymentId: paymentLink.id,
+      paymentLink: paymentLinkUrl,
+      paymentId: paymentId,
     });
 
     // Return the payment link to the frontend
