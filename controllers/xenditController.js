@@ -91,7 +91,7 @@ export const xenditCallback = async (req, res) => {
       case "PAID":
         order.paymentStatus = "paid";
         order.paymentLink = undefined;
-        order.payment = {
+        order.paymentXendit = {
           paymentId: event.payment_id,
           status: event.status,
           created: event.created,
@@ -120,7 +120,7 @@ export const xenditCallback = async (req, res) => {
         await order.save();
         break;
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        console.log(`Unhandled event status: ${event.status}`);
         break;
     }
 

@@ -69,6 +69,27 @@ const paymentXenditSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const paymentPaylabsSchema = new mongoose.Schema(
+  {
+    merchantId: { type: String, required: true },
+    requestId: { type: String, required: true },
+    errCode: { type: String, required: true },
+    paymentType: { type: String, required: true },
+    amount: { type: Number, required: true },
+    createTime: { type: Date, required: true },
+    successTime: { type: Date },
+    merchantTradeNo: { type: String, required: true },
+    platformTradeNo: { type: String, required: true },
+    status: { type: String, required: true },
+    vaCode: { type: String, required: true },
+    transFeeRate: { type: Number, required: true },
+    transFeeAmount: { type: Number, required: true },
+    totalTransFee: { type: Number, required: true },
+    vatFee: { type: Number, required: true },
+  },
+  { _id: false }
+);
+
 const orderSchema = new mongoose.Schema(
   {
     orderId: {
@@ -144,10 +165,25 @@ const orderSchema = new mongoose.Schema(
       type: String,
       select: false,
     },
-    payment: paymentXenditSchema,
+    paymentXendit: paymentXenditSchema,
+    paymentPaylabs: paymentPaylabsSchema,
   },
   { timestamps: true }
 );
+
+orderSchema.pre("save", function (next) {
+  if (this.paymentMethod === "xendit" && !this.paymentXendit) {
+    return next(
+      new Error("Xendit payment data is required for Xendit provider.")
+    );
+  }
+  if (this.paymentMethod === "paylabs" && !this.paymentPaylabs) {
+    return next(
+      new Error("Paylabs payment data is required for Paylabs provider.")
+    );
+  }
+  next();
+});
 
 const Order = mongoose.model("Order", orderSchema);
 export default Order;

@@ -124,3 +124,11 @@ export const calculateTotal = (products) => {
 
   return total;
 };
+
+export const verifySignature = (signature, payload) => {
+  const publicKey = fs.readFileSync("public.pem", "utf8");
+  const verifier = crypto.createVerify("SHA256");
+  verifier.update(payload);
+  verifier.end();
+  return verifier.verify(publicKey, signature, "base64");
+};
