@@ -48,7 +48,7 @@ export const createPaymentLink = async (order) => {
     console.log("headers:", headers);
     console.log("body:", requestBody);
 
-    const { response } = await axios.post(
+    const response  = await axios.post(
       `${paylabsApiUrl}/payment/v2.1/h5/createLink`,
       requestBody,
       { headers }
