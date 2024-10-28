@@ -4,6 +4,6 @@ import { createPaymentLink } from "../controllers/paymentController.js";
 
 const router = express.Router();
 
-router.post("/payment/createLink", jwtMiddlewareAdmin, createPaymentLink);
+// router.post("/payment/createLink", jwtMiddlewareAdmin, createPaymentLink);
 
 export default router;

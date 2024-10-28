@@ -76,7 +76,7 @@ const orderSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    buyerId: {
+    userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -135,6 +135,14 @@ const orderSchema = new mongoose.Schema(
     paymentMethod: {
       type: String,
       required: true,
+    },
+    paymentLink: {
+      type: String,
+      select: false,
+    },
+    paymentId: {
+      type: String,
+      select: false,
     },
     payment: paymentXenditSchema,
   },

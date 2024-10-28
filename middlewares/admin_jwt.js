@@ -4,7 +4,7 @@ import IPWhitelist from "../models/ipWhitelistModel.js";
 export const jwtMiddlewareAdmin = async (req, res, next) => {
   let token;
   const clientIP = req.ip;
-  console.log(clientIP)
+  // console.log(clientIP)
 
   if (req.headers.client === "not-browser") {
     token = req.headers.authorization;

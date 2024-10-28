@@ -1,4 +1,8 @@
-import { Xendit, Invoice as InvoiceClient } from "xendit-node";
+import {
+  Xendit,
+  Invoice as InvoiceClient,
+  Balance as BalanceClient,
+} from "xendit-node";
 import User from "../models/userModel.js";
 import mongoose from "mongoose";
 import Order from "../models/orderModel.js";
@@ -8,14 +12,10 @@ const xenditInvoiceClient = new InvoiceClient({
 });
 export const createXenditPaymentLink = async (order) => {
   try {
-    const buyerObjectId = new mongoose.Types.ObjectId(order.buyerId);
+    const buyerObjectId = new mongoose.Types.ObjectId(order.userId);
     const existUser = await User.findOne({ _id: buyerObjectId });
     if (!existUser) {
-      return res.status(404).json({
-        success: false,
-
-        message: "User not registered!",
-      });
+      throw new Error("user not registerd!");
     }
 
     const data = {
@@ -26,6 +26,16 @@ export const createXenditPaymentLink = async (order) => {
       invoiceDuration: "172800",
       currency: "IDR",
       reminderTime: 1,
+      customer: {
+        id: order.userId,
+        phoneNumber: order.phoneNumber,
+        email: existUser.email,
+      },
+      items: order.products.map((product) => ({
+        name: product.title,
+        price: product.price,
+        quantity: product.quantity,
+      })),
       successRedirectUrl: "http://localhost:5000",
       failureRedirectUrl: "http://localhost:5000",
     };
@@ -34,7 +44,11 @@ export const createXenditPaymentLink = async (order) => {
       data,
     });
 
-    return response.invoiceUrl;
+    const result = {
+      id: response.id,
+      invoiceUrl: response.invoiceUrl,
+    };
+    return result;
   } catch (error) {
     throw new Error(`Error creating Xendit payment link: ${error.message}`);
   }
@@ -42,15 +56,15 @@ export const createXenditPaymentLink = async (order) => {
 
 export const xenditCallback = async (req, res) => {
   try {
-    // // Verify the webhook signature
-    // const signature = req.headers["x-signature"];
-    // const isValid = xenditInvoiceClient.webhook.verify(req.body, signature);
+    // Verify the webhook signature
+    const signature = req.headers["x-callback-token"];
+    const callbackToken = process.env.XENDIT_SECRET_CALLBACK;
 
-    // if (!isValid) {
-    //   return res
-    //     .status(401)
-    //     .json({ success: false, message: "Invalid signature" });
-    // }
+    if (signature !== callbackToken) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid signature" });
+    }
 
     const event = req.body;
 
@@ -76,6 +90,7 @@ export const xenditCallback = async (req, res) => {
     switch (event.status) {
       case "PAID":
         order.paymentStatus = "paid";
+        order.paymentLink = undefined;
         order.payment = {
           paymentId: event.payment_id,
           status: event.status,
@@ -116,4 +131,24 @@ export const xenditCallback = async (req, res) => {
       .status(500)
       .json({ success: false, message: "Webhook handling failed" });
   }
+};
+
+export const expiredXendit = async (id) => {
+  const response = await xenditInvoiceClient.expireInvoice({
+    invoiceId: id,
+  });
+
+  return response;
+};
+
+export const balance = async (req, res) => {
+  const xenditBalanceClient = new BalanceClient({
+    secretKey: process.env.XENDIT_SECRET_KEY,
+  });
+
+  const response = await xenditBalanceClient.getBalance();
+  return res.status(200).json({
+    success: true,
+    data: response,
+  });
 };
