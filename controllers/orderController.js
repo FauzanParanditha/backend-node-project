@@ -168,7 +168,7 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    if (!paymentLink.invoiceUrl) {
+    if (!paymentLink.invoiceUrl || !paymentLink.url) {
       return res.status(400).json({
         success: false,
         message: "Failed to create payment link.",
@@ -178,7 +178,7 @@ export const createOrder = async (req, res) => {
     // Now that we have a payment link, save the order
     const savedOrder = await Order.create({
       ...temporaryOrder,
-      paymentLink: paymentLink.invoiceUrl,
+      paymentLink: paymentLink.invoiceUrl || paymentLink.url,
       paymentId: paymentLink.id,
     });
 
