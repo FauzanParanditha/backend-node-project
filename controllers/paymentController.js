@@ -54,7 +54,7 @@ export const createPaymentLink = async (order) => {
       { headers }
     );
 
-    console.log(response)
+    console.log(response.data)
     // const result = {
     //   headers,
     //   requestBody,
