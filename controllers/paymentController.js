@@ -166,7 +166,7 @@ export const paylabsCallback = async (req, res) => {
       "X-REQUEST-ID": notificationData.requestId,
     };
 
-    res.status(200).headers(headers).json({
+    res.set(headers).status(200).json({
       requestBodyResponse,
     });
   } catch (error) {
