@@ -81,11 +81,11 @@ const paymentPaylabsSchema = new mongoose.Schema(
     merchantTradeNo: { type: String, required: true },
     platformTradeNo: { type: String, required: true },
     status: { type: String, required: true },
-    vaCode: { type: String, required: true },
+    vaCode: { type: String },
     transFeeRate: { type: Number, required: true },
     transFeeAmount: { type: Number, required: true },
     totalTransFee: { type: Number, required: true },
-    vatFee: { type: Number, required: true },
+    vatFee: { type: Number },
   },
   { _id: false }
 );
