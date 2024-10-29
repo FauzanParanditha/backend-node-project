@@ -97,7 +97,7 @@ export const paylabsCallback = async (req, res) => {
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: `Order not found for orderID: ${event.external_id}`,
+        message: `Order not found for orderID: ${notificationData.external_id}`,
       });
     }
 
