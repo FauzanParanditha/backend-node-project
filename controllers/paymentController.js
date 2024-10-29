@@ -24,7 +24,8 @@ export const createPaymentLink = async (order) => {
       phoneNumber: order.phoneNumber,
       productName: order.products.map((p) => p.title).join(", "),
       redirectUrl: "http:localhost:5000",
-      // lang: "en",
+      lang: "en",
+      notifyUrl: "http://103.122.34.186:5000/api/order/webhook/xendit"
     };
 
     // Validate request body using Joi
