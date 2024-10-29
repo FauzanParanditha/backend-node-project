@@ -7,6 +7,7 @@ const logSchema = joi.object({
   body: joi.object(),
   statusCode: joi.number().required(),
   ipAddress: joi.string().required(),
+  response: joi.any().optional(),
 });
 
 export const validateLog = (log) => {
