@@ -140,7 +140,35 @@ export const paylabsCallback = async (req, res) => {
           `Unhandled notificationData status: ${notificationData.status}`
         );
     }
-    res.status(200).json({ success: true, message: "successfully" });
+
+    const timestampResponse = generateTimestamp();
+    const merchantId = process.env.PAYLABS_MERCHANT_ID;
+
+    const requestBodyResponse = {
+      merchantId: merchantId,
+      requestId: notificationData.requestId,
+      errCode: notificationData.errCode,
+    };
+
+    // Generate the signature
+    const signatureResponse = createSignature(
+      "POST",
+      "/api/order/webhook/paylabs",
+      requestBodyResponse,
+      timestampResponse
+    );
+
+    const headers = {
+      "Content-Type": "application/json;charset=utf-8",
+      "X-TIMESTAMP": timestampResponse,
+      "X-SIGNATURE": signatureResponse,
+      "X-PARTNER-ID": merchantId,
+      "X-REQUEST-ID": notificationData.requestId,
+    };
+
+    res.status(200).headers(headers).json({
+      requestBodyResponse,
+    });
   } catch (error) {
     console.error("Error handling webhook:", error);
     res
