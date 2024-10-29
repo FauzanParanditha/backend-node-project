@@ -171,11 +171,12 @@ export const createOrder = async (req, res) => {
       temporaryOrder.paymentMethod === "xendit"
         ? paymentLink.invoiceUrl
         : paymentLink.url;
-
+    console.log(paymentLinkUrl);
     const paymentId =
       temporaryOrder.paymentMethod === "xendit"
         ? paymentLink.id
         : paymentLink.requestId;
+    console.log(paymentId);
 
     // Check if the payment link URL is valid
     if (!paymentLinkUrl) {
@@ -254,7 +255,7 @@ export const editOrder = async (req, res) => {
       });
     }
 
-    if(existingOrder.paymentStatus === "paid"){
+    if (existingOrder.paymentStatus === "paid") {
       return res.status(200).json({
         success: true,
         message: "payment has been already processed",
