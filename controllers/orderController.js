@@ -254,6 +254,13 @@ export const editOrder = async (req, res) => {
       });
     }
 
+    if(existingOrder.paymentStatus === "paid"){
+      return res.status(200).json({
+        success: true,
+        message: "payment has been already processed",
+      });
+    }
+
     // Validate the request body using Joi
     const validatedOrder = await orderSchema.validateAsync(req.body, {
       abortEarly: false,
