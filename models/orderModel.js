@@ -171,19 +171,5 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-orderSchema.pre("save", function (next) {
-  if (this.paymentMethod === "xendit" && !this.paymentXendit) {
-    return next(
-      new Error("Xendit payment data is required for Xendit provider.")
-    );
-  }
-  if (this.paymentMethod === "paylabs" && !this.paymentPaylabs) {
-    return next(
-      new Error("Paylabs payment data is required for Paylabs provider.")
-    );
-  }
-  next();
-});
-
 const Order = mongoose.model("Order", orderSchema);
 export default Order;

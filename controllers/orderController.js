@@ -171,12 +171,10 @@ export const createOrder = async (req, res) => {
       temporaryOrder.paymentMethod === "xendit"
         ? paymentLink.invoiceUrl
         : paymentLink.url;
-    console.log(paymentLinkUrl);
     const paymentId =
       temporaryOrder.paymentMethod === "xendit"
         ? paymentLink.id
         : paymentLink.requestId;
-    console.log(paymentId);
 
     // Check if the payment link URL is valid
     if (!paymentLinkUrl) {
