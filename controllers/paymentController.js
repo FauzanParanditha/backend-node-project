@@ -25,7 +25,7 @@ export const createPaymentLink = async (order) => {
       productName: order.products.map((p) => p.title).join(", "),
       redirectUrl: "http:localhost:5000",
       lang: "en",
-      notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs"
+      notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs",
     };
 
     // Validate request body using Joi
@@ -51,8 +51,8 @@ export const createPaymentLink = async (order) => {
       "X-REQUEST-ID": requestId,
     };
 
-    // console.log("headers:", headers);
-    // console.log("body:", requestBody);
+    console.log("headers:", headers);
+    console.log("body:", requestBody);
 
     const response = await axios.post(
       `${paylabsApiUrl}/payment/v2.1/h5/createLink`,
@@ -66,6 +66,7 @@ export const createPaymentLink = async (order) => {
     //   requestBody,
     // };
 
+    console.log(response.data);
     return response.data;
   } catch (err) {
     throw new Error(`Payment initiation failed: ${err.message}`);
