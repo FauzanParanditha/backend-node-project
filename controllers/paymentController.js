@@ -92,12 +92,12 @@ export const paylabsCallback = async (req, res) => {
     const notificationData = req.body;
 
     const order = await Order.findOne({
-      requestId: notificationData.requestId,
+      merchantTradeNo: notificationData.merchantTradeNo,
     });
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: `Order not found for orderID: ${notificationData.external_id}`,
+        message: `Order not found for orderID: ${notificationData.merchantTradeNo}`,
       });
     }
 
