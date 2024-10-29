@@ -92,7 +92,7 @@ export const paylabsCallback = async (req, res) => {
     const notificationData = req.body;
 
     const order = await Order.findOne({
-      merchantTradeNo: notificationData.merchantTradeNo,
+      paymentId: notificationData.merchantTradeNo,
     });
     if (!order) {
       return res.status(404).json({
