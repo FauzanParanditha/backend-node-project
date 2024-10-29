@@ -27,7 +27,6 @@ const paymentXenditSchema = new mongoose.Schema(
     },
     bankCode: {
       type: String,
-      required: true,
     },
     description: {
       type: String,
@@ -55,7 +54,6 @@ const paymentXenditSchema = new mongoose.Schema(
     },
     paymentDestination: {
       type: String,
-      required: true,
     },
     failureRedirectUrl: {
       type: String,
