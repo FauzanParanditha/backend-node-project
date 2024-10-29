@@ -51,8 +51,8 @@ export const createPaymentLink = async (order) => {
       "X-REQUEST-ID": requestId,
     };
 
-    console.log("headers:", headers);
-    console.log("body:", requestBody);
+    // console.log("headers:", headers);
+    // console.log("body:", requestBody);
 
     const response = await axios.post(
       `${paylabsApiUrl}/payment/v2.1/h5/createLink`,
@@ -66,7 +66,7 @@ export const createPaymentLink = async (order) => {
     //   requestBody,
     // };
 
-    console.log(response.data);
+    // console.log(response.data);
     return response.data;
   } catch (err) {
     throw new Error(`Payment initiation failed: ${err.message}`);
