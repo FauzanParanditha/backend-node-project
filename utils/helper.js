@@ -125,10 +125,29 @@ export const calculateTotal = (products) => {
   return total;
 };
 
-export const verifySignature = (signature, payload) => {
+export const verifySignature = (
+  httpMethod,
+  endpointUrl,
+  body,
+  timestamp,
+  signature
+) => {
+  const minifiedBody = minifyJson(body);
+
+  const hashedBody = crypto
+    .createHash("sha256")
+    .update(minifiedBody, "utf8")
+    .digest("hex")
+    .toLowerCase();
+
+  const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
+
   const publicKey = fs.readFileSync("public.pem", "utf8");
-  const verifier = crypto.createVerify("SHA256");
-  verifier.update(payload);
-  verifier.end();
-  return verifier.verify(publicKey, signature, "base64");
+
+  const verify = crypto.createVerify("RSA-SHA256");
+  verify.update(stringContent);
+
+  const isVerified = verify.verify(publicKey, signature, "base64");
+
+  return isVerified;
 };

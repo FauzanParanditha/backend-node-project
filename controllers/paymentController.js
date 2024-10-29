@@ -77,10 +77,15 @@ export const paylabsCallback = async (req, res) => {
   try {
     //Verify the signature
     const signature = req.headers["x-signature"];
-    const payload = JSON.stringify(req.body);
+    const payload = req.body;
+    const httpMethod = req.method;
+    const endpointUrl = req.originalUrl;
+    const timestamp = req.headers["x-timestamp"];
 
     // Verify the notification signature
-    if (!verifySignature(signature, payload)) {
+    if (
+      !verifySignature(httpMethod, endpointUrl, payload, timestamp, signature)
+    ) {
       return res.status(401).send("Invalid signature");
     }
 
