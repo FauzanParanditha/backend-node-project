@@ -174,7 +174,7 @@ export const createOrder = async (req, res) => {
     const paymentId =
       temporaryOrder.paymentMethod === "xendit"
         ? paymentLink.id
-        : paymentLink.requestId;
+        : paymentLink.merchantTradeNo;
 
     // Check if the payment link URL is valid
     if (!paymentLinkUrl) {
