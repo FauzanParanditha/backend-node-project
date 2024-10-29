@@ -7,6 +7,7 @@ const apiLogSchema = new mongoose.Schema(
     headers: { type: Object, required: true },
     body: { type: Object },
     statusCode: { type: Number },
+    response: { type: Object },
     ipAddress: { type: String, required: true },
   },
   { timestamps: true }
