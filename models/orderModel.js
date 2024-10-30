@@ -167,6 +167,9 @@ const orderSchema = new mongoose.Schema(
       type: String,
       select: false,
     },
+    storeId: {
+      type: String,
+    },
     paymentXendit: paymentXenditSchema,
     paymentPaylabs: paymentPaylabsSchema,
   },
