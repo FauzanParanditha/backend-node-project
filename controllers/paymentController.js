@@ -8,36 +8,39 @@ import { validateCreateLinkRequest } from "../validators/paymentValidator.js";
 import uuid4 from "uuid4";
 import Order from "../models/orderModel.js";
 
+// Helper function to generate a unique merchant trade number
+const generateMerchantTradeNo = () => `merch-${uuid4().substring(0, 32 - 6)}`;
+
+// Create a payment link with Paylabs
 export const createPaymentLink = async (order) => {
   try {
+    // Configuration and unique identifiers
     const paylabsApiUrl = process.env.PAYLABS_API_URL;
     const merchantId = process.env.PAYLABS_MERCHANT_ID;
     const timestamp = generateTimestamp();
     const requestId = `req-${uuid4()}`;
-    const merchantTradeNo = `merch-${uuid4().substring(0, 32 - 6)}`;
+    const merchantTradeNo = generateMerchantTradeNo();
 
+    // Prepare request payload
     const requestBody = {
-      merchantId: merchantId,
-      merchantTradeNo: merchantTradeNo,
-      requestId: requestId,
+      merchantId,
+      merchantTradeNo,
+      requestId,
       amount: order.totalAmount,
       phoneNumber: order.phoneNumber,
       productName: order.products.map((p) => p.title).join(", "),
       redirectUrl: "http://103.122.34.186:5000",
       storeId: order.storeId,
-      // lang: "en",
       notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs",
-      feeType: "OUR"
+      feeType: "OUR",
     };
 
-    // Validate request body using Joi
+    // Validate request body
     const { error } = validateCreateLinkRequest(requestBody);
-
-    if (error) {
+    if (error)
       throw new Error(`Payment validation failed: ${error.details[0].message}`);
-    }
 
-    // Generate the signature
+    // Generate request signature
     const signature = createSignature(
       "POST",
       "/payment/v2.1/h5/createLink",
@@ -45,6 +48,7 @@ export const createPaymentLink = async (order) => {
       timestamp
     );
 
+    // Configure headers
     const headers = {
       "Content-Type": "application/json;charset=utf-8",
       "X-TIMESTAMP": timestamp,
@@ -53,48 +57,39 @@ export const createPaymentLink = async (order) => {
       "X-REQUEST-ID": requestId,
     };
 
-    console.log("headers:", headers);
-    console.log("body:", requestBody);
-
+    // Make API request to Paylabs
     const response = await axios.post(
       `${paylabsApiUrl}/payment/v2.1/h5/createLink`,
       requestBody,
       { headers }
     );
 
-    // const result = {
-    //   headers,
-    //   requestBody,
-    // };
-
-    console.log(response.data);
+    console.log("Response:", response.data);
     return response.data;
   } catch (err) {
     throw new Error(`Payment initiation failed: ${err.message}`);
   }
 };
 
+// Handle Paylabs callback notifications
 export const paylabsCallback = async (req, res) => {
   try {
-    //Verify the signature
-    const signature = req.headers["x-signature"];
-    const payload = req.body;
-    const httpMethod = req.method;
-    const endpointUrl = req.originalUrl;
-    const timestamp = req.headers["x-timestamp"];
+    // Extract and verify signature
+    const { "x-signature": signature, "x-timestamp": timestamp } = req.headers;
+    const { body: payload, method: httpMethod, originalUrl: endpointUrl } = req;
 
-    // Verify the notification signature
     if (
       !verifySignature(httpMethod, endpointUrl, payload, timestamp, signature)
     ) {
       return res.status(401).send("Invalid signature");
     }
 
-    const notificationData = req.body;
-
+    // Retrieve notification data and order
+    const notificationData = payload;
     const order = await Order.findOne({
       paymentId: notificationData.merchantTradeNo,
     });
+
     if (!order) {
       return res.status(404).json({
         success: false,
@@ -105,74 +100,55 @@ export const paylabsCallback = async (req, res) => {
     if (order.paymentStatus === "paid") {
       return res.status(200).json({
         success: true,
-        message: "payment has been already processed",
+        message: "Payment has already been processed",
       });
     }
 
+    // Process based on notification status
     switch (notificationData.status) {
-      case "02":
+      case "02": // Payment successful
         order.paymentStatus = "paid";
-        order.amount = notificationData.amount
+        order.amount = notificationData.amount;
         order.paymentLink = undefined;
-        order.paymentPaylabs = {
-          merchantId: notificationData.merchantId,
-          requestId: notificationData.requestId,
-          errCode: notificationData.errCode,
-          paymentType: notificationData.paymentType,
-          amount: notificationData.amount,
-          createTime: notificationData.createTime,
-          successTime: notificationData.successTime,
-          merchantTradeNo: notificationData.merchantTradeNo,
-          platformTradeNo: notificationData.platformTradeNo,
-          status: notificationData.status,
-          vaCode: notificationData.vaCode,
-          transFeeRate: notificationData.transFeeRate,
-          transFeeAmount: notificationData.transFeeAmount,
-          totalTransFee: notificationData.totalTransFee,
-          vatFee: notificationData.vatFee,
-        };
+        order.paymentPaylabs = { ...notificationData };
         await order.save();
         break;
-      case "09":
+
+      case "09": // Payment failed
         order.paymentStatus = "failed";
         await order.save();
         break;
+
       default:
         console.log(
-          `Unhandled notificationData status: ${notificationData.status}`
+          `Unhandled notification status: ${notificationData.status}`
         );
     }
 
+    // Prepare response payload and headers
     const timestampResponse = generateTimestamp();
-    const merchantId = process.env.PAYLABS_MERCHANT_ID;
-
-    const requestBodyResponse = {
-      merchantId: merchantId,
+    const responsePayload = {
+      merchantId: process.env.PAYLABS_MERCHANT_ID,
       requestId: notificationData.requestId,
       errCode: notificationData.errCode,
     };
 
-    // Generate the signature
     const signatureResponse = createSignature(
       "POST",
       "/api/order/webhook/paylabs",
-      requestBodyResponse,
+      responsePayload,
       timestampResponse
     );
 
-    const headers = {
+    const responseHeaders = {
       "Content-Type": "application/json;charset=utf-8",
       "X-TIMESTAMP": timestampResponse,
       "X-SIGNATURE": signatureResponse,
-      "X-PARTNER-ID": merchantId,
+      "X-PARTNER-ID": process.env.PAYLABS_MERCHANT_ID,
       "X-REQUEST-ID": notificationData.requestId,
     };
 
-    res.set(headers).status(200).json({
-      merchantId: merchantId,
-      requestId: notificationData.requestId,
-      errCode: notificationData.errCode,
-    });
+    res.set(responseHeaders).status(200).json(responsePayload);
   } catch (error) {
     console.error("Error handling webhook:", error);
     res

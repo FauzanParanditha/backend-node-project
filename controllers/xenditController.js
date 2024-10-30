@@ -73,9 +73,10 @@ export const xenditCallback = async (req, res) => {
     const order = await Order.findOne({ orderId: event.external_id });
 
     if (!order) {
+      console.error(`Order not found for external_id: ${event.external_id}`);
       return res.status(404).json({
         success: false,
-        message: `Order not found for orderID: ${event.external_id}`,
+        message: `Order not found for external_id: ${event.external_id}`,
       });
     }
 
@@ -120,7 +121,7 @@ export const xenditCallback = async (req, res) => {
         await order.save();
         break;
       default:
-        console.log(`Unhandled event status: ${event.status}`);
+        console.warn(`Unhandled event status received: ${event.status}`, event);
         break;
     }
 
@@ -134,11 +135,13 @@ export const xenditCallback = async (req, res) => {
 };
 
 export const expiredXendit = async (id) => {
-  const response = await xenditInvoiceClient.expireInvoice({
-    invoiceId: id,
-  });
-
-  return response;
+  try {
+    const response = await xenditInvoiceClient.expireInvoice({ invoiceId: id });
+    return response;
+  } catch (error) {
+    console.error(`Error expiring Xendit invoice with ID: ${id}`, error);
+    throw new Error(`Failed to expire invoice: ${error.message}`);
+  }
 };
 
 export const balance = async (req, res) => {
