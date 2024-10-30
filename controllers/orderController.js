@@ -151,6 +151,7 @@ export const createOrder = async (req, res) => {
       phoneNumber: validatedOrder.phoneNumber,
       paymentStatus: "pending",
       paymentMethod: validatedOrder.paymentMethod,
+      storeId: validatedOrder.storeId,
     };
 
     let paymentLink;

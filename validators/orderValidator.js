@@ -25,4 +25,5 @@ export const orderSchema = joi.object({
     .max(15)
     .required(),
   paymentMethod: joi.string().required(),
+  storeId: joi.string().optional(),
 });
