@@ -57,6 +57,9 @@ export const createPaymentLink = async (order) => {
       "X-REQUEST-ID": requestId,
     };
 
+    console.log(requestBody);
+    console.log(headers);
+
     // Make API request to Paylabs
     const response = await axios.post(
       `${paylabsApiUrl}/payment/v2.1/h5/createLink`,
