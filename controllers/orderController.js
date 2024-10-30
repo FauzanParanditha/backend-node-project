@@ -176,6 +176,8 @@ export const createOrder = async (req, res) => {
       temporaryOrder.paymentMethod === "xendit"
         ? paymentLink.id
         : paymentLink.merchantTradeNo;
+    const storeId =
+      temporaryOrder.paymentMethod === "paylabs" ? paymentLink.storeId : "";
 
     // Check if the payment link URL is valid
     if (!paymentLinkUrl) {
@@ -190,6 +192,7 @@ export const createOrder = async (req, res) => {
       ...temporaryOrder,
       paymentLink: paymentLinkUrl,
       paymentId: paymentId,
+      storeId: storeId,
     });
 
     // Return the payment link to the frontend

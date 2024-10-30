@@ -16,7 +16,12 @@ const apiLogger = async (req, res, next) => {
 
   res.send = function (body) {
     logData.statusCode = res.statusCode;
-    logData.response = body;
+
+    try {
+      logData.response = JSON.parse(body);
+    } catch (error) {
+      logData.response = body;
+    }
 
     const { error } = validateLog(logData);
     if (!error) {
