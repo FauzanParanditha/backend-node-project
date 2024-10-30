@@ -25,7 +25,7 @@ export const createPaymentLink = async (order) => {
       productName: order.products.map((p) => p.title).join(", "),
       redirectUrl: "http://103.122.34.186:5000",
       storeId: order.storeId,
-      lang: "en",
+      // lang: "en",
       notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs",
       feeType: "OUR"
     };
@@ -112,6 +112,7 @@ export const paylabsCallback = async (req, res) => {
     switch (notificationData.status) {
       case "02":
         order.paymentStatus = "paid";
+        order.amount = notificationData.amount
         order.paymentLink = undefined;
         order.paymentPaylabs = {
           merchantId: notificationData.merchantId,
@@ -168,7 +169,9 @@ export const paylabsCallback = async (req, res) => {
     };
 
     res.set(headers).status(200).json({
-      requestBodyResponse,
+      merchantId: merchantId,
+      requestId: notificationData.requestId,
+      errCode: notificationData.errCode,
     });
   } catch (error) {
     console.error("Error handling webhook:", error);
