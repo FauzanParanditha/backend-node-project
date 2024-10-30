@@ -27,6 +27,7 @@ export const createPaymentLink = async (order) => {
       storeId: order.storeId,
       lang: "en",
       notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs",
+      feeType: "OUR"
     };
 
     // Validate request body using Joi
