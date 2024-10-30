@@ -95,6 +95,7 @@ export const createOrder = async (req, res) => {
     const products = await validateOrderProducts(validatedOrder.products);
     if (!products.length)
       throw new Error("No valid products found to create the order");
+    console.log(products);
 
     const orderData = {
       orderId: uuid4(),
