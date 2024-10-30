@@ -112,7 +112,7 @@ export const createOrder = async (req, res) => {
     const savedOrder = await Order.create({ ...orderData, ...paymentLink });
     res.status(200).json({
       success: true,
-      paymentLink: paymentLink.url,
+      paymentLink: paymentLink,
       orderId: savedOrder._id,
     });
   } catch (err) {
