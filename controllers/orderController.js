@@ -140,7 +140,7 @@ const handlePaymentLink = async (orderData) => {
       throw new Error("Payment method not supported");
   }
 
-  if (!paymentLink.url) throw new Error("Failed to create payment link");
+  if (!paymentLink) throw new Error("Failed to create payment link");
   return {
     paymentLink: paymentLink.url || paymentLink.invoiceUrl,
     paymentId: paymentLink.id || paymentLink.merchantTradeNo,
