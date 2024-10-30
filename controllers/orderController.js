@@ -92,6 +92,15 @@ export const createOrder = async (req, res) => {
       });
     }
 
+    const buyerObjectId = new mongoose.Types.ObjectId(validatedOrder.userId);
+    const existUser = await User.findOne({ _id: buyerObjectId });
+    if (!existUser) {
+      return res.status(404).json({
+        success: false,
+        message: "user not registerd!",
+      });
+    }
+
     const validProducts = [];
 
     // Check each product for validity
@@ -132,15 +141,6 @@ export const createOrder = async (req, res) => {
     }
 
     const requestId = uuid4();
-
-    const buyerObjectId = new mongoose.Types.ObjectId(validatedOrder.userId);
-    const existUser = await User.findOne({ _id: buyerObjectId });
-    if (!existUser) {
-      return res.status(404).json({
-        success: false,
-        message: "user not registerd!",
-      });
-    }
 
     // Save the order to the database
     const temporaryOrder = {
