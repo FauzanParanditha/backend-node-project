@@ -29,7 +29,7 @@ export const createPaymentLink = async (order) => {
       phoneNumber: order.phoneNumber,
       productName: order.products.map((p) => p.title).join(", "),
       redirectUrl: "http://103.122.34.186:5000",
-      storeId: order.storeId,
+      ...(order.storeId && { storeId: order.storeId }),
       notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs",
       feeType: "OUR",
     };

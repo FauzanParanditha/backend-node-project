@@ -44,7 +44,7 @@ export const createQris = async (req, res) => {
       phoneNumber: validatedProduct.phoneNumber,
       paymentStatus: "pending",
       paymentMethod: validatedProduct.paymentMethod,
-      storeId: validatedProduct.storeId,
+      ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 
     const timestamp = generateTimestamp();
@@ -54,7 +54,7 @@ export const createQris = async (req, res) => {
     const requestBody = {
       requestId,
       merchantId,
-      storeId: requestBodyForm.storeId,
+      ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
       paymentType: "QRIS",
       amount: requestBodyForm.totalAmount,
       merchantTradeNo,
