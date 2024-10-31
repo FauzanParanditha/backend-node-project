@@ -156,10 +156,14 @@ export const createQris = async (req, res) => {
 
 export const qrisOrderStatus = async (req, res) => {
   try {
-    // Validate request body
-    const errorQrisStatus = await validateQrisStatusSchema.validateAsync(
-      req.body
-    );
+    const { id } = req.params;
+    const existOrder = await Order.findById(id);
+    if (!existOrder) {
+      return res.status(404).json({
+        success: false,
+        message: "order not found",
+      });
+    }
 
     const timestamp = generateTimestamp();
     const requestId = generateRequestId();
@@ -168,7 +172,7 @@ export const qrisOrderStatus = async (req, res) => {
       requestId,
       merchantId,
       ...(req.body.storeId && { storeId: req.body.storeId }),
-      merchantTradeNo: req.body.merchantTradeNo,
+      merchantTradeNo: existOrder.paymentId,
       paymentType: "QRIS",
     };
 
