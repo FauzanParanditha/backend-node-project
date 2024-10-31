@@ -8,7 +8,7 @@ import {
 } from "../controllers/orderController.js";
 import { balance, xenditCallback } from "../controllers/xenditController.js";
 import { paylabsCallback } from "../controllers/paymentController.js";
-import { createQris } from "../controllers/qrisController.js";
+import { createQris, qrisOrderStatus } from "../controllers/qrisController.js";
 
 const router = express.Router();
 
@@ -22,5 +22,6 @@ router.put("/order/:id", jwtMiddlewareAdmin, editOrder);
 router.get("/xendit/balance", jwtMiddlewareAdmin, balance);
 
 router.post("/order/create/qris", jwtMiddlewareAdmin, createQris);
+router.post("/order/create/qris/status", jwtMiddlewareAdmin, qrisOrderStatus);
 
 export default router;

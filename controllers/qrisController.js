@@ -10,7 +10,10 @@ import {
   paylabsApiUrl,
 } from "../utils/paylabs.js";
 import { orderSchema } from "../validators/orderValidator.js";
-import { validateQrisRequest } from "../validators/paymentValidator.js";
+import {
+  validateQrisRequest,
+  validateQrisStatus,
+} from "../validators/paymentValidator.js";
 import axios from "axios";
 import Order from "../models/orderModel.js";
 
@@ -97,8 +100,8 @@ export const createQris = async (req, res) => {
       "X-REQUEST-ID": requestId,
     };
 
-    console.log(requestBody);
-    console.log(headers);
+    // console.log(requestBody);
+    // console.log(headers);
 
     // Make API request to Paylabs
     const response = await axios.post(
@@ -107,7 +110,7 @@ export const createQris = async (req, res) => {
       { headers }
     );
 
-    console.log("Response:", response.data);
+    // console.log("Response:", response.data);
     if (!response.data) {
       return res.status(400).json({
         success: false,
@@ -121,7 +124,7 @@ export const createQris = async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "error, " + response.data.errCode,
+        message: "error, " + response.data.errCodeDes,
       });
     }
 
@@ -132,11 +135,89 @@ export const createQris = async (req, res) => {
     res.status(200).json({
       success: true,
       qrCode: response.data.qrCode,
-      qrUrl: response.data.qrUrl,
+      qrUrl: response.data.qrisUrl,
       expiredTime: response.data.expiredTime,
       paymentId: response.data.merchantTradeNo,
       storeId: response.data.storeId,
       orderId: savedOrder._id,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred",
+      error: error.message,
+    });
+  }
+};
+
+export const qrisOrderStatus = async (req, res) => {
+  try {
+    const timestamp = generateTimestamp();
+    const requestId = generateRequestId();
+    const merchantTradeNo = generateMerchantTradeNo();
+
+    const requestBody = {
+      requestId,
+      merchantId,
+      ...(req.body.storeId && { storeId: req.body.storeId }),
+      merchantTradeNo,
+      paymentType: "QRIS",
+    };
+
+    // Validate request body
+    const { error } = validateQrisStatus(requestBody);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        errors: error.details.map((err) => err.message),
+      });
+    }
+
+    // Generate request signature
+    const signature = createSignature(
+      "POST",
+      "/payment/v2.1/qris/query",
+      requestBody,
+      timestamp
+    );
+
+    // Configure headers
+    const headers = {
+      "Content-Type": "application/json;charset=utf-8",
+      "X-TIMESTAMP": timestamp,
+      "X-SIGNATURE": signature,
+      "X-PARTNER-ID": merchantId,
+      "X-REQUEST-ID": requestId,
+    };
+
+    console.log(requestBody);
+    console.log(headers);
+
+    // Make API request to Paylabs
+    const response = await axios.post(
+      `${paylabsApiUrl}/payment/v2.1/qris/query`,
+      requestBody,
+      { headers }
+    );
+    // console.log(response.data);
+
+    if (!response.data) {
+      return res.status(400).json({
+        success: false,
+        message: "failed to create payment",
+      });
+    }
+
+    if (response.data.errCode != 0) {
+      return res.status(400).json({
+        success: false,
+        message: "error, " + response.data.errCodeDes,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: response.data,
     });
   } catch (error) {
     return res.status(500).json({
