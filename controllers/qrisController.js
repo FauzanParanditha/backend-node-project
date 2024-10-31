@@ -333,12 +333,12 @@ export const cancleQris = async (req, res) => {
       "X-REQUEST-ID": requestId,
     };
 
+    existOrder.paymentLink = undefined;
+    existOrder.paymentStatus = "cancel";
     existOrder.qris.set(response.data);
     await existOrder.save();
 
-    res.set(headersResponse).status(200).json({
-      data: response.data,
-    });
+    res.set(headersResponse).status(200).json(response.data);
   } catch (error) {
     return res.status(500).json({
       success: false,
