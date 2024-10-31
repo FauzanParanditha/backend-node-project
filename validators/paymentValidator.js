@@ -63,3 +63,7 @@ export const validateQrisStatus = (data) => {
 
   return schema.validate(data);
 };
+
+export const validateQrisStatusSchema = joi.object({
+  merchantTradeNo: joi.string().max(32).required(),
+});

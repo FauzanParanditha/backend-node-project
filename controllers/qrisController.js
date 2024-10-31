@@ -13,6 +13,7 @@ import { orderSchema } from "../validators/orderValidator.js";
 import {
   validateQrisRequest,
   validateQrisStatus,
+  validateQrisStatusSchema,
 } from "../validators/paymentValidator.js";
 import axios from "axios";
 import Order from "../models/orderModel.js";
@@ -130,6 +131,9 @@ export const createQris = async (req, res) => {
 
     const savedOrder = await Order.create({
       ...requestBodyForm,
+      paymentLink: response.data.qrisUrl,
+      paymentId: response.data.merchantTradeNo,
+      storeId: response.data.storeId,
       qris: response.data,
     });
     res.status(200).json({
@@ -152,15 +156,19 @@ export const createQris = async (req, res) => {
 
 export const qrisOrderStatus = async (req, res) => {
   try {
+    // Validate request body
+    const errorQrisStatus = await validateQrisStatusSchema.validateAsync(
+      req.body
+    );
+
     const timestamp = generateTimestamp();
     const requestId = generateRequestId();
-    const merchantTradeNo = generateMerchantTradeNo();
 
     const requestBody = {
       requestId,
       merchantId,
       ...(req.body.storeId && { storeId: req.body.storeId }),
-      merchantTradeNo,
+      merchantTradeNo: req.body.merchantTradeNo,
       paymentType: "QRIS",
     };
 
