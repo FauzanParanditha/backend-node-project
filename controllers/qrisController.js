@@ -315,5 +315,16 @@ export const cancleQris = async (req, res) => {
         message: "error, " + response.data.errCodeDes,
       });
     }
-  } catch (error) {}
+
+    res.status(200).json({
+      success: true,
+      data: response.data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "an error occurred",
+      error: error.message,
+    });
+  }
 };
