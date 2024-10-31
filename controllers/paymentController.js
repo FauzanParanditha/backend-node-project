@@ -1,24 +1,23 @@
 import axios from "axios";
 import {
   createSignature,
+  generateMerchantTradeNo,
+  generateRequestId,
   generateTimestamp,
+  merchantId,
+  paylabsApiUrl,
   verifySignature,
-} from "../utils/helper.js";
+} from "../utils/paylabs.js";
 import { validateCreateLinkRequest } from "../validators/paymentValidator.js";
 import uuid4 from "uuid4";
 import Order from "../models/orderModel.js";
-
-// Helper function to generate a unique merchant trade number
-const generateMerchantTradeNo = () => `merch-${uuid4().substring(0, 32 - 6)}`;
 
 // Create a payment link with Paylabs
 export const createPaymentLink = async (order) => {
   try {
     // Configuration and unique identifiers
-    const paylabsApiUrl = process.env.PAYLABS_API_URL;
-    const merchantId = process.env.PAYLABS_MERCHANT_ID;
     const timestamp = generateTimestamp();
-    const requestId = `req-${uuid4()}`;
+    const requestId = generateRequestId();
     const merchantTradeNo = generateMerchantTradeNo();
 
     // Prepare request payload

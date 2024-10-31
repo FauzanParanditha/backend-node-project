@@ -3,34 +3,14 @@ import mongoose from "mongoose";
 import Order from "../models/orderModel.js";
 import Product from "../models/productModel.js";
 import User from "../models/userModel.js";
-import { calculateTotal, escapeRegExp } from "../utils/helper.js";
+import {
+  calculateTotal,
+  escapeRegExp,
+  validateOrderProducts,
+} from "../utils/helper.js";
 import { orderSchema } from "../validators/orderValidator.js";
 import { createPaymentLink } from "./paymentController.js";
 import { createXenditPaymentLink, expiredXendit } from "./xenditController.js";
-
-// Helper: Validate Order Products
-const validateOrderProducts = async (products) => {
-  const validProducts = [];
-
-  for (const product of products) {
-    const foundProduct = await Product.findById(product.productId);
-    if (!foundProduct) {
-      throw new Error(`Product not found: ${product.productId}`);
-    }
-
-    validProducts.push({
-      productId: foundProduct._id,
-      title: foundProduct.title,
-      price: foundProduct.price,
-      discount: foundProduct.discount,
-      quantity: product.quantity,
-      colors: product.colors.map((c) => ({ color: c })),
-      sizes: product.sizes.map((s) => ({ size: s })),
-    });
-  }
-
-  return validProducts;
-};
 
 // Orders Listing with Pagination and Sorting
 export const orders = async (req, res) => {
@@ -141,6 +121,10 @@ const handlePaymentLink = async (orderData) => {
   }
 
   if (!paymentLink) throw new Error("Failed to create payment link");
+
+  if (paymentLink.errCode != 0 && orderData.paymentMethod === "paylabs") {
+    throw new Error("error, " + paymentLink.errCode);
+  }
   return {
     paymentLink: paymentLink.url || paymentLink.invoiceUrl,
     paymentId: paymentLink.id || paymentLink.merchantTradeNo,
