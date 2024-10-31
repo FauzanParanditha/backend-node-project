@@ -125,10 +125,11 @@ export const createQris = async (req, res) => {
       });
     }
 
-    const savedOrder = await Order.create({ ...data, ...paymentLink });
+    const savedOrder = await Order.create({ ...data, ...response.data });
     res.status(200).json({
       success: true,
-      paymentLink: response.data.url,
+      qrCode: response.data.qrCode,
+      expiredTime: response.data.expiredTime,
       paymentId: response.data.merchantTradeNo,
       storeId: response.data.storeId,
       orderId: savedOrder._id,

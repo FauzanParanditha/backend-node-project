@@ -92,6 +92,51 @@ const paymentPaylabsSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const productInfoSchema = new mongoose.Schema({
+  id: { type: String, required: true },
+  name: { type: String, required: true },
+  price: { type: Number, required: true },
+  type: { type: String, required: true },
+  url: { type: String },
+  quantity: { type: Number, required: true },
+});
+
+const qrisSchema = new mongoose.Schema(
+  {
+    requestId: { type: String, required: true },
+    errCode: { type: String, required: true },
+    errCodeDes: { type: String },
+    merchantId: { type: String, required: true },
+    storeId: { type: String },
+    paymentType: { type: String, required: true },
+    requestAmount: { type: Number },
+    amount: { type: Number, required: true },
+    merchantTradeNo: { type: String, required: true },
+    createTime: { type: String },
+    qrCode: { type: String },
+    qrisUrl: { type: String },
+    nmid: { type: String },
+    platformTradeNo: { type: String },
+    successTime: { type: String },
+    expiredTime: { type: String },
+    status: { type: String },
+    productName: { type: String, required: true },
+    rrn: { type: String },
+    tid: { type: String },
+    payer: { type: String },
+    phoneNumber: { type: String },
+    issuerId: { type: String },
+    productInfo: [productInfoSchema],
+    transFeeRate: { type: String },
+    transFeeAmount: { type: String },
+    totalTransFee: { type: String },
+    vatFee: { type: String },
+  },
+  {
+    timestamps: true,
+  }
+);
+
 const orderSchema = new mongoose.Schema(
   {
     orderId: {
@@ -172,6 +217,7 @@ const orderSchema = new mongoose.Schema(
     },
     paymentXendit: paymentXenditSchema,
     paymentPaylabs: paymentPaylabsSchema,
+    qris: qrisSchema,
   },
   { timestamps: true }
 );
