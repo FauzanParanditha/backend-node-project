@@ -97,8 +97,8 @@ export const createQris = async (req, res) => {
       "X-REQUEST-ID": requestId,
     };
 
-    // console.log(requestBody);
-    // console.log(headers);
+    console.log(requestBody);
+    console.log(headers);
 
     // Make API request to Paylabs
     const response = await axios.post(
