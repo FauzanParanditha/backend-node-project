@@ -316,8 +316,27 @@ export const cancleQris = async (req, res) => {
       });
     }
 
-    res.status(200).json({
-      success: true,
+    // Generate request signature response
+    const signatureResponse = createSignature(
+      "POST",
+      "/payment/v2.1/qris/cancel",
+      response.data,
+      timestamp
+    );
+
+    // Configure headers response
+    const headersResponse = {
+      "Content-Type": "application/json;charset=utf-8",
+      "X-TIMESTAMP": timestamp,
+      "X-SIGNATURE": signatureResponse,
+      "X-PARTNER-ID": merchantId,
+      "X-REQUEST-ID": requestId,
+    };
+
+    existOrder.qris.set(response.data);
+    await existOrder.save();
+
+    res.set(headersResponse).status(200).json({
       data: response.data,
     });
   } catch (error) {

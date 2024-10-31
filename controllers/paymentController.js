@@ -112,6 +112,7 @@ export const paylabsCallback = async (req, res) => {
         order.paymentStatus = "paid";
         order.amount = notificationData.amount;
         order.paymentLink = undefined;
+        order.qris = undefined;
         order.paymentPaylabs = { ...notificationData };
         await order.save();
         break;
