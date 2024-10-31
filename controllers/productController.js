@@ -96,7 +96,7 @@ export const createProduct = async (req, res) => {
   if (!req.file) {
     return res.status(400).json({
       success: false,
-      message: "Image is required",
+      message: "image is required",
     });
   }
 
@@ -124,7 +124,7 @@ export const createProduct = async (req, res) => {
   } catch (err) {
     return res.status(500).json({
       success: false,
-      message: "An error occurred",
+      message: "an error occurred",
       error: err.message,
     });
   }
@@ -184,7 +184,7 @@ export const updateProduct = async (req, res) => {
       return res.status(404).json({
         success: false,
 
-        message: "Product not found",
+        message: "product not found",
       });
     }
     if (existingProduct.adminId.toString() != adminId) {
@@ -229,13 +229,13 @@ export const updateProduct = async (req, res) => {
     return res.status(200).json({
       success: true,
 
-      message: "Product updated successfully",
+      message: "product updated successfully",
     });
   } catch (err) {
     return res.status(500).json({
       success: false,
 
-      message: "An error occurred",
+      message: "an error occurred",
       error: err.message,
     });
   }
@@ -251,7 +251,7 @@ export const deleteProduct = async (req, res) => {
       return res.status(404).json({
         success: false,
 
-        message: "Product not found",
+        message: "product not found",
       });
     }
 
@@ -269,14 +269,14 @@ export const deleteProduct = async (req, res) => {
     return res.status(200).json({
       success: true,
 
-      message: "Product successfully deleted",
+      message: "product successfully deleted",
     });
   } catch (err) {
     console.error("Error deleting product:", err);
     return res.status(500).json({
       success: false,
 
-      message: "An error occurred while deleting the product",
+      message: "an error occurred while deleting the product",
       error: err.message,
     });
   }

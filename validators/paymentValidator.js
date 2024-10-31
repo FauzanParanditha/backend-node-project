@@ -64,6 +64,15 @@ export const validateQrisStatus = (data) => {
   return schema.validate(data);
 };
 
-export const validateQrisStatusSchema = joi.object({
-  merchantTradeNo: joi.string().max(32).required(),
-});
+export const cancelQrisValidator = (data) => {
+  const schema = joi.object({
+    requestId: joi.string().max(64).required(),
+    merchantId: joi.string().max(10).required(),
+    storeId: joi.string().max(30).optional(),
+    merchantTradeNo: joi.string().max(32).required(),
+    platformTradeNo: joi.string().max(32).required(),
+    qrCode: joi.string().max(300).optional(),
+  });
+
+  return schema.validate(data);
+};

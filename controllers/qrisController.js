@@ -11,9 +11,9 @@ import {
 } from "../utils/paylabs.js";
 import { orderSchema } from "../validators/orderValidator.js";
 import {
+  cancelQrisValidator,
   validateQrisRequest,
   validateQrisStatus,
-  validateQrisStatusSchema,
 } from "../validators/paymentValidator.js";
 import axios from "axios";
 import Order from "../models/orderModel.js";
@@ -36,7 +36,7 @@ export const createQris = async (req, res) => {
     if (!products.length) {
       return res.status(404).json({
         success: false,
-        message: "No valid products found to create the order",
+        message: "no valid products found to create the order",
       });
     }
 
@@ -148,7 +148,7 @@ export const createQris = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "An error occurred",
+      message: "an error occurred",
       error: error.message,
     });
   }
@@ -216,7 +216,7 @@ export const qrisOrderStatus = async (req, res) => {
     if (!response.data) {
       return res.status(400).json({
         success: false,
-        message: "failed to create payment",
+        message: "failed to check status",
       });
     }
 
@@ -234,8 +234,86 @@ export const qrisOrderStatus = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "An error occurred",
+      message: "an error occurred",
       error: error.message,
     });
   }
+};
+
+export const cancleQris = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const existOrder = await Order.findById(id);
+    if (!existOrder) {
+      return res.status(404).json({
+        success: false,
+        message: "order not found",
+      });
+    }
+    if (existOrder.paymentStatus === "paid") {
+      return res.status(200).json({
+        success: true,
+        message: "payment already processed",
+      });
+    }
+
+    const timestamp = generateTimestamp();
+    const requestId = generateRequestId();
+
+    const requestBody = {
+      requestId,
+      merchantId,
+      ...(req.body.storeId && { storeId: req.body.storeId }),
+      merchantTradeNo: existOrder.paymentId,
+      platformTradeNo: existOrder.qris.platformTradeNo,
+      qrCode: existOrder.qris.qrCode,
+    };
+
+    // Validate request body
+    const { error } = cancelQrisValidator(requestBody);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        errors: error.details.map((err) => err.message),
+      });
+    }
+
+    // Generate request signature
+    const signature = createSignature(
+      "POST",
+      "/payment/v2.1/qris/cancel",
+      requestBody,
+      timestamp
+    );
+
+    // Configure headers
+    const headers = {
+      "Content-Type": "application/json;charset=utf-8",
+      "X-TIMESTAMP": timestamp,
+      "X-SIGNATURE": signature,
+      "X-PARTNER-ID": merchantId,
+      "X-REQUEST-ID": requestId,
+    };
+
+    // Make API request to Paylabs
+    const response = await axios.post(
+      `${paylabsApiUrl}/payment/v2.1/qris/cancel`,
+      requestBody,
+      { headers }
+    );
+
+    if (!response.data) {
+      return res.status(400).json({
+        success: false,
+        message: "failed to create payment",
+      });
+    }
+
+    if (response.data.errCode != 0) {
+      return res.status(400).json({
+        success: false,
+        message: "error, " + response.data.errCodeDes,
+      });
+    }
+  } catch (error) {}
 };

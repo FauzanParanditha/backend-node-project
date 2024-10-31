@@ -25,7 +25,7 @@ export const jwtMiddlewareAdmin = async (req, res, next) => {
   if (!whitelistedIP) {
     return res.status(403).json({
       success: false,
-      message: "Access forbidden: Your IP address is not whitelisted.",
+      message: "access forbidden: Your IP address is not whitelisted.",
     });
   }
 

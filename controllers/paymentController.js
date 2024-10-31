@@ -102,7 +102,7 @@ export const paylabsCallback = async (req, res) => {
     if (order.paymentStatus === "paid") {
       return res.status(200).json({
         success: true,
-        message: "Payment has already been processed",
+        message: "payment has already been processed",
       });
     }
 
@@ -155,6 +155,6 @@ export const paylabsCallback = async (req, res) => {
     console.error("Error handling webhook:", error);
     res
       .status(500)
-      .json({ success: false, message: "Webhook handling failed" });
+      .json({ success: false, message: "webhook handling failed" });
   }
 };

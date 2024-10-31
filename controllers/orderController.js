@@ -47,7 +47,7 @@ export const orders = async (req, res) => {
     const total = await Order.countDocuments(filter);
     res.status(200).json({
       success: true,
-      message: "All orders",
+      message: "all orders",
       data: orders,
       pagination: {
         totalRecords: total,
@@ -100,7 +100,7 @@ export const createOrder = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       success: false,
-      message: "Order creation failed",
+      message: "order creation failed",
       error: err.message,
     });
   }
@@ -142,11 +142,11 @@ export const order = async (req, res) => {
     if (!existOrder)
       return res
         .status(404)
-        .json({ success: false, message: "Order not found" });
+        .json({ success: false, message: "order not found" });
 
     res
       .status(200)
-      .json({ success: true, message: "Order details", data: existOrder });
+      .json({ success: true, message: "order details", data: existOrder });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -166,11 +166,11 @@ export const editOrder = async (req, res) => {
     if (!existingOrder)
       return res
         .status(404)
-        .json({ success: false, message: "Order not found" });
+        .json({ success: false, message: "order not found" });
     if (existingOrder.paymentStatus === "paid")
       return res
         .status(200)
-        .json({ success: true, message: "Payment already processed" });
+        .json({ success: true, message: "payment already processed" });
 
     const validProducts = await validateOrderProducts(validatedOrder.products);
     if (!validProducts.length)
@@ -196,14 +196,14 @@ export const editOrder = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "Order updated successfully",
+      message: "order updated successfully",
       orderId: existingOrder._id,
       paymentLink: paymentLink.url,
     });
   } catch (err) {
     res.status(500).json({
       success: false,
-      message: "Order update failed",
+      message: "order update failed",
       error: err.message,
     });
   }

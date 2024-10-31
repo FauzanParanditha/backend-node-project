@@ -63,7 +63,7 @@ export const xenditCallback = async (req, res) => {
     if (signature !== callbackToken) {
       return res
         .status(401)
-        .json({ success: false, message: "Invalid signature" });
+        .json({ success: false, message: "invalid signature" });
     }
 
     const event = req.body;
@@ -130,7 +130,7 @@ export const xenditCallback = async (req, res) => {
     console.error("Error handling webhook:", error);
     res
       .status(500)
-      .json({ success: false, message: "Webhook handling failed" });
+      .json({ success: false, message: "webhook handling failed" });
   }
 };
 

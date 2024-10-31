@@ -90,7 +90,7 @@ export const create = async (req, res) => {
     if (existingIP) {
       return res.status(400).json({
         success: false,
-        message: "This IP address is already whitelisted.",
+        message: "this ip address is already whitelisted.",
       });
     }
 
@@ -100,7 +100,7 @@ export const create = async (req, res) => {
     });
     res.status(201).json({
       success: true,
-      message: "IP address added successfully!",
+      message: "ip address added successfully!",
       data: newIP,
     });
   } catch (error) {
@@ -122,7 +122,7 @@ export const ipWhitelist = async (req, res) => {
     if (!ip) {
       return res.status(404).json({
         success: false,
-        message: "IP address not found.",
+        message: "ip address not found.",
       });
     }
 
