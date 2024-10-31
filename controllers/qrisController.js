@@ -269,6 +269,8 @@ export const cancleQris = async (req, res) => {
       qrCode: existOrder.qris.qrCode,
     };
 
+    console.log(requestBody);
+
     // Validate request body
     const { error } = cancelQrisValidator(requestBody);
     if (error) {
