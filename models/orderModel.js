@@ -206,11 +206,9 @@ const orderSchema = new mongoose.Schema(
     },
     paymentLink: {
       type: String,
-      select: false,
     },
     paymentId: {
       type: String,
-      select: false,
     },
     storeId: {
       type: String,

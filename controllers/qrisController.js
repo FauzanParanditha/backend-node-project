@@ -164,7 +164,6 @@ export const qrisOrderStatus = async (req, res) => {
         message: "order not found",
       });
     }
-    console.log(existOrder);
 
     const timestamp = generateTimestamp();
     const requestId = generateRequestId();
