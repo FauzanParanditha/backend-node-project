@@ -125,7 +125,10 @@ export const createQris = async (req, res) => {
       });
     }
 
-    const savedOrder = await Order.create({ ...data, ...response.data });
+    const savedOrder = await Order.create({
+      ...requestBodyForm,
+      qris: response.data,
+    });
     res.status(200).json({
       success: true,
       qrCode: response.data.qrCode,
