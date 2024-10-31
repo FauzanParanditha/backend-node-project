@@ -22,6 +22,6 @@ router.put("/order/:id", jwtMiddlewareAdmin, editOrder);
 router.get("/xendit/balance", jwtMiddlewareAdmin, balance);
 
 router.post("/order/create/qris", jwtMiddlewareAdmin, createQris);
-router.post("/order/create/qris/:id", jwtMiddlewareAdmin, qrisOrderStatus);
+router.get("/order/status/qris/:id", jwtMiddlewareAdmin, qrisOrderStatus);
 
 export default router;
