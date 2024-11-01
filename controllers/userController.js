@@ -11,10 +11,14 @@ import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
 import transport from "../middlewares/sendMail.js";
 
 export const register = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, fullName, password } = req.body;
 
   try {
-    const { error, value } = registerSchema.validate({ email, password });
+    const { error, value } = registerSchema.validate({
+      email,
+      fullName,
+      password,
+    });
     if (error) {
       return res.status(401).json({
         success: false,
@@ -37,6 +41,7 @@ export const register = async (req, res) => {
 
     const newUser = new User({
       email,
+      fullName,
       password: hashPassword,
     });
     const result = await newUser.save();

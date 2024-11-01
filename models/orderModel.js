@@ -161,6 +161,55 @@ const generateVaSchema = new mongoose.Schema({
   vatFee: { type: String },
 });
 
+const generateVaSnapSchema = new mongoose.Schema({
+  responseCode: { type: String, required: true },
+  responseMessage: { type: String, required: true },
+  virtualAccountData: {
+    partnerServiceId: { type: String, required: true },
+    customerNo: { type: String, required: true },
+    virtualAccountNo: { type: String, required: true },
+    virtualAccountName: { type: String },
+    virtualAccountEmail: { type: String },
+    virtualAccountPhone: { type: String },
+    trxId: { type: String },
+    totalAmount: {
+      value: { type: String, required: true },
+      currency: { type: String, required: true },
+    },
+    billDetails: [
+      {
+        billCode: { type: String },
+        billNo: { type: String },
+        billName: { type: String },
+        billShortName: { type: String },
+        billDescription: {
+          english: { type: String },
+          indonesia: { type: String },
+        },
+        billSubCompany: { type: String },
+        billAmount: {
+          value: { type: String, required: true },
+          currency: { type: String, required: true },
+        },
+        additionalInfo: {},
+      },
+    ],
+    freeTexts: [
+      {
+        english: { type: String },
+        indonesia: { type: String },
+      },
+    ],
+    virtualAccountTrxType: { type: String },
+    feeAmount: {
+      value: { type: String, required: true },
+      currency: { type: String, required: true },
+    },
+    expiredDate: { type: String },
+    additionalInfo: {},
+  },
+});
+
 const orderSchema = new mongoose.Schema(
   {
     orderId: {
@@ -241,13 +290,22 @@ const orderSchema = new mongoose.Schema(
     paymentId: {
       type: String,
     },
+    partnerServiceId: {
+      type: String,
+    },
+    customerNo: {
+      type: String,
+    },
+    virtualAccountNo: {
+      type: String,
+    },
     storeId: {
       type: String,
     },
     paymentXendit: paymentXenditSchema,
     paymentPaylabs: paymentPaylabsSchema,
     qris: qrisSchema,
-    va: generateVaSchema,
+    va: generateVaSnapSchema,
   },
   { timestamps: true }
 );

@@ -9,6 +9,7 @@ export const registerSchema = joi.object({
     .email({
       tlds: { allow: true },
     }),
+  fullName: joi.string().max(100).required(),
   password: joi
     .string()
     .required()

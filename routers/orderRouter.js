@@ -13,7 +13,7 @@ import {
   createQris,
   qrisOrderStatus,
 } from "../controllers/qrisController.js";
-import { generateVA } from "../controllers/vaController.js";
+import { createVASNAP } from "../controllers/vaController.js";
 
 const router = express.Router();
 
@@ -30,5 +30,5 @@ router.post("/order/create/qris", jwtMiddlewareAdmin, createQris);
 router.get("/order/status/qris/:id", jwtMiddlewareAdmin, qrisOrderStatus);
 router.post("/order/cancel/qris/:id", jwtMiddlewareAdmin, cancleQris);
 
-router.post("/order/create/va", jwtMiddlewareAdmin, generateVA);
+router.post("/order/create/va", jwtMiddlewareAdmin, createVASNAP);
 export default router;

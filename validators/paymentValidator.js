@@ -108,7 +108,7 @@ export const validateGenerateVA = (data) => {
 
 export const validateCreateVA = (data) => {
   const schema = joi.object({
-    partnerServiceId: joi.string().ma(8).required(),
+    partnerServiceId: joi.string().max(8).required(),
     customerNo: joi.string().max(20).required(),
     virtualAccountNo: joi.string().max(28).required(),
     virtualAccountName: joi.string().max(255).optional(),
