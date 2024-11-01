@@ -101,7 +101,9 @@ export const createVASNAP = async (req, res) => {
       "X-PARTNER-ID": merchantId,
       "X-EXTERNAL-ID": requestId,
       "X-SIGNATURE": signature,
-      "X-IP-ADDRESS": req.ip,
+      "X-IP-ADDRESS": req.ip.includes("::ffff:")
+        ? req.ip.split("::ffff:")[1]
+        : req.ip,
     };
 
     console.log(requestBody);
