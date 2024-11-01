@@ -89,7 +89,7 @@ export const createVASNAP = async (req, res) => {
     // Generate request signature
     const signature = createSignature(
       "POST",
-      "/v1.0/transfer-va/create-va",
+      "/api/v1.0/transfer-va/create-va",
       requestBody,
       timestamp
     );
@@ -111,7 +111,7 @@ export const createVASNAP = async (req, res) => {
 
     // Make API request to Paylabs
     const response = await axios.post(
-      `${paylabsApiUrl}/v1.0/transfer-va/create-va`,
+      `${paylabsApiUrl}/api/v1.0/transfer-va/create-va`,
       requestBody,
       { headers }
     );
