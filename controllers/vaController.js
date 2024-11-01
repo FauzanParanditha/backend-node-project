@@ -106,8 +106,8 @@ export const createVASNAP = async (req, res) => {
         : req.ip,
     };
 
-    console.log(requestBody);
-    console.log(headers);
+    // console.log(requestBody);
+    // console.log(headers);
 
     // Make API request to Paylabs
     const response = await axios.post(

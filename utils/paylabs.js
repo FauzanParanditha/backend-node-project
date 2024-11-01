@@ -61,6 +61,8 @@ const minifyJson = (body) => {
 // Function to create signature
 export const createSignature = (httpMethod, endpointUrl, body, timestamp) => {
   const minifiedBody = minifyJson(body);
+  console.log(minifiedBody);
+  console.log(timestamp);
   const privateKey = fs.readFileSync("private-key.pem", "utf8");
 
   const hashedBody = crypto
