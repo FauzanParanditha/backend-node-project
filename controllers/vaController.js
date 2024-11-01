@@ -89,7 +89,7 @@ export const createVASNAP = async (req, res) => {
     // Generate request signature
     const signature = createSignature(
       "POST",
-      "/api/v1.0/transfer-va/create-va",
+      "/transfer-va/create-va",
       requestBody,
       timestamp
     );
