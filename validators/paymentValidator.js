@@ -76,3 +76,93 @@ export const cancelQrisValidator = (data) => {
 
   return schema.validate(data);
 };
+
+export const validateGenerateVA = (data) => {
+  const schema = joi.object({
+    requestId: joi.string().max(64).required(),
+    merchantId: joi.string().max(20).required(),
+    storeId: joi.string().max(30).optional(),
+    paymentType: joi.string().max(20).required(),
+    amount: joi.number().precision(2).required(),
+    merchantTradeNo: joi.string().max(32).required(),
+    notifyUrl: joi.string().max(200).optional(),
+    payer: joi.string().max(60).required(),
+    productName: joi.string().max(100).required(),
+    productInfo: joi
+      .array()
+      .items(
+        joi.object({
+          id: joi.string().max(10).required(),
+          name: joi.string().max(32).required(),
+          price: joi.number().required(),
+          type: joi.string().max(20).required(),
+          url: joi.string().max(200).optional(),
+          quantity: joi.number().max(4).required(),
+        })
+      )
+      .min(1)
+      .optional(),
+  });
+  return schema.validate(data);
+};
+
+export const validateCreateVA = (data) => {
+  const schema = joi.object({
+    partnerServiceId: joi.string().ma(8).required(),
+    customerNo: joi.string().max(20).required(),
+    virtualAccountNo: joi.string().max(28).required(),
+    virtualAccountName: joi.string().max(255).optional(),
+    virtualAccountEmail: joi.string().max(255).optional(),
+    virtualAccountPhone: joi.string().max(30).optional(),
+    trxId: joi.string().max(64).required(),
+    totalAmount: joi.object({
+      value: joi.string().max(16).required(),
+      currency: joi.string().max(3).required(),
+    }),
+    billDetails: joi.array().items(
+      joi.object({
+        billCode: joi.string().max(2).optional(),
+        billName: joi.string().max(20).optional(),
+        billShortName: joi.string().max(20).optional(),
+        billDescription: joi
+          .object({
+            english: joi.string().max(18).optional(),
+            indonesia: joi.string().max(18).optional(),
+          })
+          .optional(),
+        billShortName: joi.string().max(5).optional(),
+        billAmount: joi
+          .object({
+            value: joi.string().max(16).required(),
+            currency: joi.string().max(3).required(),
+          })
+          .optional(),
+        additionalInfo: joi.object().optional(),
+      })
+    ),
+    freeTexts: joi
+      .array()
+      .items(
+        joi.object({
+          english: joi.string().max(18).optional(),
+          indonesia: joi.string().max(18).optional(),
+        })
+      )
+      .optional(),
+    virtualAccountTrxType: joi.string().max(1).optional(),
+    feeAmount: joi
+      .object({
+        value: joi.string().max(16).required(),
+        currency: joi.string().max(3).required(),
+      })
+      .optional(),
+    expiredDate: joi.string().max(25).optional(),
+    additionalInfo: joi
+      .object({
+        paymentType: joi.string().max(32).required(),
+      })
+      .optional(),
+  });
+
+  return schema.validate(data);
+};

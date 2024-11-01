@@ -48,6 +48,7 @@ export const createQris = async (req, res) => {
       phoneNumber: validatedProduct.phoneNumber,
       paymentStatus: "pending",
       paymentMethod: validatedProduct.paymentMethod,
+      paymentType: validatedProduct.paymentType,
       ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 
@@ -59,7 +60,7 @@ export const createQris = async (req, res) => {
       requestId,
       merchantId,
       ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
-      paymentType: "QRIS",
+      paymentType: requestBodyForm.paymentType,
       amount: requestBodyForm.totalAmount,
       merchantTradeNo,
       notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs",
