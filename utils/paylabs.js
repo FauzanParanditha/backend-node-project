@@ -69,6 +69,7 @@ export const createSignature = (httpMethod, endpointUrl, body, timestamp) => {
     .digest("hex")
     .toLowerCase();
   const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
+  console.log(stringContent);
 
   const sign = crypto.createSign("RSA-SHA256");
   sign.update(stringContent);
