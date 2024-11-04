@@ -1,14 +1,12 @@
 import uuid4 from "uuid4";
-import mongoose from "mongoose";
 import Order from "../models/orderModel.js";
-import Product from "../models/productModel.js";
 import User from "../models/userModel.js";
 import {
   calculateTotal,
   escapeRegExp,
   validateOrderProducts,
 } from "../utils/helper.js";
-import { orderSchema } from "../validators/orderValidator.js";
+import { orderLinkSchema } from "../validators/orderValidator.js";
 import { createPaymentLink } from "./paymentController.js";
 import { createXenditPaymentLink, expiredXendit } from "./xenditController.js";
 
@@ -65,7 +63,7 @@ export const orders = async (req, res) => {
 // Create Order
 export const createOrder = async (req, res) => {
   try {
-    const validatedOrder = await orderSchema.validateAsync(req.body, {
+    const validatedOrder = await orderLinkSchema.validateAsync(req.body, {
       abortEarly: false,
     });
 
@@ -156,7 +154,7 @@ export const order = async (req, res) => {
 export const editOrder = async (req, res) => {
   try {
     const { id } = req.params;
-    const validatedOrder = await orderSchema.validateAsync(req.body, {
+    const validatedOrder = await orderLinkSchema.validateAsync(req.body, {
       abortEarly: false,
     });
     const existingOrder = await Order.findById(id).select(
