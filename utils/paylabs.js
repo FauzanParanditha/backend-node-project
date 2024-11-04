@@ -51,25 +51,26 @@ export const generateTimestamp = (offsetMs = 0) => {
 // const privateKey = fs.readFileSync(privateKeyPath, "utf8");
 
 // Function to minify JSON body
-const minifyJson = (body) => {
+export const minifyJson = (body) => {
   if (typeof body !== "object" || body === null) {
     throw new TypeError("Input must be a non-null JSON object");
   }
 
+  // Minify JSON except the `payer` field
   const minified = JSON.stringify(body, (key, value) => {
     if (value === null) return undefined; // Remove null values
-    if (key === "payer") return value; // Preserve spaces in "payer" field
     return value;
   });
 
-  // Remove whitespace, line breaks, and tabs except within the "payer" field
-  return minified.replace(/(\s+|\n|\r|\t)/g, (match, offset, string) => {
-    const inPayer = string.slice(0, offset).includes('"payer":');
-    return inPayer ? match : "";
-  });
-};
+  // Parse back into an object to process `payer` separately
+  const parsed = JSON.parse(minified);
+  if (parsed.payer) {
+    parsed.payer = body.payer; // Retain original spacing in `payer`
+  }
 
-export default minifyJson;
+  // Return the final JSON string
+  return JSON.stringify(parsed);
+};
 
 // Function to create signature
 export const createSignature = (httpMethod, endpointUrl, body, timestamp) => {
