@@ -52,11 +52,24 @@ export const generateTimestamp = (offsetMs = 0) => {
 
 // Function to minify JSON body
 const minifyJson = (body) => {
-  const minified = JSON.stringify(body, (key, value) =>
-    value === null ? undefined : value
-  );
-  return minified.replace(/[\s\n\r\t]+/g, "");
+  if (typeof body !== "object" || body === null) {
+    throw new TypeError("Input must be a non-null JSON object");
+  }
+
+  const minified = JSON.stringify(body, (key, value) => {
+    if (value === null) return undefined; // Remove null values
+    if (key === "payer") return value; // Preserve spaces in "payer" field
+    return value;
+  });
+
+  // Remove whitespace, line breaks, and tabs except within the "payer" field
+  return minified.replace(/(\s+|\n|\r|\t)/g, (match, offset, string) => {
+    const inPayer = string.slice(0, offset).includes('"payer":');
+    return inPayer ? match : "";
+  });
 };
+
+export default minifyJson;
 
 // Function to create signature
 export const createSignature = (httpMethod, endpointUrl, body, timestamp) => {
