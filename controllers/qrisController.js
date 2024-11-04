@@ -228,10 +228,25 @@ export const qrisOrderStatus = async (req, res) => {
       });
     }
 
-    res.status(200).json({
-      success: true,
-      data: response.data,
-    });
+    // Prepare response payload and headers
+    const timestampResponse = generateTimestamp();
+
+    const signatureResponse = createSignature(
+      "POST",
+      "/api/order/status/qris/:id",
+      response.data,
+      timestampResponse
+    );
+
+    const responseHeaders = {
+      "Content-Type": "application/json;charset=utf-8",
+      "X-TIMESTAMP": timestampResponse,
+      "X-SIGNATURE": signatureResponse,
+      "X-PARTNER-ID": process.env.PAYLABS_MERCHANT_ID,
+      "X-REQUEST-ID": notificationData.requestId,
+    };
+
+    res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
     return res.status(500).json({
       success: false,
