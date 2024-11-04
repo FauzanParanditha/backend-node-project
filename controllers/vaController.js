@@ -359,15 +359,13 @@ export const createStaticVa = async (req, res) => {
     const savedOrder = await Order.create({
       ...requestBodyForm,
       paymentCode: response.data.vaCode,
-      paymentId: response.data.merchantTradeNo,
       storeId: response.data.storeId,
       vaStatic: response.data,
     });
     res.status(200).json({
       success: true,
       paymentCode: response.data.vaCode,
-      expiredTime: response.data.expiredTime,
-      paymentId: response.data.merchantTradeNo,
+      createTime: response.data.createTime,
       storeId: response.data.storeId,
       orderId: savedOrder._id,
     });
