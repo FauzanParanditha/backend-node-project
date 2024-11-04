@@ -87,7 +87,11 @@ export const createOrder = async (req, res) => {
 
     const paymentLink = await handlePaymentLink(orderData);
 
-    const savedOrder = await Order.create({ ...orderData, ...paymentLink });
+    const savedOrder = await Order.create({
+      ...orderData,
+      ...paymentLink,
+      paymentType: "HTML5",
+    });
     res.status(200).json({
       success: true,
       paymentLink: paymentLink.paymentLink,
