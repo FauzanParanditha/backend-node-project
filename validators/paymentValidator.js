@@ -106,6 +106,19 @@ export const validateGenerateVA = (data) => {
   return schema.validate(data);
 };
 
+export const validateStaticVA = (data) => {
+  const schema = joi.object({
+    requestId: joi.string().max(64).required(),
+    merchantId: joi.string().max(20).required(),
+    storeId: joi.string().max(30).optional(),
+    paymentType: joi.string().max(20).required(),
+    payer: joi.string().max(60).required(),
+    beUsedFor: joi.string().max(100).optional(),
+    notifyUrl: joi.string().max(200).optional(),
+  });
+  return schema.validate(data);
+};
+
 export const validateCreateVASNAP = (data) => {
   const schema = joi.object({
     partnerServiceId: joi.string().max(8).required(),

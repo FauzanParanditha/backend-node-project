@@ -18,7 +18,11 @@ import {
   createCreditCard,
 } from "../controllers/ccController.js";
 import { createVASNAP } from "../controllers/vaSnapController.js";
-import { createVA, vaOrderStatus } from "../controllers/vaController.js";
+import {
+  createStaticVa,
+  createVA,
+  vaOrderStatus,
+} from "../controllers/vaController.js";
 
 const router = express.Router();
 
@@ -39,6 +43,7 @@ router.post("/order/create/vaSnap", jwtMiddlewareAdmin, createVASNAP);
 
 router.post("/order/create/va", jwtMiddlewareAdmin, createVA);
 router.get("/order/status/va/:id", jwtMiddlewareAdmin, vaOrderStatus);
+router.post("/order/create/va/static", jwtMiddlewareAdmin, createStaticVa);
 
 router.post("/order/create/cc", jwtMiddlewareAdmin, createCreditCard);
 router.get("/order/status/cc/:id", jwtMiddlewareAdmin, ccOrderStatus);
