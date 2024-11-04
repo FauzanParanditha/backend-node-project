@@ -361,7 +361,7 @@ export const createStaticVa = async (req, res) => {
       paymentCode: response.data.vaCode,
       paymentId: response.data.merchantTradeNo,
       storeId: response.data.storeId,
-      qris: response.data,
+      vaStatic: response.data,
     });
     res.status(200).json({
       success: true,
