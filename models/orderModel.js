@@ -336,7 +336,8 @@ const orderSchema = new mongoose.Schema(
     paymentXendit: paymentXenditSchema,
     paymentPaylabs: paymentPaylabsSchema,
     qris: qrisSchema,
-    va: generateVaSnapSchema,
+    vaSnap: generateVaSnapSchema,
+    va: generateVaSchema,
     cc: ccSchema,
   },
   { timestamps: true }
