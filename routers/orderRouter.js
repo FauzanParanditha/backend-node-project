@@ -41,6 +41,6 @@ router.post("/order/create/va", jwtMiddlewareAdmin, createVA);
 router.get("/order/status/va/:id", jwtMiddlewareAdmin, vaOrderStatus);
 
 router.post("/order/create/cc", jwtMiddlewareAdmin, createCreditCard);
-router.post("/order/status/cc/:id", jwtMiddlewareAdmin, ccOrderStatus);
+router.get("/order/status/cc/:id", jwtMiddlewareAdmin, ccOrderStatus);
 
 export default router;
