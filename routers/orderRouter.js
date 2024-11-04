@@ -21,7 +21,7 @@ router.get("/orders", jwtMiddlewareAdmin, orders);
 router.post("/order/create", jwtMiddlewareAdmin, createOrder);
 router.post("/order/webhook/xendit", xenditCallback);
 router.post("/order/webhook/paylabs", paylabsCallback);
-router.get("/order/:id", order);
+router.get("/order/:id", jwtMiddlewareAdmin, order);
 router.put("/order/:id", jwtMiddlewareAdmin, editOrder);
 
 router.get("/xendit/balance", jwtMiddlewareAdmin, balance);
