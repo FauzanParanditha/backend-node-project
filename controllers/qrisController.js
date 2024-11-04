@@ -243,7 +243,7 @@ export const qrisOrderStatus = async (req, res) => {
       "X-TIMESTAMP": timestampResponse,
       "X-SIGNATURE": signatureResponse,
       "X-PARTNER-ID": process.env.PAYLABS_MERCHANT_ID,
-      "X-REQUEST-ID": notificationData.requestId,
+      "X-REQUEST-ID": generateRequestId(),
     };
 
     res.set(responseHeaders).status(200).json(response.data);
