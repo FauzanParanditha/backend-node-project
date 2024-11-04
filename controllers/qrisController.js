@@ -242,7 +242,7 @@ export const qrisOrderStatus = async (req, res) => {
       "Content-Type": "application/json;charset=utf-8",
       "X-TIMESTAMP": timestampResponse,
       "X-SIGNATURE": signatureResponse,
-      "X-PARTNER-ID": process.env.PAYLABS_MERCHANT_ID,
+      "X-PARTNER-ID": merchantId,
       "X-REQUEST-ID": generateRequestId(),
     };
 
