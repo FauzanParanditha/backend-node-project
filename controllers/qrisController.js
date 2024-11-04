@@ -174,7 +174,7 @@ export const qrisOrderStatus = async (req, res) => {
       merchantId,
       ...(req.body.storeId && { storeId: req.body.storeId }),
       merchantTradeNo: existOrder.paymentId,
-      paymentType: "QRIS",
+      paymentType: existOrder.paymentType,
     };
 
     // Validate request body

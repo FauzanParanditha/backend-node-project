@@ -14,7 +14,10 @@ import {
   qrisOrderStatus,
 } from "../controllers/qrisController.js";
 import { createVASNAP } from "../controllers/vaController.js";
-import { createCreditCard } from "../controllers/ccController.js";
+import {
+  ccOrderStatus,
+  createCreditCard,
+} from "../controllers/ccController.js";
 
 const router = express.Router();
 
@@ -34,5 +37,6 @@ router.post("/order/cancel/qris/:id", jwtMiddlewareAdmin, cancleQris);
 router.post("/order/create/va", jwtMiddlewareAdmin, createVASNAP);
 
 router.post("/order/create/cc", jwtMiddlewareAdmin, createCreditCard);
+router.post("/order/status/cc/:id", jwtMiddlewareAdmin, ccOrderStatus);
 
 export default router;
