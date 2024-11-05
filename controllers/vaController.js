@@ -17,6 +17,7 @@ import {
 } from "../validators/paymentValidator.js";
 import axios from "axios";
 import Order from "../models/orderModel.js";
+import VirtualAccount from "../models/vaModel.js";
 
 export const createVA = async (req, res) => {
   try {
@@ -277,27 +278,14 @@ export const createStaticVa = async (req, res) => {
       });
     }
 
-    const requestBodyForm = {
-      orderId: uuid4(),
-      userId: validatedProduct.userId,
-      products,
-      totalAmount: calculateTotal(products),
-      phoneNumber: validatedProduct.phoneNumber,
-      paymentStatus: "pending",
-      paymentMethod: validatedProduct.paymentMethod,
-      paymentType: validatedProduct.paymentType,
-      ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
-    };
-
     const timestamp = generateTimestamp();
     const requestId = generateRequestId();
-    const merchantTradeNo = generateMerchantTradeNo();
 
     const requestBody = {
       requestId,
       merchantId,
-      ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
-      paymentType: requestBodyForm.paymentType,
+      ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
+      paymentType: validatedProduct.paymentType,
       payer: existUser.fullName,
       notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs",
     };
@@ -348,7 +336,7 @@ export const createStaticVa = async (req, res) => {
 
     if (
       response.data.errCode != 0 &&
-      requestBodyForm.paymentMethod === "paylabs"
+      validatedProduct.paymentMethod === "paylabs"
     ) {
       return res.status(400).json({
         success: false,
@@ -356,10 +344,8 @@ export const createStaticVa = async (req, res) => {
       });
     }
 
-    const savedOrder = await Order.create({
-      ...requestBodyForm,
-      paymentCode: response.data.vaCode,
-      storeId: response.data.storeId,
+    const savedOrder = await VirtualAccount.create({
+      userId: existUser._id,
       vaStatic: response.data,
     });
     res.status(200).json({

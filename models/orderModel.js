@@ -161,18 +161,6 @@ const generateVaSchema = new mongoose.Schema({
   vatFee: { type: String },
 });
 
-const generateVaStaticSchema = new mongoose.Schema({
-  requestId: { type: String, required: true },
-  errCode: { type: String, required: true },
-  errCodeDes: { type: String },
-  merchantId: { type: String, required: true },
-  storeId: { type: String },
-  paymentType: { type: String, required: true },
-  createTime: { type: String },
-  vaCode: { type: String },
-  expiredTime: { type: String },
-});
-
 const generateVaSnapSchema = new mongoose.Schema({
   responseCode: { type: String, required: true },
   responseMessage: { type: String, required: true },
@@ -350,7 +338,6 @@ const orderSchema = new mongoose.Schema(
     qris: qrisSchema,
     vaSnap: generateVaSnapSchema,
     va: generateVaSchema,
-    vaStatic: generateVaStaticSchema,
     cc: ccSchema,
   },
   { timestamps: true }
