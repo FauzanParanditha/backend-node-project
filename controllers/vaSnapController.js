@@ -12,7 +12,10 @@ import {
   merchantId,
   paylabsApiUrl,
 } from "../utils/paylabs.js";
-import { validateCreateVASNAP } from "../validators/paymentValidator.js";
+import {
+  validateCreateVASNAP,
+  validateVaSNAPStatus,
+} from "../validators/paymentValidator.js";
 import axios from "axios";
 import Order from "../models/orderModel.js";
 
@@ -132,6 +135,7 @@ export const createVASNAP = async (req, res) => {
 
     const savedOrder = await Order.create({
       ...requestBodyForm,
+      totalAmount: response.data.virtualAccountData.totalAmount.value,
       partnerServiceId: response.data.virtualAccountData.partnerServiceId,
       customerNo: response.data.virtualAccountData.customerNo,
       virtualAccountNo: response.data.virtualAccountData.virtualAccountNo,
@@ -142,9 +146,102 @@ export const createVASNAP = async (req, res) => {
       partnerServiceId: response.data.virtualAccountData.partnerServiceId,
       customerNo: response.data.virtualAccountData.customerNo,
       virtualAccountNo: response.data.virtualAccountData.virtualAccountNo,
+      totalAmount: response.data.virtualAccountData.totalAmount.value,
       expiredDate: response.data.virtualAccountData.expiredDate,
       orderId: savedOrder._id,
     });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "an error occurred",
+      error: error.message,
+    });
+  }
+};
+
+export const vaSNAPOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const existOrder = await Order.findById(id);
+    if (!existOrder) {
+      return res.status(404).json({
+        success: false,
+        message: "order not found",
+      });
+    }
+
+    const timestamp = generateTimestamp();
+    const requestId = generateRequestId();
+
+    const requestBody = {
+      partnerServiceId: existOrder.partnerServiceId,
+      customerNo: existOrder.customerNo,
+      virtualAccountNo: existOrder.virtualAccountNo,
+      inquiryRequestId: requestId,
+      paymentRequestId: requestId,
+      additionalInfo: existOrder.vaSnap.virtualAccountData.additionalInfo,
+    };
+
+    // Validate request body
+    const { error } = validateVaSNAPStatus(requestBody);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        errors: error.details.map((err) => err.message),
+      });
+    }
+
+    // Generate request signature
+    const signature = createSignature(
+      "POST",
+      "/v1.0/transfer-va/status",
+      requestBody,
+      timestamp
+    );
+
+    // Configure headers
+    const headers = {
+      "Content-Type": "application/json;charset=utf-8",
+      "X-TIMESTAMP": timestamp,
+      "X-SIGNATURE": signature,
+      "X-PARTNER-ID": merchantId,
+      "X-REQUEST-ID": requestId,
+    };
+
+    // console.log(requestBody);
+    // console.log(headers);
+
+    // Make API request to Paylabs
+    const response = await axios.post(
+      `${paylabsApiUrl}/v1.0/transfer-va/status`,
+      requestBody,
+      { headers }
+    );
+    // console.log(response.data);
+
+    if (!response.data) {
+      return res.status(400).json({
+        success: false,
+        message: "failed to check status",
+      });
+    }
+
+    if (response.data.responseCode.charAt(0) !== "2") {
+      return res.status(400).json({
+        success: false,
+        message: "error, " + response.data.errCodeDes,
+      });
+    }
+
+    // Prepare response payload and headers
+    const timestampResponse = generateTimestamp();
+
+    const responseHeaders = {
+      "Content-Type": "application/json;charset=utf-8",
+      "X-TIMESTAMP": timestampResponse,
+    };
+
+    res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
     return res.status(500).json({
       success: false,

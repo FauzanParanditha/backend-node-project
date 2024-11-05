@@ -106,6 +106,18 @@ export const validateGenerateVA = (data) => {
   return schema.validate(data);
 };
 
+export const validateVaStatus = (data) => {
+  const schema = joi.object({
+    requestId: joi.string().max(64).required(),
+    merchantId: joi.string().max(10).required(),
+    storeId: joi.string().max(30).optional(),
+    merchantTradeNo: joi.string().max(32).optional(),
+    paymentType: joi.string().max(20).required(),
+  });
+
+  return schema.validate(data);
+};
+
 export const validateStaticVA = (data) => {
   const schema = joi.object({
     requestId: joi.string().max(64).required(),
@@ -180,6 +192,19 @@ export const validateCreateVASNAP = (data) => {
   return schema.validate(data);
 };
 
+export const validateVaSNAPStatus = (data) => {
+  const schema = joi.object({
+    partnerServiceId: joi.string().max(8).required(),
+    customerNo: joi.string().max(20).required(),
+    virtualAccountNo: joi.string().max(28).required(),
+    inquiryRequestId: joi.string().max(128).required(),
+    paymentRequestId: joi.string().max(128).optional(),
+    additionalInfo: joi.object().optional(),
+  });
+
+  return schema.validate(data);
+};
+
 export const validateCreditCardRequest = (data) => {
   const schema = joi.object({
     requestId: joi.string().max(64).required(),
@@ -216,18 +241,6 @@ export const validateCreditCardRequest = (data) => {
 };
 
 export const validateCCStatus = (data) => {
-  const schema = joi.object({
-    requestId: joi.string().max(64).required(),
-    merchantId: joi.string().max(10).required(),
-    storeId: joi.string().max(30).optional(),
-    merchantTradeNo: joi.string().max(32).optional(),
-    paymentType: joi.string().max(20).required(),
-  });
-
-  return schema.validate(data);
-};
-
-export const validateVaStatus = (data) => {
   const schema = joi.object({
     requestId: joi.string().max(64).required(),
     merchantId: joi.string().max(10).required(),

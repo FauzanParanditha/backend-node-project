@@ -20,7 +20,10 @@ import {
   ccOrderStatus,
   createCreditCard,
 } from "../controllers/ccController.js";
-import { createVASNAP } from "../controllers/vaSnapController.js";
+import {
+  createVASNAP,
+  vaSNAPOrderStatus,
+} from "../controllers/vaSnapController.js";
 import {
   createStaticVa,
   createVA,
@@ -44,6 +47,7 @@ router.get("/order/status/qris/:id", jwtMiddlewareAdmin, qrisOrderStatus);
 router.post("/order/cancel/qris/:id", jwtMiddlewareAdmin, cancleQris);
 
 router.post("/order/create/vaSnap", jwtMiddlewareAdmin, createVASNAP);
+router.get("/order/status/vaSnap/:id", jwtMiddlewareAdmin, vaSNAPOrderStatus);
 
 router.post("/order/create/va", jwtMiddlewareAdmin, createVA);
 router.get("/order/status/va/:id", jwtMiddlewareAdmin, vaOrderStatus);
