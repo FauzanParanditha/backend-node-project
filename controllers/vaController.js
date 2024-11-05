@@ -166,6 +166,18 @@ export const vaOrderStatus = async (req, res) => {
         message: "order not found",
       });
     }
+    if (existOrder.paymentStatus === "paid") {
+      return res.status(200).json({
+        success: true,
+        message: "payment already processed",
+      });
+    }
+    if (!existOrder.va) {
+      return res.status(400).json({
+        success: false,
+        message: "va data not found in the order",
+      });
+    }
 
     const timestamp = generateTimestamp();
     const requestId = generateRequestId();
