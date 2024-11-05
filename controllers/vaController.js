@@ -132,6 +132,7 @@ export const createVA = async (req, res) => {
 
     const savedOrder = await Order.create({
       ...requestBodyForm,
+      totalAmount: response.data.amount,
       virtualAccountNo: response.data.vaCode,
       paymentId: response.data.merchantTradeNo,
       storeId: response.data.storeId,
@@ -142,7 +143,7 @@ export const createVA = async (req, res) => {
       virtualAccountNo: response.data.vaCode,
       expiredTime: response.data.expiredTime,
       paymentId: response.data.merchantTradeNo,
-      amount: response.data.amount,
+      totalAmount: response.data.amount,
       storeId: response.data.storeId,
       orderId: savedOrder._id,
     });

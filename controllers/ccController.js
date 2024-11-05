@@ -133,6 +133,7 @@ export const createCreditCard = async (req, res) => {
 
     const savedOrder = await Order.create({
       ...requestBodyForm,
+      totalAmount: response.data.amount,
       paymentLink: response.data.paymentActions.payUrl,
       paymentId: response.data.merchantTradeNo,
       storeId: response.data.storeId,
@@ -143,6 +144,7 @@ export const createCreditCard = async (req, res) => {
       paymentLink: response.data.paymentActions.payUrl,
       expiredTime: response.data.expiredTime,
       paymentId: response.data.merchantTradeNo,
+      totalAmount: response.data.amount,
       storeId: response.data.storeId,
       orderId: savedOrder._id,
     });

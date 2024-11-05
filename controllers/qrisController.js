@@ -132,6 +132,7 @@ export const createQris = async (req, res) => {
 
     const savedOrder = await Order.create({
       ...requestBodyForm,
+      totalAmount: response.data.amount,
       paymentLink: response.data.qrisUrl,
       paymentId: response.data.merchantTradeNo,
       storeId: response.data.storeId,
@@ -143,6 +144,7 @@ export const createQris = async (req, res) => {
       qrUrl: response.data.qrisUrl,
       expiredTime: response.data.expiredTime,
       paymentId: response.data.merchantTradeNo,
+      totalAmount: response.data.amount,
       storeId: response.data.storeId,
       orderId: savedOrder._id,
     });
