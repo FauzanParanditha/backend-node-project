@@ -121,7 +121,7 @@ export const createVASNAP = async (req, res) => {
     }
 
     if (
-      response.data.errCode != 0 &&
+      response.data.responseCode.charAt(0) !== "2" &&
       requestBodyForm.paymentMethod === "paylabs"
     ) {
       return res.status(400).json({
