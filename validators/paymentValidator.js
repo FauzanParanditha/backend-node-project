@@ -221,13 +221,13 @@ export const validatePaymentVASNAP = (data) => {
     sourceBankCode: joi.string().max(3).optional(),
     paidAmount: joi
       .object({
-        value: joi.string().max(16).precision(2).required(),
+        value: joi.string().max(16).required(),
         currency: joi.string().max(3).required(),
       })
       .required(),
     cumulativePaymentAmount: joi
       .object({
-        value: joi.string().max(16).precision(2).required(),
+        value: joi.string().max(16).required(),
         currency: joi.string().max(3).required(),
       })
       .optional(),
