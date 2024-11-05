@@ -226,7 +226,7 @@ export const vaSNAPOrderStatus = async (req, res) => {
 
     // Make API request to Paylabs
     const response = await axios.post(
-      `${paylabsApiUrl}/v1.0/transfer-va/status`,
+      `${paylabsApiUrl}/api/v1.0/transfer-va/status`,
       requestBody,
       { headers }
     );
