@@ -1,7 +1,10 @@
 import uuid4 from "uuid4";
 import User from "../models/userModel.js";
 import { calculateTotal, validateOrderProducts } from "../utils/helper.js";
-import { orderSchema } from "../validators/orderValidator.js";
+import {
+  orderSchema,
+  paymentSNAPSchema,
+} from "../validators/orderValidator.js";
 import {
   createSignature,
   deriveUUID8,
@@ -15,6 +18,7 @@ import {
 } from "../utils/paylabs.js";
 import {
   validateCreateVASNAP,
+  validatePaymentVASNAP,
   validateVaSNAPStatus,
 } from "../validators/paymentValidator.js";
 import axios from "axios";
@@ -65,6 +69,7 @@ export const createVASNAP = async (req, res) => {
       customerNo,
       virtualAccountNo: partnerServiceId + customerNo,
       virtualAccountName: existUser.fullName,
+      virtualAccountEmail: existUser.email,
       virtualAccountPhone: requestBodyForm.phoneNumber,
       trxId: merchantTradeNo,
       totalAmount: {
@@ -244,6 +249,144 @@ export const vaSNAPOrderStatus = async (req, res) => {
         success: false,
         message: "error, " + response.data.errCodeDes,
       });
+    }
+
+    // Prepare response payload and headers
+    const timestampResponse = generateTimestamp();
+
+    const responseHeaders = {
+      "Content-Type": "application/json;charset=utf-8",
+      "X-TIMESTAMP": timestampResponse,
+    };
+
+    res.set(responseHeaders).status(200).json(response.data);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "an error occurred",
+      error: error.message,
+    });
+  }
+};
+
+export const paymentVASNAP = async (req, res) => {
+  try {
+    const validatedRequest = await paymentSNAPSchema.validateAsync(req.body, {
+      abortEarly: false,
+    });
+
+    const existOrder = await Order.findOne({
+      customerNo: validatedRequest.customerNo,
+    });
+    if (!existOrder) {
+      return res.status(404).json({
+        success: false,
+        message: "order does not exist!",
+      });
+    }
+    if (existOrder.paymentStatus === "paid") {
+      return res.status(200).json({
+        success: true,
+        message: "payment already processed",
+      });
+    }
+    if (!existOrder.vaSnap) {
+      return res.status(400).json({
+        success: false,
+        message: "vaSnap data not found in the order",
+      });
+    }
+
+    const timestamp = generateTimestamp();
+    const requestId = generateRequestId();
+
+    const requestBody = {
+      partnerServiceId: existOrder.vaSnap.virtualAccountData.partnerServiceId,
+      customerNo: existOrder.vaSnap.virtualAccountData.customerNo,
+      virtualAccountNo: existOrder.vaSnap.virtualAccountData.virtualAccountNo,
+      virtualAccountName:
+        existOrder.vaSnap.virtualAccountData.virtualAccountName,
+      virtualAccountEmail:
+        existOrder.vaSnap.virtualAccountData.virtualAccountEmail,
+      virtualAccountPhone:
+        existOrder.vaSnap.virtualAccountData.virtualAccountPhone,
+      trxId: existOrder.vaSnap.virtualAccountData.trxId,
+      paymentRequestId: requestId,
+      paidAmount: existOrder.vaSnap.virtualAccountData.totalAmount,
+      totalAmount: existOrder.vaSnap.virtualAccountData.totalAmount,
+    };
+
+    // Validate request body
+    const { error } = validatePaymentVASNAP(requestBody);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        errors: error.details.map((err) => err.message),
+      });
+    }
+
+    // Generate request signature
+    const signature = createSignature(
+      "POST",
+      "/transfer-va/payment",
+      requestBody,
+      timestamp
+    );
+
+    // Configure headers
+    const headers = {
+      "Content-Type": "application/json;charset=utf-8",
+      "X-TIMESTAMP": timestamp,
+      "X-PARTNER-ID": merchantId,
+      "X-EXTERNAL-ID": requestId,
+      "X-SIGNATURE": signature,
+      "X-IP-ADDRESS": req.ip.includes("::ffff:")
+        ? req.ip.split("::ffff:")[1]
+        : req.ip,
+    };
+
+    // console.log(requestBody);
+    // console.log(headers);
+
+    // Make API request to Paylabs
+    const response = await axios.post(
+      `${paylabsApiUrl}/api/v1.0/transfer-va/payment`,
+      requestBody,
+      { headers }
+    );
+
+    // console.log("Response:", response.data);
+    if (!response.data) {
+      return res.status(400).json({
+        success: false,
+        message: "failed to create payment",
+      });
+    }
+
+    if (response.data.responseCode.charAt(0) !== "2") {
+      return res.status(400).json({
+        success: false,
+        message: "error, " + response.data.errCodeDes,
+      });
+    }
+
+    // Process based on notification status
+    switch (response.data.virtualAccountData.paymentFlagStatus) {
+      case "00": // Payment successful
+        existOrder.paymentStatus = "paid";
+        existOrder.paymentPaylabs = { ...response.data };
+        await existOrder.save();
+        break;
+      case "05": // Payment canceled
+        existOrder.paymentStatus = "cancel";
+        break;
+      case "06": // Payment failed
+        existOrder.paymentStatus = "failed";
+        break;
+      default:
+        console.log(
+          `Unhandled notification status: ${notificationData.status}`
+        );
     }
 
     // Prepare response payload and headers

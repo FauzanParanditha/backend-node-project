@@ -64,3 +64,7 @@ export const orderLinkSchema = joi.object({
   storeId: joi.string().optional(),
   paymentType: joi.string().optional(),
 });
+
+export const paymentSNAPSchema = joi.object({
+  customerNo: joi.string().required(),
+});

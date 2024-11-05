@@ -141,12 +141,13 @@ export const validateCreateVASNAP = (data) => {
     virtualAccountPhone: joi.string().max(30).optional(),
     trxId: joi.string().max(64).required(),
     totalAmount: joi.object({
-      value: joi.string().max(16).required(),
+      value: joi.string().max(16).precision(2).required(),
       currency: joi.string().max(3).required(),
     }),
     billDetails: joi.array().items(
       joi.object({
         billCode: joi.string().max(2).optional(),
+        billNo: joi.string().max(18).optional(),
         billName: joi.string().max(20).optional(),
         billShortName: joi.string().max(20).optional(),
         billDescription: joi
@@ -155,7 +156,7 @@ export const validateCreateVASNAP = (data) => {
             indonesia: joi.string().max(18).optional(),
           })
           .optional(),
-        billShortName: joi.string().max(5).optional(),
+        billSubCompany: joi.string().max(5).optional(),
         billAmount: joi
           .object({
             value: joi.string().max(16).required(),
@@ -200,6 +201,91 @@ export const validateVaSNAPStatus = (data) => {
     inquiryRequestId: joi.string().max(128).required(),
     paymentRequestId: joi.string().max(128).optional(),
     additionalInfo: joi.object().optional(),
+  });
+
+  return schema.validate(data);
+};
+
+export const validatePaymentVASNAP = (data) => {
+  const schema = joi.object({
+    partnerServiceId: joi.string().max(8).required(),
+    customerNo: joi.string().max(20).required(),
+    virtualAccountNo: joi.string().max(28).required(),
+    virtualAccountName: joi.string().max(255).optional(),
+    virtualAccountEmail: joi.string().max(255).optional(),
+    virtualAccountPhone: joi.string().max(30).optional(),
+    trxId: joi.string().max(64).required(),
+    paymentRequestId: joi.string().max(128).required(),
+    channelCode: joi.string().max(4).optional(),
+    hashedSourceAccountNo: joi.string().max(32).optional(),
+    sourceBankCode: joi.string().max(3).optional(),
+    paidAmount: joi
+      .object({
+        value: joi.string().max(16).precision(2).required(),
+        currency: joi.string().max(3).required(),
+      })
+      .required(),
+    cumulativePaymentAmount: joi
+      .object({
+        value: joi.string().max(16).precision(2).required(),
+        currency: joi.string().max(3).required(),
+      })
+      .optional(),
+    paidBills: joi.string().max(6).optional(),
+    totalAmount: joi
+      .object({
+        value: joi.string().max(16).required(),
+        currency: joi.string().max(3).required(),
+      })
+      .optional(),
+    trxDateTime: joi.date().optional(),
+    referenceNo: joi.string().max(64).optional(),
+    journalNum: joi.string().max(6).optional(),
+    paymentType: joi.string().max(1).optional(),
+    flagAdvise: joi.string().max(1).optional(),
+    subCompany: joi.string().max(5).optional(),
+    billDetails: joi
+      .array()
+      .items(
+        joi.object({
+          billCode: joi.string().max(2).optional(),
+          billNo: joi.string().max(18).optional(),
+          billName: joi.string().max(20).optional(),
+          billShortName: joi.string().max(20).optional(),
+          billDescription: joi
+            .object({
+              english: joi.string().max(18).optional(),
+              indonesia: joi.string().max(18).optional(),
+            })
+            .optional(),
+          billSubCompany: joi.string().max(5).optional(),
+          billAmount: joi
+            .object({
+              value: joi.string().max(16).required(),
+              currency: joi.string().max(3).required(),
+            })
+            .optional(),
+          additionalInfo: joi.object().optional(),
+        })
+      )
+      .optional(),
+    freeTexts: joi
+      .array()
+      .items(
+        joi.object({
+          english: joi.string().max(18).optional(),
+          indonesia: joi.string().max(18).optional(),
+        })
+      )
+      .optional(),
+    additionalInfo: joi
+      .object({
+        transFeeRate: joi.number().max(6).precision(6).optional(),
+        transFeeAmount: joi.number().max(12).precision(2).optional(),
+        totalTransFee: joi.number().max(6).precision(6).optional(),
+        vatFee: joi.number().max(6).precision(6).optional(),
+      })
+      .optional(),
   });
 
   return schema.validate(data);
