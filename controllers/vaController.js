@@ -1,7 +1,7 @@
 import uuid4 from "uuid4";
 import User from "../models/userModel.js";
 import { calculateTotal, validateOrderProducts } from "../utils/helper.js";
-import { orderSchema } from "../validators/orderValidator.js";
+import { orderSchema, vaStaticSchema } from "../validators/orderValidator.js";
 import {
   createSignature,
   generateMerchantTradeNo,
@@ -258,7 +258,7 @@ export const vaOrderStatus = async (req, res) => {
 
 export const createStaticVa = async (req, res) => {
   try {
-    const validatedProduct = await orderSchema.validateAsync(req.body, {
+    const validatedProduct = await vaStaticSchema.validateAsync(req.body, {
       abortEarly: false,
     });
 
@@ -267,14 +267,6 @@ export const createStaticVa = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "user does not exist!",
-      });
-    }
-
-    const products = await validateOrderProducts(validatedProduct.products);
-    if (!products.length) {
-      return res.status(404).json({
-        success: false,
-        message: "no valid products found to create the order",
       });
     }
 

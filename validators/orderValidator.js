@@ -29,6 +29,13 @@ export const orderSchema = joi.object({
   paymentType: joi.string().required(),
 });
 
+export const vaStaticSchema = joi.object({
+  userId: joi.string().required(),
+  paymentMethod: joi.string().required(),
+  storeId: joi.string().optional(),
+  paymentType: joi.string().required(),
+});
+
 export const orderLinkSchema = joi.object({
   products: joi
     .array()
