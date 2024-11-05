@@ -7,6 +7,7 @@ import {
   deriveUUID8,
   generateCustomerNumber,
   generateMerchantTradeNo,
+  generateRequestId,
   generateTimestamp,
   generateUUID12,
   merchantId,
