@@ -112,6 +112,7 @@ export const paylabsCallback = async (req, res) => {
       case "02": // Payment successful
         order.paymentStatus = "paid";
         order.totalAmount = notificationData.amount;
+        order.paymentType = notificationData.paymentType;
         order.paymentLink = undefined;
         order.qris = undefined;
         order.va = undefined;
