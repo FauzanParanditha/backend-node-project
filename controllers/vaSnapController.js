@@ -207,7 +207,7 @@ export const vaSNAPOrderStatus = async (req, res) => {
     // Generate request signature
     const signature = createSignature(
       "POST",
-      "/v1.0/transfer-va/status",
+      "/transfer-va/status",
       requestBody,
       timestamp
     );
