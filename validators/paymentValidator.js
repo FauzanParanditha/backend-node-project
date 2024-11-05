@@ -141,7 +141,7 @@ export const validateCreateVASNAP = (data) => {
     virtualAccountPhone: joi.string().max(30).optional(),
     trxId: joi.string().max(64).required(),
     totalAmount: joi.object({
-      value: joi.string().max(16).precision(2).required(),
+      value: joi.string().max(16).required(),
       currency: joi.string().max(3).required(),
     }),
     billDetails: joi.array().items(
