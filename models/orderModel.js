@@ -202,8 +202,8 @@ const generateVaSnapSchema = new mongoose.Schema({
     ],
     virtualAccountTrxType: { type: String },
     feeAmount: {
-      value: { type: String, required: true },
-      currency: { type: String, required: true },
+      value: { type: String },
+      currency: { type: String },
     },
     expiredDate: { type: String },
     additionalInfo: {},
