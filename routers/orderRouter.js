@@ -7,7 +7,10 @@ import {
   orders,
 } from "../controllers/orderController.js";
 import { balance, xenditCallback } from "../controllers/xenditController.js";
-import { paylabsCallback } from "../controllers/paymentController.js";
+import {
+  paylabsCallback,
+  paylabsVaStaticCallback,
+} from "../controllers/paymentController.js";
 import {
   cancleQris,
   createQris,
@@ -30,6 +33,7 @@ router.get("/orders", jwtMiddlewareAdmin, orders);
 router.post("/order/create", jwtMiddlewareAdmin, createOrder);
 router.post("/order/webhook/xendit", xenditCallback);
 router.post("/order/webhook/paylabs", paylabsCallback);
+router.post("/order/webhook/paylabs/va", paylabsVaStaticCallback);
 router.get("/order/:id", jwtMiddlewareAdmin, order);
 router.put("/order/:id", jwtMiddlewareAdmin, editOrder);
 

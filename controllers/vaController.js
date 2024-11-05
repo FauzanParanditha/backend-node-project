@@ -132,14 +132,14 @@ export const createVA = async (req, res) => {
 
     const savedOrder = await Order.create({
       ...requestBodyForm,
-      paymentCode: response.data.vaCode,
+      virtualAccountNo: response.data.vaCode,
       paymentId: response.data.merchantTradeNo,
       storeId: response.data.storeId,
       va: response.data,
     });
     res.status(200).json({
       success: true,
-      paymentCode: response.data.vaCode,
+      virtualAccountNo: response.data.vaCode,
       expiredTime: response.data.expiredTime,
       paymentId: response.data.merchantTradeNo,
       amount: response.data.amount,
@@ -279,7 +279,7 @@ export const createStaticVa = async (req, res) => {
       ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
       paymentType: validatedProduct.paymentType,
       payer: existUser.fullName,
-      notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs",
+      notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs/va",
     };
 
     // Validate request body
@@ -336,16 +336,17 @@ export const createStaticVa = async (req, res) => {
       });
     }
 
-    const savedOrder = await VirtualAccount.create({
+    const savedVa = await VirtualAccount.create({
       userId: existUser._id,
+      vaCode: response.data.vaCode,
       vaStatic: response.data,
     });
     res.status(200).json({
       success: true,
-      paymentCode: response.data.vaCode,
+      virtualAccountNo: response.data.vaCode,
       createTime: response.data.createTime,
       storeId: response.data.storeId,
-      orderId: savedOrder._id,
+      vaId: savedVa._id,
     });
   } catch (error) {
     return res.status(500).json({

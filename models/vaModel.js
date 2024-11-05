@@ -20,6 +20,10 @@ const vaSchema = new mongoose.Schema(
       required: true,
     },
     vaStatic: generateVaStaticSchema,
+    phoneNumber: {
+      type: String,
+      required: true,
+    },
   },
   { timestamps: true }
 );

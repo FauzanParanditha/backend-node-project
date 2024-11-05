@@ -11,6 +11,7 @@ import {
 import { validateCreateLinkRequest } from "../validators/paymentValidator.js";
 import uuid4 from "uuid4";
 import Order from "../models/orderModel.js";
+import VirtualAccount from "../models/vaModel.js";
 
 // Create a payment link with Paylabs
 export const createPaymentLink = async (order) => {
@@ -110,7 +111,7 @@ export const paylabsCallback = async (req, res) => {
     switch (notificationData.status) {
       case "02": // Payment successful
         order.paymentStatus = "paid";
-        order.amount = notificationData.amount;
+        order.totalAmount = notificationData.amount;
         order.paymentLink = undefined;
         order.qris = undefined;
         order.va = undefined;
@@ -142,6 +143,89 @@ export const paylabsCallback = async (req, res) => {
     const signatureResponse = createSignature(
       "POST",
       "/api/order/webhook/paylabs",
+      responsePayload,
+      timestampResponse
+    );
+
+    const responseHeaders = {
+      "Content-Type": "application/json;charset=utf-8",
+      "X-TIMESTAMP": timestampResponse,
+      "X-SIGNATURE": signatureResponse,
+      "X-PARTNER-ID": process.env.PAYLABS_MERCHANT_ID,
+      "X-REQUEST-ID": generateRequestId(),
+    };
+
+    res.set(responseHeaders).status(200).json(responsePayload);
+  } catch (error) {
+    console.error("Error handling webhook:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "webhook handling failed" });
+  }
+};
+
+export const paylabsVaStaticCallback = async (req, res) => {
+  try {
+    // Extract and verify signature
+    const { "x-signature": signature, "x-timestamp": timestamp } = req.headers;
+    const { body: payload, method: httpMethod, originalUrl: endpointUrl } = req;
+
+    if (
+      !verifySignature(httpMethod, endpointUrl, payload, timestamp, signature)
+    ) {
+      return res.status(401).send("Invalid signature");
+    }
+
+    // Retrieve notification data and order
+    const notificationData = payload;
+    const va = await VirtualAccount.findOne({
+      vaCode: notificationData.paymentMethodInfo.vaCode,
+    });
+
+    if (!va) {
+      return res.status(404).json({
+        success: false,
+        message: `virtual account not found for vaCode: ${notificationData.paymentMethodInfo.vaCode}`,
+      });
+    }
+
+    // Process based on notification status
+    switch (notificationData.status) {
+      case "02": // Payment successful
+        await Order.create({
+          orderId: uuid4(),
+          userId: va.userId,
+          totalAmount: notificationData.amout,
+          phoneNumber: va.phoneNumber,
+          paymentStatus: "paid",
+          paymentMethod: "paylabs",
+          paymentType: notificationData.paymentType,
+          virtualAccountNo: notificationData.paymentMethodInfo.vaCode,
+          paymentId: notificationData.merchantTradeNo,
+          paymentPaylabs: { ...notificationData },
+        });
+        break;
+
+      case "09": // Payment failed
+        break;
+
+      default:
+        console.log(
+          `Unhandled notification status: ${notificationData.status}`
+        );
+    }
+
+    // Prepare response payload and headers
+    const timestampResponse = generateTimestamp();
+    const responsePayload = {
+      merchantId: process.env.PAYLABS_MERCHANT_ID,
+      requestId: notificationData.requestId,
+      errCode: notificationData.errCode,
+    };
+
+    const signatureResponse = createSignature(
+      "POST",
+      "/api/order/webhook/paylabs/va",
       responsePayload,
       timestampResponse
     );

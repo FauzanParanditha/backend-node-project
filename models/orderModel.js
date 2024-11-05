@@ -315,9 +315,6 @@ const orderSchema = new mongoose.Schema(
     paymentLink: {
       type: String,
     },
-    paymentCode: {
-      type: String,
-    },
     paymentId: {
       type: String,
     },
