@@ -22,7 +22,6 @@ import {
 } from "../controllers/ccController.js";
 import {
   createVASNAP,
-  paymentVASNAP,
   VaSnapCallback,
   vaSNAPOrderStatus,
 } from "../controllers/vaSnapController.js";

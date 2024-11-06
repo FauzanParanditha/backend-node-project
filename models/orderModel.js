@@ -256,7 +256,7 @@ const paymentPaylabsVaSnap = new mongoose.Schema({
         value: { type: String, maxlength: 16, required: true },
         currency: { type: String, maxlength: 3, required: true },
       },
-      additionalInfo: { type: Map, of: Schema.Types.Mixed },
+      additionalInfo: { type: Object },
     },
   ],
   freeTexts: [
