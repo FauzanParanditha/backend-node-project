@@ -360,7 +360,7 @@ export const createStaticVa = async (req, res) => {
       });
     }
 
-    const savedVa = await VirtualAccount.create({
+    await VirtualAccount.create({
       userId: existUser._id,
       phoneNumber: validatedProduct.phoneNumber,
       vaCode: response.data.vaCode,
@@ -372,7 +372,7 @@ export const createStaticVa = async (req, res) => {
       virtualAccountNo: response.data.vaCode,
       paymentId: response.data.merchantTradeNo,
       storeId: response.data.storeId,
-      qris: response.data,
+      va: response.data,
     });
     res.status(200).json({
       success: true,
