@@ -20,6 +20,7 @@ const vaSchema = new mongoose.Schema(
       required: true,
     },
     vaStatic: generateVaStaticSchema,
+    vaCode: { type: String },
     phoneNumber: {
       type: String,
       required: true,

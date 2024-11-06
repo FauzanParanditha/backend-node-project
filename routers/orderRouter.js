@@ -49,11 +49,7 @@ router.post("/order/cancel/qris/:id", jwtMiddlewareAdmin, cancleQris);
 
 router.post("/order/create/vaSnap", jwtMiddlewareAdmin, createVASNAP);
 router.get("/order/status/vaSnap/:id", jwtMiddlewareAdmin, vaSNAPOrderStatus);
-router.post(
-  "/order/webhook/paylabs/vaSnap",
-  jwtMiddlewareAdmin,
-  VaSnapCallback
-);
+router.post("/order/webhook/paylabs/vaSnap", VaSnapCallback);
 
 router.post("/order/create/va", jwtMiddlewareAdmin, createVA);
 router.get("/order/status/va/:id", jwtMiddlewareAdmin, vaOrderStatus);

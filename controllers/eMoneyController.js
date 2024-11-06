@@ -3,6 +3,7 @@ import User from "../models/userModel.js";
 import { calculateTotal, validateOrderProducts } from "../utils/helper.js";
 import { orderSchema } from "../validators/orderValidator.js";
 import {
+  createSignature,
   generateMerchantTradeNo,
   generateRequestId,
   generateTimestamp,
@@ -136,7 +137,7 @@ export const createEMoney = async (req, res) => {
       paymentActions: response.data.paymentActions,
       paymentId: response.data.merchantTradeNo,
       storeId: response.data.storeId,
-      qris: response.data,
+      eMoney: response.data,
     });
     res.status(200).json({
       success: true,
