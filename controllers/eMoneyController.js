@@ -59,7 +59,12 @@ export const createEMoney = async (req, res) => {
       amount: requestBodyForm.totalAmount,
       merchantTradeNo,
       notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs",
-      expire: 300,
+      paymentParams: {
+        redirectUrl: "http://103.122.34.186:5000",
+        ...(requestBodyForm.paymentType === "OVOBALANCE" && {
+          phoneNumber: requestBodyForm.phoneNumber,
+        }),
+      },
       feeType: "OUR",
       productName: requestBodyForm.products.map((p) => p.title).join(", "),
       // productInfo: requestBodyForm.products.map((product) => ({
