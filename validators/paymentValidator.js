@@ -345,6 +345,7 @@ export const validateEMoneyRequest = (data) => {
     storeId: joi.string().max(30).optional(),
     paymentType: joi.string().max(20).required(),
     amount: joi.number().precision(2).required(),
+    feeType: joi.string().valid("BEN", "OUR").optional(),
     merchantTradeNo: joi.string().max(32).required(),
     notifyUrl: joi.string().max(200).optional(),
     paymentParams: joi
