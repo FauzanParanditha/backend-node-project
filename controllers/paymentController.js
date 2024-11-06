@@ -196,7 +196,7 @@ export const paylabsVaStaticCallback = async (req, res) => {
         await Order.create({
           orderId: uuid4(),
           userId: va.userId,
-          totalAmount: notificationData.amout,
+          totalAmount: notificationData.amount,
           phoneNumber: va.phoneNumber,
           paymentStatus: "paid",
           paymentMethod: "paylabs",
