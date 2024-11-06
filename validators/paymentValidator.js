@@ -216,7 +216,7 @@ export const validatePaymentVASNAP = (data) => {
     virtualAccountPhone: joi.string().max(30).optional(),
     trxId: joi.string().max(64).required(),
     paymentRequestId: joi.string().max(128).required(),
-    channelCode: joi.number().max(4).optional(),
+    channelCode: joi.number().optional(),
     hashedSourceAccountNo: joi.string().max(32).optional(),
     sourceBankCode: joi.string().max(3).optional(),
     paidAmount: joi
