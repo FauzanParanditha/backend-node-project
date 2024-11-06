@@ -210,6 +210,69 @@ const generateVaSnapSchema = new mongoose.Schema({
   },
 });
 
+const paymentPaylabsVaSnap = new mongoose.Schema({
+  partnerServiceId: { type: String, maxlength: 8, required: true },
+  customerNo: { type: String, maxlength: 20, required: true },
+  virtualAccountNo: { type: String, maxlength: 28, required: true },
+  virtualAccountName: { type: String, maxlength: 255 },
+  virtualAccountEmail: { type: String, maxlength: 255 },
+  virtualAccountPhone: { type: String, maxlength: 30 },
+  trxId: { type: String, maxlength: 64, required: true },
+  paymentRequestId: { type: String, maxlength: 128, required: true },
+  channelCode: { type: String, maxlength: 4 },
+  hashedSourceAccountNo: { type: String, maxlength: 32 },
+  sourceBankCode: { type: String, maxlength: 3 },
+  paidAmount: {
+    value: { type: String, maxlength: 16, required: true },
+    currency: { type: String, maxlength: 3, required: true },
+  },
+  cumulativePaymentAmount: {
+    value: { type: String, maxlength: 16 },
+    currency: { type: String, maxlength: 3 },
+  },
+  paidBills: { type: String, maxlength: 6 },
+  totalAmount: {
+    value: { type: String, maxlength: 16 },
+    currency: { type: String, maxlength: 3 },
+  },
+  trxDateTime: { type: Date },
+  referenceNo: { type: String, maxlength: 64 },
+  journalNum: { type: String, maxlength: 6 },
+  paymentType: { type: String, maxlength: 1 },
+  flagAdvise: { type: String, maxlength: 1 },
+  subCompany: { type: String, maxlength: 5 },
+  billDetails: [
+    {
+      billCode: { type: String, maxlength: 2 },
+      billNo: { type: String, maxlength: 18 },
+      billName: { type: String, maxlength: 20 },
+      billShortName: { type: String, maxlength: 20 },
+      billDescription: {
+        english: { type: String, maxlength: 18 },
+        indonesia: { type: String, maxlength: 18 },
+      },
+      billSubCompany: { type: String, maxlength: 5 },
+      billAmount: {
+        value: { type: String, maxlength: 16, required: true },
+        currency: { type: String, maxlength: 3, required: true },
+      },
+      additionalInfo: { type: Map, of: Schema.Types.Mixed },
+    },
+  ],
+  freeTexts: [
+    {
+      english: { type: String, maxlength: 18 },
+      indonesia: { type: String, maxlength: 18 },
+    },
+  ],
+  additionalInfo: {
+    transFeeRate: { type: Number, max: 999999, precision: 6 },
+    transFeeAmount: { type: Number, max: 999999999999, precision: 2 },
+    totalTransFee: { type: Number, max: 999999, precision: 6 },
+    vatFee: { type: Number, max: 999999, precision: 6 },
+  },
+});
+
 const ccSchema = new mongoose.Schema(
   {
     requestId: { type: String, required: true },
@@ -332,6 +395,7 @@ const orderSchema = new mongoose.Schema(
     },
     paymentXendit: paymentXenditSchema,
     paymentPaylabs: paymentPaylabsSchema,
+    paymentPaylabsVaSnap: paymentPaylabsVaSnap,
     qris: qrisSchema,
     vaSnap: generateVaSnapSchema,
     va: generateVaSchema,

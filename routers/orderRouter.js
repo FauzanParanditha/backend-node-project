@@ -23,6 +23,7 @@ import {
 import {
   createVASNAP,
   paymentVASNAP,
+  VaSnapCallback,
   vaSNAPOrderStatus,
 } from "../controllers/vaSnapController.js";
 import {
@@ -37,7 +38,6 @@ router.get("/orders", jwtMiddlewareAdmin, orders);
 router.post("/order/create", jwtMiddlewareAdmin, createOrder);
 router.post("/order/webhook/xendit", xenditCallback);
 router.post("/order/webhook/paylabs", paylabsCallback);
-router.post("/order/webhook/paylabs/va", paylabsVaStaticCallback);
 router.get("/order/:id", jwtMiddlewareAdmin, order);
 router.put("/order/:id", jwtMiddlewareAdmin, editOrder);
 
@@ -49,11 +49,16 @@ router.post("/order/cancel/qris/:id", jwtMiddlewareAdmin, cancleQris);
 
 router.post("/order/create/vaSnap", jwtMiddlewareAdmin, createVASNAP);
 router.get("/order/status/vaSnap/:id", jwtMiddlewareAdmin, vaSNAPOrderStatus);
-router.post("/order/payment/vaSnap", jwtMiddlewareAdmin, paymentVASNAP);
+router.post(
+  "/order/webhook/paylabs/vaSnap",
+  jwtMiddlewareAdmin,
+  VaSnapCallback
+);
 
 router.post("/order/create/va", jwtMiddlewareAdmin, createVA);
 router.get("/order/status/va/:id", jwtMiddlewareAdmin, vaOrderStatus);
 router.post("/order/create/va/static", jwtMiddlewareAdmin, createStaticVa);
+router.post("/order/webhook/paylabs/va", paylabsVaStaticCallback);
 
 router.post("/order/create/cc", jwtMiddlewareAdmin, createCreditCard);
 router.get("/order/status/cc/:id", jwtMiddlewareAdmin, ccOrderStatus);
