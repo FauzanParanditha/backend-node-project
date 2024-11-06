@@ -102,6 +102,8 @@ export const verifySignature = (
   signature
 ) => {
   const minifiedBody = minifyJson(body);
+  console.log("verify", minifiedBody);
+  console.log("verify", timestamp);
 
   const hashedBody = crypto
     .createHash("sha256")
@@ -110,13 +112,16 @@ export const verifySignature = (
     .toLowerCase();
 
   const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
+  console.log("verify", stringContent);
 
   const publicKey = fs.readFileSync("public.pem", "utf8");
 
   const verify = crypto.createVerify("RSA-SHA256");
   verify.update(stringContent);
+  console.log("verify", stringContent);
 
   const isVerified = verify.verify(publicKey, signature, "base64");
+  console.log("verify", isVerified);
 
   return isVerified;
 };
