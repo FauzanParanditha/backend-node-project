@@ -337,3 +337,43 @@ export const validateCCStatus = (data) => {
 
   return schema.validate(data);
 };
+
+export const validateEMoneyRequest = (data) => {
+  const schema = joi.object({
+    requestId: joi.string().max(64).required(),
+    merchantId: joi.string().max(20).required(),
+    storeId: joi.string().max(30).optional(),
+    paymentType: joi.string().max(20).required(),
+    amount: joi.number().precision(2).required(),
+    merchantTradeNo: joi.string().max(32).required(),
+    notifyUrl: joi.string().max(200).optional(),
+    paymentParams: joi
+      .object({
+        redirectUrl: joi.string().max(200).required(),
+        phoneNumber: joi
+          .string()
+          .pattern(/^[0-9]+$/)
+          .min(10)
+          .max(15)
+          .optional(),
+      })
+      .optional(),
+    productName: joi.string().max(100).required(),
+    productInfo: joi
+      .array()
+      .items(
+        joi.object({
+          id: joi.string().max(10).required(),
+          name: joi.string().max(32).required(),
+          price: joi.number().required(),
+          type: joi.string().max(20).required(),
+          url: joi.string().max(200).optional(),
+          quantity: joi.number().max(4).required(),
+        })
+      )
+      .min(1)
+      .optional(),
+  });
+
+  return schema.validate(data);
+};

@@ -30,6 +30,7 @@ import {
   createVA,
   vaOrderStatus,
 } from "../controllers/vaController.js";
+import { createEMoney } from "../controllers/eMoneyController.js";
 
 const router = express.Router();
 
@@ -61,5 +62,7 @@ router.post("/order/webhook/paylabs/va", paylabsVaStaticCallback);
 
 router.post("/order/create/cc", jwtMiddlewareAdmin, createCreditCard);
 router.get("/order/status/cc/:id", jwtMiddlewareAdmin, ccOrderStatus);
+
+router.post("/order/create/eMoney", jwtMiddlewareAdmin, createEMoney);
 
 export default router;
