@@ -351,6 +351,7 @@ export const createStaticVa = async (req, res) => {
 
     const savedVa = await VirtualAccount.create({
       userId: existUser._id,
+      phoneNumber: validatedProduct.phoneNumber,
       vaCode: response.data.vaCode,
       vaStatic: response.data,
     });

@@ -31,6 +31,12 @@ export const orderSchema = joi.object({
 
 export const vaStaticSchema = joi.object({
   userId: joi.string().required(),
+  phoneNumber: joi
+    .string()
+    .pattern(/^[0-9]+$/)
+    .min(10)
+    .max(15)
+    .required(),
   paymentMethod: joi.string().required(),
   storeId: joi.string().optional(),
   paymentType: joi.string().required(),
