@@ -303,7 +303,7 @@ export const createStaticVa = async (req, res) => {
       ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
       paymentType: requestBodyForm.paymentType,
       payer: existUser.fullName,
-      notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs",
+      notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs/va",
     };
 
     // Validate request body
