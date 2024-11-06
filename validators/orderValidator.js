@@ -74,3 +74,7 @@ export const orderLinkSchema = joi.object({
 export const paymentSNAPSchema = joi.object({
   customerNo: joi.string().required(),
 });
+
+export const refundSchema = joi.object({
+  reason: joi.string().required(),
+});

@@ -390,3 +390,25 @@ export const validateEmoneyStatus = (data) => {
 
   return schema.validate(data);
 };
+
+export const validateEMoneyRefund = (data) => {
+  const schema = joi.object({
+    requestId: joi.string().max(64).required(),
+    merchantId: joi.string().max(20).required(),
+    storeId: joi.string().max(30).optional(),
+    merchantTradeNo: joi.string().max(32).required(),
+    paymentType: joi.string().max(20).required(),
+    amount: joi.number().precision(2).required(),
+    refundAmount: joi.number().precision(2).required(),
+    platformRefundNo: joi.string().max(32).required(),
+    merchantRefundNo: joi.string().max(32).required(),
+    notifyUrl: joi.string().max(200).optional(),
+    reason: joi.string().max(200).optional(),
+    transFeeRate: joi.number().precision(2).optional(),
+    transFeeAmount: joi.number().precision(2).optional(),
+    totalTransFee: joi.number().precision(2).optional(),
+    vatFee: joi.number().precision(2).optional(),
+  });
+
+  return schema.validate(data);
+};

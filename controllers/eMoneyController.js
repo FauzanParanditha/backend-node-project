@@ -1,7 +1,7 @@
 import uuid4 from "uuid4";
 import User from "../models/userModel.js";
 import { calculateTotal, validateOrderProducts } from "../utils/helper.js";
-import { orderSchema } from "../validators/orderValidator.js";
+import { orderSchema, refundSchema } from "../validators/orderValidator.js";
 import {
   createSignature,
   generateMerchantTradeNo,
@@ -11,6 +11,7 @@ import {
   paylabsApiUrl,
 } from "../utils/paylabs.js";
 import {
+  validateEMoneyRefund,
   validateEMoneyRequest,
   validateEmoneyStatus,
 } from "../validators/paymentValidator.js";
@@ -251,6 +252,137 @@ export const eMoneyOrderStatus = async (req, res) => {
     const signatureResponse = createSignature(
       "POST",
       "/api/order/status/ewallet/:id",
+      response.data,
+      timestampResponse
+    );
+
+    const responseHeaders = {
+      "Content-Type": "application/json;charset=utf-8",
+      "X-TIMESTAMP": timestampResponse,
+      "X-SIGNATURE": signatureResponse,
+      "X-PARTNER-ID": merchantId,
+      "X-REQUEST-ID": generateRequestId(),
+    };
+
+    res.set(responseHeaders).status(200).json(response.data);
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "an error occurred",
+      error: error.message,
+    });
+  }
+};
+
+export const createEMoneyRefund = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const validatedRequest = await refundSchema.validateAsync(req.body, {
+      abortEarly: false,
+    });
+
+    const existOrder = await Order.findById(id);
+    if (!existOrder) {
+      return res.status(404).json({
+        success: false,
+        message: "order not found",
+      });
+    }
+    if (!existOrder.paymentPaylabs) {
+      return res.status(400).json({
+        success: false,
+        message: "order not pay",
+      });
+    }
+
+    // Check if refund is supported for the payment type
+    if (existOrder.paymentType === "OVOBALANCE") {
+      return res.status(400).json({
+        success: false,
+        error: "Refunds are not supported for OVOBALANCE payment type.",
+      });
+    }
+
+    const timestamp = generateTimestamp();
+    const requestId = generateRequestId();
+    const refundNo = generateMerchantTradeNo();
+
+    const requestBody = {
+      requestId,
+      merchantId,
+      ...(existOrder.storeId && { storeId: existOrder.storeId }),
+      merchantTradeNo: existOrder.paymentId,
+      paymentType: existOrder.paymentType,
+      amount: existOrder.totalAmount,
+      refundAmount: existOrder.totalAmount,
+      platformRefundNo: refundNo,
+      merchantRefundNo: refundNo,
+      notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs/refund",
+      reason: validatedRequest.reason,
+      transFeeRate: existOrder.paymentPaylabs.transFeeRate,
+      transFeeAmount: existOrder.paymentPaylabs.transFeeAmount,
+      totalTransFee: existOrder.paymentPaylabs.totalTransFee,
+    };
+
+    console.log(requestBody);
+
+    // Validate request body
+    const { error } = validateEMoneyRefund(requestBody);
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        errors: error.details.map((err) => err.message),
+      });
+    }
+
+    // Generate request signature
+    const signature = createSignature(
+      "POST",
+      "/payment/v2.1/ewallet/refund",
+      requestBody,
+      timestamp
+    );
+
+    // Configure headers
+    const headers = {
+      "Content-Type": "application/json;charset=utf-8",
+      "X-TIMESTAMP": timestamp,
+      "X-SIGNATURE": signature,
+      "X-PARTNER-ID": merchantId,
+      "X-REQUEST-ID": requestId,
+    };
+
+    // console.log(requestBody);
+    // console.log(headers);
+
+    // Make API request to Paylabs
+    const response = await axios.post(
+      `${paylabsApiUrl}/payment/v2.1/ewallet/refund`,
+      requestBody,
+      { headers }
+    );
+    // console.log(response.data);
+
+    if (!response.data) {
+      return res.status(400).json({
+        success: false,
+        message: "failed to check status",
+      });
+    }
+
+    if (response.data.errCode != 0) {
+      return res.status(400).json({
+        success: false,
+        message: "error, " + response.data.errCodeDes,
+      });
+    }
+
+    // Prepare response payload and headers
+    const timestampResponse = generateTimestamp();
+
+    const signatureResponse = createSignature(
+      "POST",
+      "/api/order/refund/ewallet/:id",
       response.data,
       timestampResponse
     );
