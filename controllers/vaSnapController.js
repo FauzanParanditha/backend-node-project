@@ -274,8 +274,9 @@ export const VaSnapCallback = async (req, res) => {
   try {
     // Extract and verify signature
     const { "x-signature": signature, "x-timestamp": timestamp } = req.headers;
-    const { body: payload, method: httpMethod, originalUrl: endpointUrl } = req;
+    const { body: payload, method: httpMethod } = req;
 
+    const endpointUrl = "/transfer-va/payment";
     if (
       !verifySignature(httpMethod, endpointUrl, payload, timestamp, signature)
     ) {
