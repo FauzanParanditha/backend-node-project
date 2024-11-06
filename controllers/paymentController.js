@@ -118,6 +118,7 @@ export const paylabsCallback = async (req, res) => {
         order.va = undefined;
         order.vaSnap = undefined;
         order.cc = undefined;
+        order.eMoney = undefined;
         order.paymentPaylabs = { ...notificationData };
         await order.save();
         break;

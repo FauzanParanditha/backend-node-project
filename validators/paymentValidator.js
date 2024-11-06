@@ -378,3 +378,15 @@ export const validateEMoneyRequest = (data) => {
 
   return schema.validate(data);
 };
+
+export const validateEmoneyStatus = (data) => {
+  const schema = joi.object({
+    requestId: joi.string().max(64).required(),
+    merchantId: joi.string().max(10).required(),
+    storeId: joi.string().max(30).optional(),
+    merchantTradeNo: joi.string().max(32).optional(),
+    paymentType: joi.string().max(20).required(),
+  });
+
+  return schema.validate(data);
+};

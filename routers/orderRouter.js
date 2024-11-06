@@ -47,8 +47,8 @@ router.post("/order/create/qris", jwtMiddlewareAdmin, createQris);
 router.get("/order/status/qris/:id", jwtMiddlewareAdmin, qrisOrderStatus);
 router.post("/order/cancel/qris/:id", jwtMiddlewareAdmin, cancleQris);
 
-router.post("/order/create/vaSnap", jwtMiddlewareAdmin, createVASNAP);
-router.get("/order/status/vaSnap/:id", jwtMiddlewareAdmin, vaSNAPOrderStatus);
+router.post("/order/create/va/snap", jwtMiddlewareAdmin, createVASNAP);
+router.get("/order/status/va/snap/:id", jwtMiddlewareAdmin, vaSNAPOrderStatus);
 router.post("/order/webhook/paylabs/vaSnap", VaSnapCallback);
 
 router.post("/order/create/va", jwtMiddlewareAdmin, createVA);
@@ -59,6 +59,7 @@ router.post("/order/webhook/paylabs/va", paylabsVaStaticCallback);
 router.post("/order/create/cc", jwtMiddlewareAdmin, createCreditCard);
 router.get("/order/status/cc/:id", jwtMiddlewareAdmin, ccOrderStatus);
 
-router.post("/order/create/eMoney", jwtMiddlewareAdmin, createEMoney);
+router.post("/order/create/ewallet", jwtMiddlewareAdmin, createEMoney);
+router.get("/order/status/ewallet/:id", jwtMiddlewareAdmin, ccOrderStatus);
 
 export default router;
