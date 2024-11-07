@@ -108,13 +108,11 @@ export const paylabsCallback = async (req, res) => {
     }
 
     const currentDateTime = new Date();
-    const expiredDateTime = new Date(
-      existOrder.vaSnap.virtualAccountData.expiredDate
-    );
+    const expiredDateTime = new Date(order.paymentExpired);
 
     if (currentDateTime > expiredDateTime) {
-      existOrder.paymentStatus = "expired";
-      await existOrder.save();
+      order.paymentStatus = "expired";
+      await order.save();
       return res.status(400).json({
         success: false,
         message: "Order has expired",
