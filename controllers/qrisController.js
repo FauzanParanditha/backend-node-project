@@ -143,7 +143,7 @@ export const createQris = async (req, res) => {
       success: true,
       qrCode: response.data.qrCode,
       qrUrl: response.data.qrisUrl,
-      expiredTime: response.data.expiredTime,
+      paymentExpired: response.data.expiredTime,
       paymentId: response.data.merchantTradeNo,
       totalAmount: response.data.amount,
       storeId: response.data.storeId,

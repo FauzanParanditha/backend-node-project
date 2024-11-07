@@ -139,7 +139,7 @@ export const createVASNAP = async (req, res) => {
       totalAmount: response.data.virtualAccountData.totalAmount.value,
       partnerServiceId: response.data.virtualAccountData.partnerServiceId,
       paymentId: response.data.virtualAccountData.trxId,
-      paymentExpired: response.data.expiredTime,
+      paymentExpired: response.data.virtualAccountData.expiredDate,
       customerNo: response.data.virtualAccountData.customerNo,
       virtualAccountNo: response.data.virtualAccountData.virtualAccountNo,
       vaSnap: response.data,
@@ -152,7 +152,7 @@ export const createVASNAP = async (req, res) => {
       customerNo: response.data.virtualAccountData.customerNo,
       virtualAccountNo: response.data.virtualAccountData.virtualAccountNo,
       totalAmount: response.data.virtualAccountData.totalAmount.value,
-      expiredDate: response.data.virtualAccountData.expiredDate,
+      paymentExpired: response.data.virtualAccountData.expiredDate,
       paymentId: response.data.virtualAccountData.trxId,
       orderId: savedOrder._id,
     });

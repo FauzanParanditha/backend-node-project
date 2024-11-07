@@ -142,7 +142,7 @@ export const createVA = async (req, res) => {
     res.status(200).json({
       success: true,
       virtualAccountNo: response.data.vaCode,
-      expiredTime: response.data.expiredTime,
+      paymentExpired: response.data.expiredTime,
       paymentId: response.data.merchantTradeNo,
       totalAmount: response.data.amount,
       storeId: response.data.storeId,

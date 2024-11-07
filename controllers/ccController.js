@@ -143,7 +143,7 @@ export const createCreditCard = async (req, res) => {
     res.status(200).json({
       success: true,
       paymentLink: response.data.paymentActions.payUrl,
-      expiredTime: response.data.expiredTime,
+      PaymentExpired: response.data.expiredTime,
       paymentId: response.data.merchantTradeNo,
       totalAmount: response.data.amount,
       storeId: response.data.storeId,

@@ -147,7 +147,7 @@ export const createEMoney = async (req, res) => {
     res.status(200).json({
       success: true,
       paymentActions: response.data.paymentActions,
-      expiredTime: response.data.expiredTime,
+      paymentExpired: response.data.expiredTime,
       paymentId: response.data.merchantTradeNo,
       totalAmount: response.data.amount,
       storeId: response.data.storeId,
