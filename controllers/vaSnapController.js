@@ -83,7 +83,7 @@ export const createVASNAP = async (req, res) => {
         value: String(requestBodyForm.totalAmount),
         currency: "IDR",
       },
-      expiredDate: generateTimestamp(30 * 60 * 100),
+      expiredDate: generateTimestamp(300 * 60 * 100),
       additionalInfo: {
         paymentType: requestBodyForm.paymentType,
       },
@@ -488,7 +488,7 @@ export const updateVASNAP = async (req, res) => {
         value: String(updatedOrderData.totalAmount),
         currency: "IDR",
       },
-      expiredDate: generateTimestamp(30 * 60 * 100),
+      expiredDate: generateTimestamp(300 * 60 * 100),
       additionalInfo: {
         paymentType: updatedOrderData.paymentType,
       },
