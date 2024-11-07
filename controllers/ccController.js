@@ -19,10 +19,12 @@ import axios from "axios";
 
 export const createCreditCard = async (req, res) => {
   try {
+    // Validate request payload
     const validatedProduct = await orderSchema.validateAsync(req.body, {
       abortEarly: false,
     });
 
+    // Verify user existence
     const existUser = await User.findById(validatedProduct.userId);
     if (!existUser) {
       return res.status(404).json({
@@ -31,6 +33,7 @@ export const createCreditCard = async (req, res) => {
       });
     }
 
+    // Validate products in the order
     const products = await validateOrderProducts(validatedProduct.products);
     if (!products.length) {
       return res.status(404).json({
@@ -39,6 +42,7 @@ export const createCreditCard = async (req, res) => {
       });
     }
 
+    // Construct order data
     const requestBodyForm = {
       orderId: uuid4(),
       userId: validatedProduct.userId,
@@ -51,10 +55,12 @@ export const createCreditCard = async (req, res) => {
       ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 
+    // Generate IDs and other necessary fields
     const timestamp = generateTimestamp();
     const requestId = generateRequestId();
     const merchantTradeNo = generateMerchantTradeNo();
 
+    // Prepare Paylabs request payload
     const requestBody = {
       requestId,
       merchantId,
@@ -77,7 +83,7 @@ export const createCreditCard = async (req, res) => {
       feeType: "OUR",
     };
 
-    // Validate request body
+    // Validate requestBody
     const { error } = validateCreditCardRequest(requestBody);
     if (error) {
       return res.status(400).json({
@@ -86,15 +92,13 @@ export const createCreditCard = async (req, res) => {
       });
     }
 
-    // Generate request signature
+    // Generate signature and headers
     const signature = createSignature(
       "POST",
       "/payment/v2.1/cc/create",
       requestBody,
       timestamp
     );
-
-    // Configure headers
     const headers = {
       "Content-Type": "application/json;charset=utf-8",
       "X-TIMESTAMP": timestamp,
@@ -106,31 +110,25 @@ export const createCreditCard = async (req, res) => {
     // console.log(requestBody);
     // console.log(headers);
 
-    // Make API request to Paylabs
+    // Send request to Paylabs
     const response = await axios.post(
       `${paylabsApiUrl}/payment/v2.1/cc/create`,
       requestBody,
       { headers }
     );
-
     // console.log("Response:", response.data);
-    if (!response.data) {
+
+    // Check for successful response
+    if (!response.data || response.data.errCode != 0) {
       return res.status(400).json({
         success: false,
-        message: "failed to create payment",
+        message: response.data
+          ? `error: ${response.data.errCodeDes}`
+          : "failed to create payment",
       });
     }
 
-    if (
-      response.data.errCode != 0 &&
-      requestBodyForm.paymentMethod === "paylabs"
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "error, " + response.data.errCodeDes,
-      });
-    }
-
+    // Save order details in the database
     const savedOrder = await Order.create({
       ...requestBodyForm,
       totalAmount: response.data.amount,
@@ -139,6 +137,8 @@ export const createCreditCard = async (req, res) => {
       storeId: response.data.storeId,
       cc: response.data,
     });
+
+    // Respond with created order details
     res.status(200).json({
       success: true,
       paymentLink: response.data.paymentActions.payUrl,
@@ -149,6 +149,7 @@ export const createCreditCard = async (req, res) => {
       orderId: savedOrder._id,
     });
   } catch (error) {
+    // Handle unexpected errors
     return res.status(500).json({
       success: false,
       message: "an error occurred",
@@ -160,6 +161,8 @@ export const createCreditCard = async (req, res) => {
 export const ccOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Check if the order exists
     const existOrder = await Order.findById(id);
     if (!existOrder) {
       return res.status(404).json({
@@ -180,6 +183,7 @@ export const ccOrderStatus = async (req, res) => {
       });
     }
 
+    // Prepare request payload for Paylabs
     const timestamp = generateTimestamp();
     const requestId = generateRequestId();
 
@@ -191,7 +195,7 @@ export const ccOrderStatus = async (req, res) => {
       paymentType: existOrder.paymentType,
     };
 
-    // Validate request body
+    // Validate requestBody
     const { error } = validateCCStatus(requestBody);
     if (error) {
       return res.status(400).json({
@@ -200,15 +204,13 @@ export const ccOrderStatus = async (req, res) => {
       });
     }
 
-    // Generate request signature
+    // Generate signature and headers
     const signature = createSignature(
       "POST",
       "/payment/v2.1/cc/query",
       requestBody,
       timestamp
     );
-
-    // Configure headers
     const headers = {
       "Content-Type": "application/json;charset=utf-8",
       "X-TIMESTAMP": timestamp,
@@ -220,7 +222,7 @@ export const ccOrderStatus = async (req, res) => {
     // console.log(requestBody);
     // console.log(headers);
 
-    // Make API request to Paylabs
+    // Send request to Paylabs
     const response = await axios.post(
       `${paylabsApiUrl}/payment/v2.1/cc/query`,
       requestBody,
@@ -228,17 +230,13 @@ export const ccOrderStatus = async (req, res) => {
     );
     // console.log(response.data);
 
-    if (!response.data) {
+    // Check for successful response
+    if (!response.data || response.data.errCode != 0) {
       return res.status(400).json({
         success: false,
-        message: "failed to check status",
-      });
-    }
-
-    if (response.data.errCode != 0) {
-      return res.status(400).json({
-        success: false,
-        message: "error, " + response.data.errCodeDes,
+        message: response.data
+          ? `error: ${response.data.errCodeDes}`
+          : "failed to create payment",
       });
     }
 
@@ -260,8 +258,10 @@ export const ccOrderStatus = async (req, res) => {
       "X-REQUEST-ID": generateRequestId(),
     };
 
+    // Respond
     res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
+    // Handle unexpected errors
     return res.status(500).json({
       success: false,
       message: "an error occurred",

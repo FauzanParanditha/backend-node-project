@@ -21,10 +21,12 @@ import VirtualAccount from "../models/vaModel.js";
 
 export const createVA = async (req, res) => {
   try {
+    // Validate request payload
     const validatedProduct = await orderSchema.validateAsync(req.body, {
       abortEarly: false,
     });
 
+    // Verify user existence
     const existUser = await User.findById(validatedProduct.userId);
     if (!existUser) {
       return res.status(404).json({
@@ -33,6 +35,7 @@ export const createVA = async (req, res) => {
       });
     }
 
+    // Validate products in the order
     const products = await validateOrderProducts(validatedProduct.products);
     if (!products.length) {
       return res.status(404).json({
@@ -41,6 +44,7 @@ export const createVA = async (req, res) => {
       });
     }
 
+    // Construct order data
     const requestBodyForm = {
       orderId: uuid4(),
       userId: validatedProduct.userId,
@@ -53,10 +57,12 @@ export const createVA = async (req, res) => {
       ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 
+    // Generate IDs and other necessary fields
     const timestamp = generateTimestamp();
     const requestId = generateRequestId();
     const merchantTradeNo = generateMerchantTradeNo();
 
+    // Prepare Paylabs request payload
     const requestBody = {
       requestId,
       merchantId,
@@ -76,7 +82,7 @@ export const createVA = async (req, res) => {
       // })),
     };
 
-    // Validate request body
+    // Validate requestBody
     const { error } = validateGenerateVA(requestBody);
     if (error) {
       return res.status(400).json({
@@ -85,15 +91,13 @@ export const createVA = async (req, res) => {
       });
     }
 
-    // Generate request signature
+    // Generate signature and headers
     const signature = createSignature(
       "POST",
       "/payment/v2.1/va/create",
       requestBody,
       timestamp
     );
-
-    // Configure headers
     const headers = {
       "Content-Type": "application/json;charset=utf-8",
       "X-TIMESTAMP": timestamp,
@@ -105,31 +109,25 @@ export const createVA = async (req, res) => {
     // console.log(requestBody);
     // console.log(headers);
 
-    // Make API request to Paylabs
+    // Send request to Paylabs
     const response = await axios.post(
       `${paylabsApiUrl}/payment/v2.1/va/create`,
       requestBody,
       { headers }
     );
-
     // console.log("Response:", response.data);
-    if (!response.data) {
+
+    // Check for successful response
+    if (!response.data || response.data.errCode != 0) {
       return res.status(400).json({
         success: false,
-        message: "failed to create payment",
+        message: response.data
+          ? `error: ${response.data.errCodeDes}`
+          : "failed to create payment",
       });
     }
 
-    if (
-      response.data.errCode != 0 &&
-      requestBodyForm.paymentMethod === "paylabs"
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "error, " + response.data.errCodeDes,
-      });
-    }
-
+    // Save order details in the database
     const savedOrder = await Order.create({
       ...requestBodyForm,
       totalAmount: response.data.amount,
@@ -138,6 +136,8 @@ export const createVA = async (req, res) => {
       storeId: response.data.storeId,
       va: response.data,
     });
+
+    // Respond with created order details
     res.status(200).json({
       success: true,
       virtualAccountNo: response.data.vaCode,
@@ -148,6 +148,7 @@ export const createVA = async (req, res) => {
       orderId: savedOrder._id,
     });
   } catch (error) {
+    // Handle unexpected errors
     return res.status(500).json({
       success: false,
       message: "an error occurred",
@@ -159,6 +160,8 @@ export const createVA = async (req, res) => {
 export const vaOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Check if the order exists
     const existOrder = await Order.findById(id);
     if (!existOrder) {
       return res.status(404).json({
@@ -179,6 +182,7 @@ export const vaOrderStatus = async (req, res) => {
       });
     }
 
+    // Prepare request payload for Paylabs
     const timestamp = generateTimestamp();
     const requestId = generateRequestId();
 
@@ -190,7 +194,7 @@ export const vaOrderStatus = async (req, res) => {
       paymentType: existOrder.paymentType,
     };
 
-    // Validate request body
+    // Validate requestBody
     const { error } = validateVaStatus(requestBody);
     if (error) {
       return res.status(400).json({
@@ -199,15 +203,13 @@ export const vaOrderStatus = async (req, res) => {
       });
     }
 
-    // Generate request signature
+    // Generate signature and headers
     const signature = createSignature(
       "POST",
       "/payment/v2.1/va/query",
       requestBody,
       timestamp
     );
-
-    // Configure headers
     const headers = {
       "Content-Type": "application/json;charset=utf-8",
       "X-TIMESTAMP": timestamp,
@@ -219,7 +221,7 @@ export const vaOrderStatus = async (req, res) => {
     // console.log(requestBody);
     // console.log(headers);
 
-    // Make API request to Paylabs
+    // Send request to Paylabs
     const response = await axios.post(
       `${paylabsApiUrl}/payment/v2.1/va/query`,
       requestBody,
@@ -227,17 +229,13 @@ export const vaOrderStatus = async (req, res) => {
     );
     // console.log(response.data);
 
-    if (!response.data) {
+    // Check for successful response
+    if (!response.data || response.data.errCode != 0) {
       return res.status(400).json({
         success: false,
-        message: "failed to check status",
-      });
-    }
-
-    if (response.data.errCode != 0) {
-      return res.status(400).json({
-        success: false,
-        message: "error, " + response.data.errCodeDes,
+        message: response.data
+          ? `error: ${response.data.errCodeDes}`
+          : "failed to create payment",
       });
     }
 
@@ -259,8 +257,10 @@ export const vaOrderStatus = async (req, res) => {
       "X-REQUEST-ID": generateRequestId(),
     };
 
+    // Respond
     res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
+    // Handle unexpected errors
     return res.status(500).json({
       success: false,
       message: "an error occurred",
@@ -271,10 +271,12 @@ export const vaOrderStatus = async (req, res) => {
 
 export const createStaticVa = async (req, res) => {
   try {
+    // Validate request payload
     const validatedProduct = await vaStaticSchema.validateAsync(req.body, {
       abortEarly: false,
     });
 
+    // Verify user existence
     const existUser = await User.findById(validatedProduct.userId);
     if (!existUser) {
       return res.status(404).json({
@@ -283,6 +285,7 @@ export const createStaticVa = async (req, res) => {
       });
     }
 
+    // Construct order data
     const requestBodyForm = {
       orderId: uuid4(),
       userId: validatedProduct.userId,
@@ -294,9 +297,11 @@ export const createStaticVa = async (req, res) => {
       ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 
+    // Generate IDs and other necessary fields
     const timestamp = generateTimestamp();
     const requestId = generateRequestId();
 
+    // Prepare Paylabs request payload
     const requestBody = {
       requestId,
       merchantId,
@@ -306,7 +311,7 @@ export const createStaticVa = async (req, res) => {
       notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs/va",
     };
 
-    // Validate request body
+    // Validate requestBody
     const { error } = validateStaticVA(requestBody);
     if (error) {
       return res.status(400).json({
@@ -315,15 +320,13 @@ export const createStaticVa = async (req, res) => {
       });
     }
 
-    // Generate request signature
+    // Generate signature and headers
     const signature = createSignature(
       "POST",
       "/payment/v2.1/staticva/create",
       requestBody,
       timestamp
     );
-
-    // Configure headers
     const headers = {
       "Content-Type": "application/json;charset=utf-8",
       "X-TIMESTAMP": timestamp,
@@ -335,31 +338,25 @@ export const createStaticVa = async (req, res) => {
     // console.log(requestBody);
     // console.log(headers);
 
-    // Make API request to Paylabs
+    // Send request to Paylabs
     const response = await axios.post(
       `${paylabsApiUrl}/payment/v2.1/staticva/create`,
       requestBody,
       { headers }
     );
-
     // console.log("Response:", response.data);
-    if (!response.data) {
+
+    // Check for successful response
+    if (!response.data || response.data.errCode != 0) {
       return res.status(400).json({
         success: false,
-        message: "failed to create payment",
+        message: response.data
+          ? `error: ${response.data.errCodeDes}`
+          : "failed to create payment",
       });
     }
 
-    if (
-      response.data.errCode != 0 &&
-      validatedProduct.paymentMethod === "paylabs"
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "error, " + response.data.errCodeDes,
-      });
-    }
-
+    // Save va details in the database
     await VirtualAccount.create({
       userId: existUser._id,
       phoneNumber: validatedProduct.phoneNumber,
@@ -367,6 +364,7 @@ export const createStaticVa = async (req, res) => {
       vaStatic: response.data,
     });
 
+    // Save order details in the database
     const savedOrder = await Order.create({
       ...requestBodyForm,
       virtualAccountNo: response.data.vaCode,
@@ -374,6 +372,8 @@ export const createStaticVa = async (req, res) => {
       storeId: response.data.storeId,
       va: response.data,
     });
+
+    // Respond with created order details
     res.status(200).json({
       success: true,
       virtualAccountNo: response.data.vaCode,
@@ -382,6 +382,7 @@ export const createStaticVa = async (req, res) => {
       vaId: savedOrder._id,
     });
   } catch (error) {
+    // Handle unexpected errors
     return res.status(500).json({
       success: false,
       message: "an error occurred",

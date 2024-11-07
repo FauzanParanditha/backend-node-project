@@ -22,6 +22,7 @@ import {
 } from "../controllers/ccController.js";
 import {
   createVASNAP,
+  updateVASNAP,
   VaSnapCallback,
   vaSNAPOrderStatus,
 } from "../controllers/vaSnapController.js";
@@ -54,6 +55,7 @@ router.post("/order/cancel/qris/:id", jwtMiddlewareAdmin, cancleQris);
 router.post("/order/create/va/snap", jwtMiddlewareAdmin, createVASNAP);
 router.get("/order/status/va/snap/:id", jwtMiddlewareAdmin, vaSNAPOrderStatus);
 router.post("/order/webhook/paylabs/vaSnap", VaSnapCallback);
+router.post("/order/update/va/snap/:id", jwtMiddlewareAdmin, updateVASNAP);
 
 router.post("/order/create/va", jwtMiddlewareAdmin, createVA);
 router.get("/order/status/va/:id", jwtMiddlewareAdmin, vaOrderStatus);

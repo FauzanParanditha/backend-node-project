@@ -20,18 +20,21 @@ import Order from "../models/orderModel.js";
 
 export const createQris = async (req, res) => {
   try {
+    // Validate request payload
     const validatedProduct = await orderSchema.validateAsync(req.body, {
       abortEarly: false,
     });
 
+    // Verify user existence
     const existUser = await User.findById(validatedProduct.userId);
     if (!existUser) {
       return res.status(404).json({
         success: false,
-        message: "user does not exist!",
+        message: "user does not exist",
       });
     }
 
+    // Validate products in the order
     const products = await validateOrderProducts(validatedProduct.products);
     if (!products.length) {
       return res.status(404).json({
@@ -40,6 +43,7 @@ export const createQris = async (req, res) => {
       });
     }
 
+    // Construct order data
     const requestBodyForm = {
       orderId: uuid4(),
       userId: validatedProduct.userId,
@@ -52,10 +56,12 @@ export const createQris = async (req, res) => {
       ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 
+    // Generate IDs and other necessary fields
     const timestamp = generateTimestamp();
     const requestId = generateRequestId();
     const merchantTradeNo = generateMerchantTradeNo();
 
+    // Prepare Paylabs request payload
     const requestBody = {
       requestId,
       merchantId,
@@ -76,7 +82,7 @@ export const createQris = async (req, res) => {
       // })),
     };
 
-    // Validate request body
+    // Validate requestBody
     const { error } = validateQrisRequest(requestBody);
     if (error) {
       return res.status(400).json({
@@ -85,15 +91,13 @@ export const createQris = async (req, res) => {
       });
     }
 
-    // Generate request signature
+    // Generate signature and headers
     const signature = createSignature(
       "POST",
       "/payment/v2.1/qris/create",
       requestBody,
       timestamp
     );
-
-    // Configure headers
     const headers = {
       "Content-Type": "application/json;charset=utf-8",
       "X-TIMESTAMP": timestamp,
@@ -105,31 +109,25 @@ export const createQris = async (req, res) => {
     // console.log(requestBody);
     // console.log(headers);
 
-    // Make API request to Paylabs
+    // Send request to Paylabs
     const response = await axios.post(
       `${paylabsApiUrl}/payment/v2.1/qris/create`,
       requestBody,
       { headers }
     );
-
     // console.log("Response:", response.data);
-    if (!response.data) {
+
+    // Check for successful response
+    if (!response.data || response.data.errCode != 0) {
       return res.status(400).json({
         success: false,
-        message: "failed to create payment",
+        message: response.data
+          ? `error: ${response.data.errCodeDes}`
+          : "failed to create payment",
       });
     }
 
-    if (
-      response.data.errCode != 0 &&
-      requestBodyForm.paymentMethod === "paylabs"
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "error, " + response.data.errCodeDes,
-      });
-    }
-
+    // Save order details in the database
     const savedOrder = await Order.create({
       ...requestBodyForm,
       totalAmount: response.data.amount,
@@ -138,6 +136,8 @@ export const createQris = async (req, res) => {
       storeId: response.data.storeId,
       qris: response.data,
     });
+
+    // Respond with created order details
     res.status(200).json({
       success: true,
       qrCode: response.data.qrCode,
@@ -149,6 +149,7 @@ export const createQris = async (req, res) => {
       orderId: savedOrder._id,
     });
   } catch (error) {
+    // Handle unexpected errors
     return res.status(500).json({
       success: false,
       message: "an error occurred",
@@ -160,6 +161,8 @@ export const createQris = async (req, res) => {
 export const qrisOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Check if the order exists
     const existOrder = await Order.findById(id);
     if (!existOrder) {
       return res.status(404).json({
@@ -180,6 +183,7 @@ export const qrisOrderStatus = async (req, res) => {
       });
     }
 
+    // Prepare request payload for Paylabs
     const timestamp = generateTimestamp();
     const requestId = generateRequestId();
 
@@ -191,7 +195,7 @@ export const qrisOrderStatus = async (req, res) => {
       paymentType: existOrder.paymentType,
     };
 
-    // Validate request body
+    // Validate requestBody
     const { error } = validateQrisStatus(requestBody);
     if (error) {
       return res.status(400).json({
@@ -200,15 +204,13 @@ export const qrisOrderStatus = async (req, res) => {
       });
     }
 
-    // Generate request signature
+    // Generate signature and headers
     const signature = createSignature(
       "POST",
       "/payment/v2.1/qris/query",
       requestBody,
       timestamp
     );
-
-    // Configure headers
     const headers = {
       "Content-Type": "application/json;charset=utf-8",
       "X-TIMESTAMP": timestamp,
@@ -220,7 +222,7 @@ export const qrisOrderStatus = async (req, res) => {
     // console.log(requestBody);
     // console.log(headers);
 
-    // Make API request to Paylabs
+    // Send request to Paylabs
     const response = await axios.post(
       `${paylabsApiUrl}/payment/v2.1/qris/query`,
       requestBody,
@@ -228,17 +230,13 @@ export const qrisOrderStatus = async (req, res) => {
     );
     // console.log(response.data);
 
-    if (!response.data) {
+    // Check for successful response
+    if (!response.data || response.data.errCode != 0) {
       return res.status(400).json({
         success: false,
-        message: "failed to check status",
-      });
-    }
-
-    if (response.data.errCode != 0) {
-      return res.status(400).json({
-        success: false,
-        message: "error, " + response.data.errCodeDes,
+        message: response.data
+          ? `error: ${response.data.errCodeDes}`
+          : "failed to create payment",
       });
     }
 
@@ -251,7 +249,6 @@ export const qrisOrderStatus = async (req, res) => {
       response.data,
       timestampResponse
     );
-
     const responseHeaders = {
       "Content-Type": "application/json;charset=utf-8",
       "X-TIMESTAMP": timestampResponse,
@@ -260,8 +257,10 @@ export const qrisOrderStatus = async (req, res) => {
       "X-REQUEST-ID": generateRequestId(),
     };
 
+    // Respond
     res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
+    // Handle unexpected errors
     return res.status(500).json({
       success: false,
       message: "an error occurred",
@@ -273,6 +272,8 @@ export const qrisOrderStatus = async (req, res) => {
 export const cancleQris = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Check if the order exists
     const existOrder = await Order.findById(id);
     if (!existOrder) {
       return res.status(404).json({
@@ -287,6 +288,7 @@ export const cancleQris = async (req, res) => {
       });
     }
 
+    // Prepare request payload for Paylabs
     const timestamp = generateTimestamp();
     const requestId = generateRequestId();
 
@@ -299,9 +301,9 @@ export const cancleQris = async (req, res) => {
       qrCode: existOrder.qris.qrCode,
     };
 
-    console.log(requestBody);
+    // console.log(requestBody);
 
-    // Validate request body
+    // Validate requestBody
     const { error } = cancelQrisValidator(requestBody);
     if (error) {
       return res.status(400).json({
@@ -310,15 +312,13 @@ export const cancleQris = async (req, res) => {
       });
     }
 
-    // Generate request signature
+    // Generate signature and headers
     const signature = createSignature(
       "POST",
       "/payment/v2.1/qris/cancel",
       requestBody,
       timestamp
     );
-
-    // Configure headers
     const headers = {
       "Content-Type": "application/json;charset=utf-8",
       "X-TIMESTAMP": timestamp,
@@ -327,36 +327,30 @@ export const cancleQris = async (req, res) => {
       "X-REQUEST-ID": requestId,
     };
 
-    // Make API request to Paylabs
+    // Send request to Paylabs
     const response = await axios.post(
       `${paylabsApiUrl}/payment/v2.1/qris/cancel`,
       requestBody,
       { headers }
     );
 
-    if (!response.data) {
+    // Check for successful response
+    if (!response.data || response.data.errCode != 0) {
       return res.status(400).json({
         success: false,
-        message: "failed to create payment",
+        message: response.data
+          ? `error: ${response.data.errCodeDes}`
+          : "failed to create payment",
       });
     }
 
-    if (response.data.errCode != 0) {
-      return res.status(400).json({
-        success: false,
-        message: "error, " + response.data.errCodeDes,
-      });
-    }
-
-    // Generate request signature response
+    // Generate response signature and headers
     const signatureResponse = createSignature(
       "POST",
       "/payment/v2.1/qris/cancel",
       response.data,
       timestamp
     );
-
-    // Configure headers response
     const headersResponse = {
       "Content-Type": "application/json;charset=utf-8",
       "X-TIMESTAMP": timestamp,
@@ -365,13 +359,16 @@ export const cancleQris = async (req, res) => {
       "X-REQUEST-ID": requestId,
     };
 
+    // Update order details in the database
     existOrder.paymentLink = undefined;
     existOrder.paymentStatus = "cancel";
     existOrder.qris.set(response.data);
     await existOrder.save();
 
+    // Respond with update order details
     res.set(headersResponse).status(200).json(response.data);
   } catch (error) {
+    // Handle unexpected errors
     return res.status(500).json({
       success: false,
       message: "an error occurred",
