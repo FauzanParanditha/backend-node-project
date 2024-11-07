@@ -118,7 +118,6 @@ export const verifySignature = (
 
   const verify = crypto.createVerify("RSA-SHA256");
   verify.update(stringContent);
-  console.log("verify", stringContent);
 
   const isVerified = verify.verify(publicKey, signature, "base64");
   console.log("verify", isVerified);

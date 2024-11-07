@@ -275,6 +275,7 @@ const paymentPaylabsVaSnap = new mongoose.Schema(
       transFeeAmount: { type: Number, max: 999999999999, precision: 2 },
       totalTransFee: { type: Number, max: 999999, precision: 6 },
       vatFee: { type: Number, max: 999999, precision: 6 },
+      paymentType: { type: String, max: 20 },
     },
   },
   { _id: false }

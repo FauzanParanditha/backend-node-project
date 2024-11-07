@@ -144,6 +144,7 @@ export const createVASNAP = async (req, res) => {
       ...requestBodyForm,
       totalAmount: response.data.virtualAccountData.totalAmount.value,
       partnerServiceId: response.data.virtualAccountData.partnerServiceId,
+      paymentId: response.data.virtualAccountData.trxId,
       customerNo: response.data.virtualAccountData.customerNo,
       virtualAccountNo: response.data.virtualAccountData.virtualAccountNo,
       vaSnap: response.data,
@@ -155,6 +156,7 @@ export const createVASNAP = async (req, res) => {
       virtualAccountNo: response.data.virtualAccountData.virtualAccountNo,
       totalAmount: response.data.virtualAccountData.totalAmount.value,
       expiredDate: response.data.virtualAccountData.expiredDate,
+      paymentId: response.data.virtualAccountData.trxId,
       orderId: savedOrder._id,
     });
   } catch (error) {
@@ -294,20 +296,20 @@ export const VaSnapCallback = async (req, res) => {
     // Retrieve notification data and order
     const notificationData = payload;
     const existOrder = await Order.findOne({
-      customerNo: notificationData.customerNo,
+      paymentId: notificationData.trxId,
     });
     if (!existOrder) {
       return res.status(404).json({
         success: false,
-        message: "order does not exist!",
+        message: `Order not found for orderID: ${notificationData.trxId}`,
       });
     }
-    if (existOrder.paymentStatus === "paid") {
-      return res.status(200).json({
-        success: true,
-        message: "payment already processed",
-      });
-    }
+    // if (existOrder.paymentStatus === "paid") {
+    //   return res.status(200).json({
+    //     success: true,
+    //     message: "payment already processed",
+    //   });
+    // }
 
     existOrder.paymentStatus = "paid";
     existOrder.totalAmount = notificationData.paidAmount.value;
