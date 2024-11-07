@@ -133,6 +133,7 @@ export const createQris = async (req, res) => {
       totalAmount: response.data.amount,
       paymentLink: response.data.qrisUrl,
       paymentId: response.data.merchantTradeNo,
+      paymentExpired: response.data.expiredTime,
       storeId: response.data.storeId,
       qris: response.data,
     });
@@ -174,6 +175,12 @@ export const qrisOrderStatus = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: "payment already processed",
+      });
+    }
+    if (existOrder.paymentStatus === "expired") {
+      return res.status(200).json({
+        success: true,
+        message: "payment expired",
       });
     }
     if (!existOrder.qris) {

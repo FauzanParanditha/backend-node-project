@@ -139,6 +139,7 @@ export const createVASNAP = async (req, res) => {
       totalAmount: response.data.virtualAccountData.totalAmount.value,
       partnerServiceId: response.data.virtualAccountData.partnerServiceId,
       paymentId: response.data.virtualAccountData.trxId,
+      paymentExpired: response.data.expiredTime,
       customerNo: response.data.virtualAccountData.customerNo,
       virtualAccountNo: response.data.virtualAccountData.virtualAccountNo,
       vaSnap: response.data,
@@ -181,6 +182,12 @@ export const vaSNAPOrderStatus = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: "payment already processed",
+      });
+    }
+    if (existOrder.paymentStatus === "expired") {
+      return res.status(200).json({
+        success: true,
+        message: "payment expired",
       });
     }
     if (!existOrder.vaSnap) {
@@ -307,6 +314,20 @@ export const VaSnapCallback = async (req, res) => {
       });
     }
 
+    const currentDateTime = new Date();
+    const expiredDateTime = new Date(
+      existOrder.vaSnap.virtualAccountData.expiredDate
+    );
+
+    if (currentDateTime > expiredDateTime) {
+      existOrder.paymentStatus = "expired";
+      await existOrder.save();
+      return res.status(400).json({
+        success: false,
+        message: "Order has expired",
+      });
+    }
+
     // Update order details in the database
     existOrder.paymentStatus = "paid";
     existOrder.totalAmount = notificationData.paidAmount.value;
@@ -400,6 +421,18 @@ export const updateVASNAP = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "order not found",
+      });
+    }
+    if (existingOrder.paymentStatus === "paid") {
+      return res.status(200).json({
+        success: true,
+        message: "payment has already processed",
+      });
+    }
+    if (existingOrder.paymentStatus === "expired") {
+      return res.status(200).json({
+        success: true,
+        message: "payment expired",
       });
     }
     if (!existingOrder.vaSnap) {

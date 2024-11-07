@@ -133,6 +133,7 @@ export const createVA = async (req, res) => {
       totalAmount: response.data.amount,
       virtualAccountNo: response.data.vaCode,
       paymentId: response.data.merchantTradeNo,
+      paymentExpired: response.data.expiredTime,
       storeId: response.data.storeId,
       va: response.data,
     });
@@ -173,6 +174,12 @@ export const vaOrderStatus = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: "payment already processed",
+      });
+    }
+    if (existOrder.paymentStatus === "expired") {
+      return res.status(200).json({
+        success: true,
+        message: "payment expired",
       });
     }
     if (!existOrder.va) {

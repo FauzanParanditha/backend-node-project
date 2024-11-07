@@ -416,6 +416,9 @@ const orderSchema = new mongoose.Schema(
     paymentLink: {
       type: String,
     },
+    paymentExpired: {
+      type: String,
+    },
     paymentActions: {
       type: Object,
     },

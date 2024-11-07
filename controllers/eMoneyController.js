@@ -138,6 +138,7 @@ export const createEMoney = async (req, res) => {
       totalAmount: response.data.amount,
       paymentActions: response.data.paymentActions,
       paymentId: response.data.merchantTradeNo,
+      paymentExpired: response.data.expiredTime,
       storeId: response.data.storeId,
       eMoney: response.data,
     });
@@ -178,6 +179,12 @@ export const eMoneyOrderStatus = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: "payment already processed",
+      });
+    }
+    if (existOrder.paymentStatus === "expired") {
+      return res.status(200).json({
+        success: true,
+        message: "payment expired",
       });
     }
     if (!existOrder.eMoney) {
