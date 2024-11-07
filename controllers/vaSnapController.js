@@ -304,12 +304,12 @@ export const VaSnapCallback = async (req, res) => {
         message: `Order not found for orderID: ${notificationData.trxId}`,
       });
     }
-    // if (existOrder.paymentStatus === "paid") {
-    //   return res.status(200).json({
-    //     success: true,
-    //     message: "payment already processed",
-    //   });
-    // }
+    if (existOrder.paymentStatus === "paid") {
+      return res.status(200).json({
+        success: true,
+        message: "payment already processed",
+      });
+    }
 
     existOrder.paymentStatus = "paid";
     existOrder.totalAmount = notificationData.paidAmount.value;
