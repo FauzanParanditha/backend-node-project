@@ -130,7 +130,7 @@ export const createVASNAP = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: response.data
-          ? `error: ${response.data.errCodeDes}`
+          ? `error: ${response.data.responseMessage} with code ${response.data.responseCode}`
           : "failed to create payment",
       });
     }
@@ -269,7 +269,6 @@ export const vaSNAPOrderStatus = async (req, res) => {
     res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
     // Handle unexpected errors
-    console.log(error);
     return res.status(500).json({
       success: false,
       message: "an error occurred",
@@ -539,8 +538,8 @@ export const updateVASNAP = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: response.data
-          ? `error: ${response.data.errCodeDes}`
-          : "failed to update payment",
+          ? `error: ${response.data.responseMessage} with code ${response.data.responseCode}`
+          : "failed to create payment",
       });
     }
 
