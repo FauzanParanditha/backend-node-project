@@ -160,11 +160,11 @@ export const createVASNAP = async (req, res) => {
     });
   } catch (error) {
     // Handle unexpected errors
-    console.log(error);
     return res.status(500).json({
       success: false,
+      status: error.message,
       message: "an error occurred",
-      error: error.message,
+      error: `error: ${response.data.responseMessage} with code ${response.data.responseCode}`,
     });
   }
 };
