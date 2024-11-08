@@ -69,15 +69,14 @@ export const createVASNAP = async (req, res) => {
     // Generate IDs and other necessary fields
     const timestamp = generateTimestamp();
     const requestId = generateUUID12();
-    const partnerServiceId = deriveUUID8(requestId);
     const merchantTradeNo = generateMerchantTradeNo();
     const customerNo = generateCustomerNumber();
 
     // Prepare Paylabs request payload
     const requestBody = {
-      partnerServiceId,
+      partnerServiceId: merchantId,
       customerNo,
-      virtualAccountNo: `${partnerServiceId}${customerNo}`,
+      virtualAccountNo: `${merchantId}${customerNo}`,
       virtualAccountName: existUser.fullName,
       virtualAccountEmail: existUser.email,
       virtualAccountPhone: requestBodyForm.phoneNumber,
@@ -489,7 +488,7 @@ export const updateVASNAP = async (req, res) => {
       virtualAccountEmail:
         existingOrder.vaSnap.virtualAccountData.virtualAccountEmail,
       virtualAccountPhone: updatedOrderData.phoneNumber,
-      trxId: existingOrder.paymentId,
+      trxId: generateMerchantTradeNo(),
       totalAmount: {
         value: String(updatedOrderData.totalAmount),
         currency: "IDR",
