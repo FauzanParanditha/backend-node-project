@@ -234,7 +234,7 @@ export const paylabsVaStaticCallback = async (req, res) => {
     const timestampResponse = generateTimestamp();
     const responsePayload = {
       merchantId: process.env.PAYLABS_MERCHANT_ID,
-      requestId: notificationData.requestId,
+      requestId: generateRequestId(),
       errCode: notificationData.errCode,
     };
 
