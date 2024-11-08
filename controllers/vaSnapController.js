@@ -252,7 +252,7 @@ export const vaSNAPOrderStatus = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: response.data
-          ? `error: ${response.data.errCodeDes}`
+          ? `error: ${response.data.responseMessage} with code ${response.data.responseCode}`
           : "failed to create payment",
       });
     }
