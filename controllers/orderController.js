@@ -70,15 +70,22 @@ export const createOrder = async (req, res) => {
     const existUser = await User.findById(validatedOrder.userId);
     if (!existUser) throw new Error("User not registered");
 
-    const products = await validateOrderProducts(validatedOrder.products);
-    if (!products.length)
-      throw new Error("No valid products found to create the order");
-
+    // Validate products in the order
+    const { validProducts, totalAmount } = await validateOrderProducts(
+      validatedOrder.products,
+      validatedOrder.paymentType || undefined
+    );
+    if (!validProducts.length) {
+      return res.status(404).json({
+        success: false,
+        message: "no valid products found to create the order",
+      });
+    }
     const orderData = {
       orderId: uuid4(),
       userId: validatedOrder.userId,
-      products,
-      totalAmount: calculateTotal(products),
+      products: validProducts,
+      totalAmount,
       phoneNumber: validatedOrder.phoneNumber,
       paymentStatus: "pending",
       paymentMethod: validatedOrder.paymentMethod,

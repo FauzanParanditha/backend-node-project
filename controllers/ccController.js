@@ -34,8 +34,11 @@ export const createCreditCard = async (req, res) => {
     }
 
     // Validate products in the order
-    const products = await validateOrderProducts(validatedProduct.products);
-    if (!products.length) {
+    const { validProducts, totalAmount } = await validateOrderProducts(
+      validatedProduct.products,
+      validatedProduct.paymentType
+    );
+    if (!validProducts.length) {
       return res.status(404).json({
         success: false,
         message: "no valid products found to create the order",
@@ -46,8 +49,8 @@ export const createCreditCard = async (req, res) => {
     const requestBodyForm = {
       orderId: uuid4(),
       userId: validatedProduct.userId,
-      products,
-      totalAmount: calculateTotal(products),
+      products: validProducts,
+      totalAmount,
       phoneNumber: validatedProduct.phoneNumber,
       paymentStatus: "pending",
       paymentMethod: validatedProduct.paymentMethod,
