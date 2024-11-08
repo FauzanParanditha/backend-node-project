@@ -74,7 +74,7 @@ export const createVASNAP = async (req, res) => {
 
     // Prepare Paylabs request payload
     const requestBody = {
-      partnerServiceId: merchantId,
+      partnerServiceId: `  ${merchantId}`,
       customerNo,
       virtualAccountNo: `${merchantId}${customerNo}`,
       virtualAccountName: existUser.fullName,
@@ -162,9 +162,9 @@ export const createVASNAP = async (req, res) => {
     // Handle unexpected errors
     return res.status(500).json({
       success: false,
-      status: error.message,
+      status: error.status,
       message: "an error occurred",
-      error: `error: ${error.data.responseMessage} with code ${error.data.responseCode}`,
+      error: `error: ${error.response.data.responseMessage} with code ${error.response.data.responseCode}`,
     });
   }
 };
@@ -272,8 +272,9 @@ export const vaSNAPOrderStatus = async (req, res) => {
     // Handle unexpected errors
     return res.status(500).json({
       success: false,
+      status: error.status,
       message: "an error occurred",
-      error: error.message,
+      error: `error: ${error.response.data.responseMessage} with code ${error.response.data.responseCode}`,
     });
   }
 };
@@ -565,8 +566,9 @@ export const updateVASNAP = async (req, res) => {
     // Handle unexpected errors
     return res.status(500).json({
       success: false,
+      status: error.status,
       message: "an error occurred",
-      error: error.message,
+      error: `error: ${error.response.data.responseMessage} with code ${error.response.data.responseCode}`,
     });
   }
 };
