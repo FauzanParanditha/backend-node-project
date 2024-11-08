@@ -124,6 +124,7 @@ export const createVASNAP = async (req, res) => {
       requestBody,
       { headers }
     );
+    console.log(response);
 
     // Check for successful response
     if (!response.data || response.data.responseCode.charAt(0) !== "2") {
