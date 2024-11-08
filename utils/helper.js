@@ -154,6 +154,5 @@ export const validateOrderProducts = async (
     );
   }
 
-  console.log(validProducts);
   return { validProducts, totalAmount };
 };
