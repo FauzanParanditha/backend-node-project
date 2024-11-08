@@ -117,6 +117,8 @@ export const createVASNAP = async (req, res) => {
         ? req.ip.split("::ffff:")[1]
         : req.ip,
     };
+    console.log(requestBody);
+    console.log(headers);
 
     // Send request to Paylabs
     const response = await axios.post(
@@ -124,7 +126,6 @@ export const createVASNAP = async (req, res) => {
       requestBody,
       { headers }
     );
-    console.log(response);
 
     // Check for successful response
     if (!response.data || response.data.responseCode.charAt(0) !== "2") {
