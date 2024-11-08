@@ -455,11 +455,14 @@ export const updateVASNAP = async (req, res) => {
     }
 
     // Validate products in the order
-    const products = await validateOrderProducts(validatedUpdateData.products);
-    if (!products.length) {
+    const { validProducts, totalAmount } = await validateOrderProducts(
+      validatedUpdateData.products,
+      validatedUpdateData.paymentType || undefined
+    );
+    if (!validProducts.length) {
       return res.status(404).json({
         success: false,
-        message: "no valid products found for the order",
+        message: "no valid products found to create the order",
       });
     }
 
@@ -467,7 +470,7 @@ export const updateVASNAP = async (req, res) => {
     const updatedOrderData = {
       ...existingOrder._doc,
       ...validatedUpdateData,
-      totalAmount: calculateTotal(products || existingOrder.products),
+      totalAmount,
       paymentStatus:
         validatedUpdateData.paymentStatus || existingOrder.paymentStatus,
     };
