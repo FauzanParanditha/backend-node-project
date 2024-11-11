@@ -546,7 +546,6 @@ export const updateVASNAP = async (req, res) => {
     );
 
     // Check for successful response
-    console.log(response);
     if (!response.data || response.data.responseCode.charAt(0) !== "2") {
       return res.status(400).json({
         success: false,
@@ -556,6 +555,8 @@ export const updateVASNAP = async (req, res) => {
       });
     }
 
+    console.log(validatedUpdateData);
+    console.log(updatedOrderData);
     // Update order in the database
     await Order.findByIdAndUpdate(
       validatedUpdateData.orderId,
