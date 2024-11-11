@@ -111,15 +111,6 @@ export const paylabsCallback = async (req, res) => {
     const currentDateTime = new Date();
     const expiredDateTime = new Date(order.paymentExpired);
 
-    if (currentDateTime > expiredDateTime) {
-      order.paymentStatus = "expired";
-      await order.save();
-      return res.status(400).json({
-        success: false,
-        message: "Order has expired",
-      });
-    }
-
     // Process based on notification status
     switch (notificationData.status) {
       case "02": // Payment successful
@@ -149,10 +140,16 @@ export const paylabsCallback = async (req, res) => {
 
     // Prepare response payload and headers
     const timestampResponse = generateTimestamp();
-    const responsePayload = {
-      merchantId: process.env.PAYLABS_MERCHANT_ID,
-      requestId: generateRequestId(),
-      errCode: notificationData.errCode,
+    const responsePayload = (errorCode, errCodeDes) => {
+      const payload = {
+        merchantId: process.env.PAYLABS_MERCHANT_ID,
+        requestId: generateRequestId(),
+        errCode: errorCode ? errorCode : notificationData.errCode,
+      };
+
+      if (errorCode) {
+        payload.errCodeDes = errCodeDes;
+      }
     };
 
     const signatureResponse = createSignature(
@@ -169,6 +166,14 @@ export const paylabsCallback = async (req, res) => {
       "X-PARTNER-ID": process.env.PAYLABS_MERCHANT_ID,
       "X-REQUEST-ID": generateRequestId(),
     };
+
+    if (currentDateTime > expiredDateTime) {
+      order.paymentStatus = "expired";
+      await order.save();
+      return res
+        .status(400)
+        .json(responsePayload("orderExpired", "order expired"));
+    }
 
     res.set(responseHeaders).status(200).json(responsePayload);
   } catch (error) {

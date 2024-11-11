@@ -126,6 +126,7 @@ export const createVASNAP = async (req, res) => {
       requestBody,
       { headers }
     );
+    // console.log(response.data);
 
     // Check for successful response
     if (!response.data || response.data.responseCode.charAt(0) !== "2") {
@@ -329,15 +330,6 @@ export const VaSnapCallback = async (req, res) => {
       existOrder.vaSnap.virtualAccountData.expiredDate
     );
 
-    if (currentDateTime > expiredDateTime) {
-      existOrder.paymentStatus = "expired";
-      await existOrder.save();
-      return res.status(400).json({
-        success: false,
-        message: "Order has expired",
-      });
-    }
-
     // Update order details in the database
     existOrder.paymentStatus = "paid";
     existOrder.totalAmount = notificationData.paidAmount.value;
@@ -347,56 +339,60 @@ export const VaSnapCallback = async (req, res) => {
 
     // Prepare response payload and headers
     const timestampResponse = generateTimestamp();
-    const responsePayload = {
-      responseCode: "2002500",
-      responseMessage: "Success",
-      virtualAccountData: {
-        paymentFlagReason: {
-          english: "Success",
-          indonesia: "Sukses",
-        },
-        partnerServiceId: existOrder.paymentPaylabsVaSnap.partnerServiceId,
-        customerNo: existOrder.paymentPaylabsVaSnap.customerNo,
-        virtualAccountNo: existOrder.paymentPaylabsVaSnap.virtualAccountNo,
-        virtualAccountName: existOrder.paymentPaylabsVaSnap.virtualAccountName,
-        virtualAccountEmail:
-          existOrder.paymentPaylabsVaSnap.virtualAccountEmail,
-        virtualAccountPhone:
-          existOrder.paymentPaylabsVaSnap.virtualAccountPhone,
-        trxId: existOrder.paymentPaylabsVaSnap.trxId,
-        paymentRequestId: generateRequestId(),
-        paidAmount: existOrder.paymentPaylabsVaSnap.paidAmount,
-        paidBills: existOrder.paymentPaylabsVaSnap.paidBills,
-        totalAmount: existOrder.paymentPaylabsVaSnap.totalAmount,
-        trxDateTime: existOrder.paymentPaylabsVaSnap.trxDateTime,
-        referenceNo: existOrder.paymentPaylabsVaSnap.referenceNo,
-        journalNum: existOrder.paymentPaylabsVaSnap.journalNum,
-        paymentType: existOrder.paymentPaylabsVaSnap.paymentType,
-        flagAdvise: existOrder.paymentPaylabsVaSnap.flagAdvise,
-        paymentFlagStatus: "00",
-        billDetails: {
-          billerReferenceId: generateRequestId(),
-          billCode: existOrder.paymentPaylabsVaSnap.billDetails.billCode,
-          billNo: existOrder.paymentPaylabsVaSnap.billDetails.billNo,
-          billName: existOrder.paymentPaylabsVaSnap.billDetails.billName,
-          billShortName:
-            existOrder.paymentPaylabsVaSnap.billDetails.billShortName,
-          billDescription:
-            existOrder.paymentPaylabsVaSnap.billDetails.billDescription,
-          billSubCompany:
-            existOrder.paymentPaylabsVaSnap.billDetails.billSubCompany,
-          billAmount: existOrder.paymentPaylabsVaSnap.billDetails.billAmount,
-          additionalInfo:
-            existOrder.paymentPaylabsVaSnap.billDetails.additionalInfo,
-          status: "00",
-          reason: {
-            english: "Success",
-            indonesia: "Sukses",
+    const generateResponsePayload = (existOrder, statusCode, statusMessage) => {
+      return {
+        responseCode: statusCode || "2002500",
+        responseMessage: statusMessage || "Success",
+        virtualAccountData: {
+          paymentFlagReason: {
+            english: statusMessage || "Success",
+            indonesia: statusMessage === "Success" ? "Sukses" : "Gagal",
           },
+          partnerServiceId: existOrder?.paymentPaylabsVaSnap?.partnerServiceId,
+          customerNo: existOrder?.paymentPaylabsVaSnap?.customerNo,
+          virtualAccountNo: existOrder?.paymentPaylabsVaSnap?.virtualAccountNo,
+          virtualAccountName:
+            existOrder?.paymentPaylabsVaSnap?.virtualAccountName,
+          virtualAccountEmail:
+            existOrder?.paymentPaylabsVaSnap?.virtualAccountEmail,
+          virtualAccountPhone:
+            existOrder?.paymentPaylabsVaSnap?.virtualAccountPhone,
+          trxId: existOrder?.paymentPaylabsVaSnap?.trxId,
+          paymentRequestId: generateRequestId(),
+          paidAmount: existOrder?.paymentPaylabsVaSnap?.paidAmount,
+          paidBills: existOrder?.paymentPaylabsVaSnap?.paidBills,
+          totalAmount: existOrder?.paymentPaylabsVaSnap?.totalAmount,
+          trxDateTime: existOrder?.paymentPaylabsVaSnap?.trxDateTime,
+          referenceNo: existOrder?.paymentPaylabsVaSnap?.referenceNo,
+          journalNum: existOrder?.paymentPaylabsVaSnap?.journalNum,
+          paymentType: existOrder?.paymentPaylabsVaSnap?.paymentType,
+          flagAdvise: existOrder?.paymentPaylabsVaSnap?.flagAdvise,
+          paymentFlagStatus: statusCode === "2002500" ? "00" : "01",
+          billDetails: {
+            billerReferenceId: generateRequestId(),
+            billCode: existOrder?.paymentPaylabsVaSnap?.billDetails?.billCode,
+            billNo: existOrder?.paymentPaylabsVaSnap?.billDetails?.billNo,
+            billName: existOrder?.paymentPaylabsVaSnap?.billDetails?.billName,
+            billShortName:
+              existOrder?.paymentPaylabsVaSnap?.billDetails?.billShortName,
+            billDescription:
+              existOrder?.paymentPaylabsVaSnap?.billDetails?.billDescription,
+            billSubCompany:
+              existOrder?.paymentPaylabsVaSnap?.billDetails?.billSubCompany,
+            billAmount:
+              existOrder?.paymentPaylabsVaSnap?.billDetails?.billAmount,
+            additionalInfo:
+              existOrder?.paymentPaylabsVaSnap?.billDetails?.additionalInfo,
+            status: statusCode === "2002500" ? "00" : "01",
+            reason: {
+              english: statusMessage || "Success",
+              indonesia: statusMessage === "Success" ? "Sukses" : "Gagal",
+            },
+          },
+          freeTexts: existOrder?.paymentPaylabsVaSnap?.freeTexts,
+          additionalInfo: existOrder?.paymentPaylabsVaSnap?.additionalInfo,
         },
-        freeTexts: existOrder.paymentPaylabsVaSnap.freeTexts,
-        additionalInfo: existOrder.paymentPaylabsVaSnap.additionalInfo,
-      },
+      };
     };
 
     // Generate response headers
@@ -405,8 +401,20 @@ export const VaSnapCallback = async (req, res) => {
       "X-TIMESTAMP": timestampResponse,
     };
 
+    if (currentDateTime > expiredDateTime) {
+      existOrder.paymentStatus = "expired";
+      await existOrder.save();
+      return res
+        .set(responseHeaders)
+        .status(403)
+        .json(generateResponsePayload(existOrder, "4030000", "Expired"));
+    }
+
     // Respond
-    res.set(responseHeaders).status(200).json(responsePayload);
+    res
+      .set(responseHeaders)
+      .status(200)
+      .json(generateResponsePayload(existOrder));
   } catch (error) {
     return res.status(500).json({
       success: false,
