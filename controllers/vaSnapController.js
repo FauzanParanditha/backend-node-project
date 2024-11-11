@@ -466,6 +466,7 @@ export const updateVASNAP = async (req, res) => {
     }
 
     // Validate products in the order
+    console.log(validatedUpdateData.products);
     const { validProducts, totalAmount } = await validateOrderProducts(
       validatedUpdateData.products,
       validatedUpdateData.paymentType || undefined
