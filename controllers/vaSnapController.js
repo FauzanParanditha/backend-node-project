@@ -574,6 +574,7 @@ export const updateVASNAP = async (req, res) => {
     });
   } catch (error) {
     // Handle unexpected errors
+    console.log(error);
     return res.status(500).json({
       success: false,
       status: error.status,
