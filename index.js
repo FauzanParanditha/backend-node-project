@@ -18,6 +18,7 @@ import { ensureUploadsDirExists } from "./utils/helper.js";
 import apiLogger from "./middlewares/apiLog.js";
 import rateLimit from "express-rate-limit";
 import mongoose from "mongoose";
+import logger from "./utils/logger.js";
 
 dotenv.config();
 
@@ -94,30 +95,30 @@ app.get("/me", jwtMiddlewareAdmin, async (req, res) => {
 
 app.listen(process.env.PORT, () => {
   connectDB();
-  console.log("app run on port:", process.env.PORT);
+  logger.info("app run on port:", process.env.PORT);
 });
 
 function handleShutdownGracefully(signal) {
   return () => {
     serverIsClosing = true;
-    console.log(
+    logger.info(
       `Received ${signal} signal. Starting graceful shutdown... New requests will be denied.`
     );
 
     // Stop accepting new connections and complete ongoing requests
     server.close(() => {
-      console.log("HTTP server closed gracefully.");
+      logger.info("HTTP server closed gracefully.");
 
       // Close the database connection gracefully
       mongoose.connection.close(false, () => {
-        console.log("MongoDB connection closed.");
+        logger.info("MongoDB connection closed.");
         process.exit(0); // Exit cleanly after everything is closed
       });
     });
 
     // Timeout as a backup to force exit if graceful shutdown takes too long
     setTimeout(() => {
-      console.error("Forced shutdown due to timeout.");
+      logger.error("Forced shutdown due to timeout.");
       process.exit(1); // Exit with failure if cleanup takes too long
     }, 10000); // 10 seconds to allow ongoing connections to complete
   };
