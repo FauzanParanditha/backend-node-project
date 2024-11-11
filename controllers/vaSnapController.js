@@ -24,6 +24,7 @@ import {
 } from "../validators/paymentValidator.js";
 import axios from "axios";
 import Order from "../models/orderModel.js";
+import logger from "../utils/logger.js";
 
 export const createVASNAP = async (req, res) => {
   try {

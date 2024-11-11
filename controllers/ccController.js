@@ -16,6 +16,7 @@ import {
   validateCreditCardRequest,
 } from "../validators/paymentValidator.js";
 import axios from "axios";
+import logger from "../utils/logger.js";
 
 export const createCreditCard = async (req, res) => {
   try {

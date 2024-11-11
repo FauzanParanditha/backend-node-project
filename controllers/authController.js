@@ -9,6 +9,7 @@ import {
 import Admin from "../models/adminModel.js";
 import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
 import transport from "../middlewares/sendMail.js";
+import logger from "../utils/logger.js";
 
 export const register = async (req, res) => {
   const { email, password } = req.body;

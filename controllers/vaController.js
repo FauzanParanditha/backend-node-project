@@ -18,6 +18,7 @@ import {
 import axios from "axios";
 import Order from "../models/orderModel.js";
 import VirtualAccount from "../models/vaModel.js";
+import logger from "../utils/logger.js";
 
 export const createVA = async (req, res) => {
   try {

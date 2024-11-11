@@ -9,6 +9,7 @@ import {
 import { orderLinkSchema } from "../validators/orderValidator.js";
 import { createPaymentLink } from "./paymentController.js";
 import { createXenditPaymentLink, expiredXendit } from "./xenditController.js";
+import logger from "../utils/logger.js";
 
 // Orders Listing with Pagination and Sorting
 export const orders = async (req, res) => {

@@ -1,5 +1,6 @@
 import ApiLog from "../models/apiLogModel.js";
 import { escapeRegExp } from "../utils/helper.js";
+import logger from "../utils/logger.js";
 
 export const apiLogs = async (req, res) => {
   const {

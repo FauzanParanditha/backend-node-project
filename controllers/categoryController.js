@@ -1,5 +1,6 @@
 import Category from "../models/categoryModel.js";
 import { escapeRegExp } from "../utils/helper.js";
+import logger from "../utils/logger.js";
 import { categorySchema } from "../validators/categoryValidator.js";
 
 export const categories = async (req, res) => {
