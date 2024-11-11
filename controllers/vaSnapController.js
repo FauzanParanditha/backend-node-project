@@ -560,9 +560,18 @@ export const updateVASNAP = async (req, res) => {
     }
     // Update validatedUpdateData with validProducts
     updatedOrderData.products = validProducts;
-
-    // Update order in the database
-    await Order.findByIdAndUpdate(id, updatedOrderData, { new: true });
+    updatedOrderData.vaSnap = response.data;
+    (updatedOrderData.partnerServiceId =
+      response.data.virtualAccountData.partnerServiceId),
+      (updatedOrderData.paymentId = response.data.virtualAccountData.trxId),
+      (updatedOrderData.paymentExpired =
+        response.data.virtualAccountData.expiredDate),
+      (updatedOrderData.customerNo =
+        response.data.virtualAccountData.customerNo),
+      (updatedOrderData.virtualAccountNo =
+        response.data.virtualAccountData.virtualAccountNo),
+      // Update order in the database
+      await Order.findByIdAndUpdate(id, updatedOrderData, { new: true });
 
     // Send a response with the updated order details
     res.status(200).json({
