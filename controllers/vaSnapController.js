@@ -554,12 +554,14 @@ export const updateVASNAP = async (req, res) => {
           : "failed to create payment",
       });
     }
+    // Update validatedUpdateData with validProducts
     validatedUpdateData.products = validProducts;
+
     console.log("validProducts:", validProducts);
-    console.log("validatedUpdateData:", updatedOrderData);
+    console.log("validatedUpdateData after update:", validatedUpdateData);
 
     // Update order in the database
-    await Order.findByIdAndUpdate(id, updatedOrderData);
+    await Order.findByIdAndUpdate(id, validatedUpdateData, { new: true });
 
     // Send a response with the updated order details
     res.status(200).json({
