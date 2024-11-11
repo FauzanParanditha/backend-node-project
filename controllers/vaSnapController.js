@@ -166,7 +166,9 @@ export const createVASNAP = async (req, res) => {
       success: false,
       status: error.status,
       message: "an error occurred",
-      error: `error: ${error.response.data.responseMessage} with code ${error.response.data.responseCode}`,
+      error: error.response.data
+        ? `error: ${error.response.data.responseMessage} with code ${error.response.data.responseCode}`
+        : error.message,
     });
   }
 };
@@ -276,7 +278,9 @@ export const vaSNAPOrderStatus = async (req, res) => {
       success: false,
       status: error.status,
       message: "an error occurred",
-      error: `error: ${error.response.data.responseMessage} with code ${error.response.data.responseCode}`,
+      error: error.response.data
+        ? `error: ${error.response.data.responseMessage} with code ${error.response.data.responseCode}`
+        : error.message,
     });
   }
 };
@@ -572,7 +576,7 @@ export const updateVASNAP = async (req, res) => {
       totalAmount: response.data.virtualAccountData.totalAmount.value,
       expiredDate: response.data.virtualAccountData.expiredDate,
       paymentId: response.data.virtualAccountData.trxId,
-      orderId: savedOrder._id,
+      orderId: id,
     });
   } catch (error) {
     // Handle unexpected errors
@@ -581,7 +585,9 @@ export const updateVASNAP = async (req, res) => {
       success: false,
       status: error.status,
       message: "an error occurred",
-      error: `error: ${error.response.data.responseMessage} with code ${error.response.data.responseCode}`,
+      error: error.response.data
+        ? `error: ${error.response.data.responseMessage} with code ${error.response.data.responseCode}`
+        : error.message,
     });
   }
 };
