@@ -489,7 +489,6 @@ export const updateVASNAP = async (req, res) => {
       paymentStatus:
         validatedUpdateData.paymentStatus || existingOrder.paymentStatus,
     };
-    console.log(updatedOrderData.totalAmount);
 
     // Prepare request payload for Paylabs
     const timestamp = generateTimestamp();
@@ -559,6 +558,8 @@ export const updateVASNAP = async (req, res) => {
           : "failed to create payment",
       });
     }
+    // Update validatedUpdateData with validProducts
+    updatedOrderData.products = validProducts;
 
     // Update order in the database
     await Order.findByIdAndUpdate(id, updatedOrderData, { new: true });
