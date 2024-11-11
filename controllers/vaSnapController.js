@@ -555,13 +555,10 @@ export const updateVASNAP = async (req, res) => {
       });
     }
 
-    console.log(validatedUpdateData);
+    console.log(validatedUpdateData._id);
     console.log(updatedOrderData);
     // Update order in the database
-    await Order.findByIdAndUpdate(
-      validatedUpdateData.orderId,
-      updatedOrderData
-    );
+    await Order.findByIdAndUpdate(validatedUpdateData._id, updatedOrderData);
 
     // Send a response with the updated order details
     res.status(200).json({
