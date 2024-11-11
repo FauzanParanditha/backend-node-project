@@ -291,6 +291,20 @@ export const cancleQris = async (req, res) => {
         message: "order not found",
       });
     }
+
+    //check expired
+    const currentDateTime = new Date();
+    const expiredDateTime = new Date(existOrder.paymentExpired);
+
+    if (currentDateTime > expiredDateTime) {
+      existOrder.paymentStatus = "expired";
+      await existOrder.save();
+      return res.status(400).json({
+        success: false,
+        message: "Order has expired",
+      });
+    }
+
     if (existOrder.paymentStatus === "paid") {
       return res.status(200).json({
         success: true,

@@ -435,12 +435,20 @@ export const updateVASNAP = async (req, res) => {
         message: "payment has already processed",
       });
     }
-    if (existingOrder.paymentStatus === "expired") {
-      return res.status(200).json({
-        success: true,
-        message: "payment expired",
+
+    //check expired
+    const currentDateTime = new Date();
+    const expiredDateTime = new Date(existingOrder.paymentExpired);
+
+    if (currentDateTime > expiredDateTime) {
+      existingOrder.paymentStatus = "expired";
+      await existingOrder.save();
+      return res.status(400).json({
+        success: false,
+        message: "Order has expired",
       });
     }
+
     if (!existingOrder.vaSnap) {
       return res.status(200).json({
         success: true,
