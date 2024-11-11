@@ -141,15 +141,12 @@ export const paylabsCallback = async (req, res) => {
     // Prepare response payload and headers
     const timestampResponse = generateTimestamp();
     const responsePayload = (errorCode, errCodeDes) => {
-      const payload = {
+      return {
         merchantId: process.env.PAYLABS_MERCHANT_ID,
         requestId: generateRequestId(),
         errCode: errorCode ? errorCode : notificationData.errCode,
+        ...(errCodeDes && { errCodeDes: errCodeDes }),
       };
-
-      if (errorCode) {
-        payload.errCodeDes = errCodeDes;
-      }
     };
 
     const signatureResponse = createSignature(
