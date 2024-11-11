@@ -158,6 +158,7 @@ export const createEMoney = async (req, res) => {
     });
   } catch (error) {
     // Handle unexpected errors
+    logger.error("Error creating e-money:", error.message);
     return res.status(500).json({
       success: false,
       message: "an error occurred",
@@ -277,6 +278,7 @@ export const eMoneyOrderStatus = async (req, res) => {
     res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
     // Handle unexpected errors
+    logger.error("Error fetching e-money status:", error.message);
     return res.status(500).json({
       success: false,
       message: "an error occurred",
@@ -408,6 +410,7 @@ export const createEMoneyRefund = async (req, res) => {
     res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
     // Handle unexpected errors
+    logger.error("Error refund e-money:", error.message);
     return res.status(500).json({
       success: false,
       message: "an error occurred",

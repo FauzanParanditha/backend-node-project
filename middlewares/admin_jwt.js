@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import IPWhitelist from "../models/ipWhitelistModel.js";
+import logger from "../utils/logger.js";
 
 export const jwtMiddlewareAdmin = async (req, res, next) => {
   let token;
@@ -42,7 +43,7 @@ export const jwtMiddlewareAdmin = async (req, res, next) => {
       throw new Error("error in the token ");
     }
   } catch (error) {
-    console.error("Error jwtMiddleware:", error.message);
+    logger.error("Error jwtMiddleware:", error.message);
     return res.status(500).json({
       success: false,
 

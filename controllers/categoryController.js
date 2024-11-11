@@ -61,7 +61,7 @@ export const categories = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching categories:", error.message);
+    logger.error("Error fetching categories:", error.message);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -100,7 +100,7 @@ export const create = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error post category:", error.message);
+    logger.error("Error post category:", error.message);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -130,7 +130,7 @@ export const category = async (req, res) => {
       data: existCategory,
     });
   } catch (error) {
-    console.error("Error fetching category:", error.message);
+    logger.error("Error fetching category:", error.message);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -177,7 +177,7 @@ export const updateCategory = async (req, res) => {
       message: "successfully update category",
     });
   } catch (error) {
-    console.error("Error update category:", error.message);
+    logger.error("Error update category:", error.message);
     return res.status(500).json({
       success: false,
 
@@ -213,7 +213,7 @@ export const deleteCategory = async (req, res) => {
       message: "successfully delete category",
     });
   } catch (error) {
-    console.error("Error delete category:", error.message);
+    logger.error("Error delete category:", error.message);
     return res.status(500).json({
       success: false,
 

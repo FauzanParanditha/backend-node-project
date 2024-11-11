@@ -6,6 +6,7 @@ import {
 import User from "../models/userModel.js";
 import mongoose from "mongoose";
 import Order from "../models/orderModel.js";
+import logger from "../utils/logger.js";
 
 const xenditInvoiceClient = new InvoiceClient({
   secretKey: process.env.XENDIT_SECRET_KEY,
@@ -127,7 +128,7 @@ export const xenditCallback = async (req, res) => {
 
     res.status(200).json({ success: true, message: "successfully" });
   } catch (error) {
-    console.error("Error handling webhook:", error);
+    logger.error("Error handling webhook:", error);
     res
       .status(500)
       .json({ success: false, message: "webhook handling failed" });
@@ -139,7 +140,7 @@ export const expiredXendit = async (id) => {
     const response = await xenditInvoiceClient.expireInvoice({ invoiceId: id });
     return response;
   } catch (error) {
-    console.error(`Error expiring Xendit invoice with ID: ${id}`, error);
+    logger.error(`Error expiring Xendit invoice with ID: ${id}`, error);
     throw new Error(`Failed to expire invoice: ${error.message}`);
   }
 };

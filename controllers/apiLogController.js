@@ -59,7 +59,7 @@ export const apiLogs = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching api logs:", error.message);
+    logger.error("Error fetching api logs:", error.message);
     return res.status(500).json({
       success: false,
 

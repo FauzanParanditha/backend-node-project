@@ -48,7 +48,7 @@ export const register = async (req, res) => {
       data: result,
     });
   } catch (error) {
-    console.error("Error register:", error.message);
+    logger.error("Error register:", error.message);
     return res.status(500).json({
       success: false,
 
@@ -115,7 +115,7 @@ export const login = async (req, res) => {
         token,
       });
   } catch (error) {
-    console.error("Error login:", error.message);
+    logger.error("Error login:", error.message);
     return res.status(500).json({
       success: false,
 
@@ -178,7 +178,7 @@ export const sendVerficationCode = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error send verification code:", error.message);
+    logger.error("Error send verification code:", error.message);
     return res.status(500).json({
       success: false,
 
@@ -260,7 +260,7 @@ export const verifyVerificationCode = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error verify verification code:", error.message);
+    logger.error("Error verify verification code:", error.message);
     return res.status(500).json({
       success: false,
 
@@ -322,7 +322,7 @@ export const changePassword = async (req, res) => {
       message: "successfuly change password!",
     });
   } catch (error) {
-    console.error("Error change password:", error.message);
+    logger.error("Error change password:", error.message);
     return res.status(500).json({
       success: false,
 
@@ -370,7 +370,7 @@ export const sendForgotPassword = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error send forgot password:", error.message);
+    logger.error("Error send forgot password:", error.message);
     return res.status(500).json({
       success: false,
 
@@ -445,7 +445,7 @@ export const verifyForgotPasswordCode = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error verify forgot password:", error.message);
+    logger.error("Error verify forgot password:", error.message);
     return res.status(500).json({
       success: false,
 

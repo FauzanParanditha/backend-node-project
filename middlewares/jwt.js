@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import logger from "../utils/logger";
 
 export const jwtMiddleware = (req, res, next) => {
   let token;
@@ -29,7 +30,7 @@ export const jwtMiddleware = (req, res, next) => {
       throw new Error("error in the token ");
     }
   } catch (error) {
-    console.error("Error jwtMiddleware:", error.message);
+    logger.error("Error jwtMiddleware:", error.message);
     return res.status(500).json({
       success: false,
 

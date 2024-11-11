@@ -1,5 +1,6 @@
 import IPWhitelist from "../models/ipWhitelistModel.js";
 import { escapeRegExp } from "../utils/helper.js";
+import logger from "../utils/logger.js";
 import { ipWhitelistSchema } from "../validators/ipWhitelistValidator.js";
 
 export const ipWhitelists = async (req, res) => {
@@ -63,7 +64,7 @@ export const ipWhitelists = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching ip whitelist:", error.message);
+    logger.error("Error fetching ip whitelist:", error.message);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -104,7 +105,7 @@ export const create = async (req, res) => {
       data: newIP,
     });
   } catch (error) {
-    console.error("Error create ip whitelist:", error.message);
+    logger.error("Error create ip whitelist:", error.message);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -132,7 +133,7 @@ export const ipWhitelist = async (req, res) => {
       data: ip,
     });
   } catch (error) {
-    console.error("Error fetching ip whitelist:", error.message);
+    logger.error("Error fetching ip whitelist:", error.message);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -176,7 +177,7 @@ export const updateIpWhitelist = async (req, res) => {
       message: "successfully update ip ",
     });
   } catch (error) {
-    console.error("Error update ip whitelist:", error.message);
+    logger.error("Error update ip whitelist:", error.message);
     return res.status(500).json({
       success: false,
 
@@ -212,7 +213,7 @@ export const deleteIpWhitelist = async (req, res) => {
       message: "successfully delete ip whitelist",
     });
   } catch (error) {
-    console.error("Error delete ip whitelist", error.message);
+    logger.error("Error delete ip whitelist", error.message);
     return res.status(500).json({
       success: false,
 

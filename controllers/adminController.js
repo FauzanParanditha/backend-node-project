@@ -1,5 +1,6 @@
 import Admin from "../models/adminModel.js";
 import { escapeRegExp } from "../utils/helper.js";
+import logger from "../utils/logger.js";
 
 export const getAllAdmin = async (req, res) => {
   const {
@@ -62,7 +63,7 @@ export const getAllAdmin = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching admins:", error.message);
+    logger.error("Error fetching admins:", error.message);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -89,7 +90,7 @@ export const deleteAdmin = async (req, res) => {
       message: "successfully delete admin",
     });
   } catch (error) {
-    console.error("Error delete admin:", error.message);
+    logger.error("Error delete admin:", error.message);
     return res.status(500).json({
       success: false,
 

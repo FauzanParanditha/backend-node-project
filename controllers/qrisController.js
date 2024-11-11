@@ -17,6 +17,7 @@ import {
 } from "../validators/paymentValidator.js";
 import axios from "axios";
 import Order from "../models/orderModel.js";
+import logger from "../utils/logger.js";
 
 export const createQris = async (req, res) => {
   try {
@@ -154,6 +155,7 @@ export const createQris = async (req, res) => {
     });
   } catch (error) {
     // Handle unexpected errors
+    logger.error("Error creating qris:", error.message);
     return res.status(500).json({
       success: false,
       message: "an error occurred",
@@ -271,6 +273,7 @@ export const qrisOrderStatus = async (req, res) => {
     res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
     // Handle unexpected errors
+    logger.error("Error fetching qris status:", error.message);
     return res.status(500).json({
       success: false,
       message: "an error occurred",
@@ -393,6 +396,7 @@ export const cancleQris = async (req, res) => {
     res.set(headersResponse).status(200).json(response.data);
   } catch (error) {
     // Handle unexpected errors
+    logger.error("Error cancel qris:", error.message);
     return res.status(500).json({
       success: false,
       message: "an error occurred",

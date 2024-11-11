@@ -12,6 +12,7 @@ import { validateCreateLinkRequest } from "../validators/paymentValidator.js";
 import uuid4 from "uuid4";
 import Order from "../models/orderModel.js";
 import VirtualAccount from "../models/vaModel.js";
+import logger from "../utils/logger.js";
 
 // Create a payment link with Paylabs
 export const createPaymentLink = async (order) => {
@@ -70,8 +71,9 @@ export const createPaymentLink = async (order) => {
 
     // console.log("Response:", response.data);
     return response.data;
-  } catch (err) {
-    throw new Error(`Payment initiation failed: ${err.message}`);
+  } catch (error) {
+    logger.error(`Payment initiation failed: ${error.message}`);
+    throw new Error(`Payment initiation failed: ${error.message}`);
   }
 };
 
@@ -174,7 +176,7 @@ export const paylabsCallback = async (req, res) => {
 
     res.set(responseHeaders).status(200).json(responsePayload);
   } catch (error) {
-    console.error("Error handling webhook:", error);
+    logger.error("Error handling webhook:", error);
     res
       .status(500)
       .json({ success: false, message: "webhook handling failed" });
@@ -257,7 +259,7 @@ export const paylabsVaStaticCallback = async (req, res) => {
 
     res.set(responseHeaders).status(200).json(responsePayload);
   } catch (error) {
-    console.error("Error handling webhook:", error);
+    logger.error("Error handling webhook:", error);
     res
       .status(500)
       .json({ success: false, message: "webhook handling failed" });

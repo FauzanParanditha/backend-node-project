@@ -4,6 +4,7 @@ import fs from "fs";
 import path, { dirname } from "path";
 import { productValidationSchema } from "../validators/productValidator.js";
 import { fileURLToPath } from "url";
+import logger from "../utils/logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -67,7 +68,7 @@ export const products = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching products:", error.message);
+    logger.error("Error fetching products:", error.message);
     return res.status(500).json({
       success: false,
 
@@ -121,11 +122,12 @@ export const createProduct = async (req, res) => {
 
       message: "successfully create product",
     });
-  } catch (err) {
+  } catch (error) {
+    logger.error("Error create products:", error.message);
     return res.status(500).json({
       success: false,
       message: "an error occurred",
-      error: err.message,
+      error: error.message,
     });
   }
 };
@@ -152,7 +154,7 @@ export const product = async (req, res) => {
       data: existProduct,
     });
   } catch (error) {
-    console.error("Error fetching product:", error.message);
+    logger.error("Error fetching product:", error.message);
     return res.status(500).json({
       success: false,
 
@@ -212,8 +214,8 @@ export const updateProduct = async (req, res) => {
       // Delete the old image file if it exists
       const oldImagePath = path.join(__dirname, "../", existingProduct.image);
       fs.unlink(oldImagePath, (err) => {
-        if (err) {
-          console.error("Failed to delete old image:", err);
+        if (error) {
+          console.error("Failed to delete old image:", error);
         }
       });
 
@@ -231,12 +233,13 @@ export const updateProduct = async (req, res) => {
 
       message: "product updated successfully",
     });
-  } catch (err) {
+  } catch (error) {
+    logger.error("Error update product:", error.message);
     return res.status(500).json({
       success: false,
 
       message: "an error occurred",
-      error: err.message,
+      error: error.message,
     });
   }
 };
@@ -258,8 +261,8 @@ export const deleteProduct = async (req, res) => {
     // Delete the associated image file
     const imagePath = path.join(__dirname, "../", product.image);
     fs.unlink(imagePath, (err) => {
-      if (err) {
-        console.error("Failed to delete image:", err);
+      if (error) {
+        console.error("Failed to delete image:", error);
       }
     });
 
@@ -271,13 +274,13 @@ export const deleteProduct = async (req, res) => {
 
       message: "product successfully deleted",
     });
-  } catch (err) {
-    console.error("Error deleting product:", err);
+  } catch (error) {
+    logger.error("Error deleting product:", error);
     return res.status(500).json({
       success: false,
 
       message: "an error occurred while deleting the product",
-      error: err.message,
+      error: error.message,
     });
   }
 };

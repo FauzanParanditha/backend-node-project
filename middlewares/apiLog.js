@@ -1,4 +1,5 @@
 import ApiLog from "../models/apiLogModel.js";
+import logger from "../utils/logger.js";
 import { validateLog } from "../validators/apiLogValidator.js";
 
 const apiLogger = async (req, res, next) => {
@@ -28,11 +29,11 @@ const apiLogger = async (req, res, next) => {
       const log = new ApiLog(logData);
       log
         .save()
-        .catch((err) =>
-          console.error("Error logging API request:", err.message)
+        .catch((error) =>
+          console.error("Error logging API request:", error.message)
         );
     } else {
-      console.error(
+      logger.error(
         "Log validation failed:",
         error.details.map((e) => e.message)
       );

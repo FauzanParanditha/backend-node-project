@@ -86,6 +86,7 @@ app.get("/me", jwtMiddlewareAdmin, async (req, res) => {
       data: existAdmin,
     });
   } catch (error) {
+    logger.error(error.message);
     res.status(400).json({
       success: false,
       message: error.message,
@@ -95,7 +96,7 @@ app.get("/me", jwtMiddlewareAdmin, async (req, res) => {
 
 app.listen(process.env.PORT, () => {
   connectDB();
-  logger.info("app run on port:", process.env.PORT);
+  logger.info(`App running on port: ${process.env.PORT}`);
 });
 
 function handleShutdownGracefully(signal) {
