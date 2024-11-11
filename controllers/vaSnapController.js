@@ -555,6 +555,7 @@ export const updateVASNAP = async (req, res) => {
       });
     }
     validatedUpdateData.products = validProducts;
+    console.log("validatedUpdateData.products:", updatedOrderData);
 
     // Update order in the database
     await Order.findByIdAndUpdate(id, updatedOrderData);
