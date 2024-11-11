@@ -56,7 +56,6 @@ export const products = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-
       message: "all products",
       data: products,
       pagination: {
@@ -68,10 +67,9 @@ export const products = async (req, res) => {
       },
     });
   } catch (error) {
-    logger.error("Error fetching products:", error.message);
+    logger.error(`Error fetching products: ${error.message}`);
     return res.status(500).json({
       success: false,
-
       message: error.message,
     });
   }
@@ -119,11 +117,10 @@ export const createProduct = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-
       message: "successfully create product",
     });
   } catch (error) {
-    logger.error("Error create products:", error.message);
+    logger.error(`Error create products: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: "an error occurred",
@@ -143,21 +140,18 @@ export const product = async (req, res) => {
     if (!existProduct) {
       return res.status(404).json({
         success: false,
-
         message: "product not found",
       });
     }
     return res.status(200).json({
       success: true,
-
       message: "product",
       data: existProduct,
     });
   } catch (error) {
-    logger.error("Error fetching product:", error.message);
+    logger.error(`Error fetching product: ${error.message}`);
     return res.status(500).json({
       success: false,
-
       message: error.message,
     });
   }
@@ -185,14 +179,12 @@ export const updateProduct = async (req, res) => {
     if (!existingProduct) {
       return res.status(404).json({
         success: false,
-
         message: "product not found",
       });
     }
     if (existingProduct.adminId.toString() != adminId) {
       return res.status(403).json({
         success: false,
-
         message: "unatuhorized",
       });
     }
@@ -213,7 +205,7 @@ export const updateProduct = async (req, res) => {
     if (req.file) {
       // Delete the old image file if it exists
       const oldImagePath = path.join(__dirname, "../", existingProduct.image);
-      fs.unlink(oldImagePath, (err) => {
+      fs.unlink(oldImagePath, (error) => {
         if (error) {
           console.error("Failed to delete old image:", error);
         }
@@ -230,14 +222,12 @@ export const updateProduct = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-
       message: "product updated successfully",
     });
   } catch (error) {
-    logger.error("Error update product:", error.message);
+    logger.error(`Error update product: ${error.message}`);
     return res.status(500).json({
       success: false,
-
       message: "an error occurred",
       error: error.message,
     });
@@ -253,14 +243,13 @@ export const deleteProduct = async (req, res) => {
     if (!product) {
       return res.status(404).json({
         success: false,
-
         message: "product not found",
       });
     }
 
     // Delete the associated image file
     const imagePath = path.join(__dirname, "../", product.image);
-    fs.unlink(imagePath, (err) => {
+    fs.unlink(imagePath, (error) => {
       if (error) {
         console.error("Failed to delete image:", error);
       }
@@ -271,14 +260,12 @@ export const deleteProduct = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-
       message: "product successfully deleted",
     });
   } catch (error) {
-    logger.error("Error deleting product:", error);
+    logger.error(`Error deleting product: ${error.message}`);
     return res.status(500).json({
       success: false,
-
       message: "an error occurred while deleting the product",
       error: error.message,
     });

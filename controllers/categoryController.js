@@ -50,7 +50,6 @@ export const categories = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-
       message: "all categories",
       data: categories,
       pagination: {
@@ -62,7 +61,7 @@ export const categories = async (req, res) => {
       },
     });
   } catch (error) {
-    logger.error("Error fetching categories:", error.message);
+    logger.error(`Error fetching categories: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -91,7 +90,6 @@ export const create = async (req, res) => {
       await Category.create({ name, adminId });
       return res.status(201).json({
         success: true,
-
         message: "category created successfully!",
       });
     } else {
@@ -101,7 +99,7 @@ export const create = async (req, res) => {
       });
     }
   } catch (error) {
-    logger.error("Error post category:", error.message);
+    logger.error(`Error post category: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -120,18 +118,16 @@ export const category = async (req, res) => {
     if (!existCategory) {
       return res.status(404).json({
         success: false,
-
         message: "category not found",
       });
     }
     return res.status(200).json({
       success: true,
-
       message: "category",
       data: existCategory,
     });
   } catch (error) {
-    logger.error("Error fetching category:", error.message);
+    logger.error(`Error fetching category: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -149,7 +145,6 @@ export const updateCategory = async (req, res) => {
     if (error) {
       return res.status(401).json({
         success: false,
-
         message: error.details[0].message,
       });
     }
@@ -158,14 +153,12 @@ export const updateCategory = async (req, res) => {
     if (!existCategory) {
       return res.status(404).json({
         success: false,
-
         message: "category not found",
       });
     }
     if (existCategory.adminId.toString() != adminId) {
       return res.status(403).json({
         success: false,
-
         message: "unatuhorized",
       });
     }
@@ -174,14 +167,12 @@ export const updateCategory = async (req, res) => {
     const result = await existCategory.save();
     return res.status(200).json({
       success: true,
-
       message: "successfully update category",
     });
   } catch (error) {
-    logger.error("Error update category:", error.message);
+    logger.error(`Error update category: ${error.message}`);
     return res.status(500).json({
       success: false,
-
       message: error.message,
     });
   }
@@ -196,28 +187,24 @@ export const deleteCategory = async (req, res) => {
     if (!existCategory) {
       return res.status(404).json({
         success: false,
-
         message: "category not found",
       });
     }
     if (existCategory.adminId.toString() != adminId) {
       return res.status(403).json({
         success: false,
-
         message: "unatuhorized",
       });
     }
     await Category.deleteOne({ _id: id });
     return res.status(200).json({
       success: true,
-
       message: "successfully delete category",
     });
   } catch (error) {
-    logger.error("Error delete category:", error.message);
+    logger.error(`Error delete category: ${error.message}`);
     return res.status(500).json({
       success: false,
-
       message: error.message,
     });
   }

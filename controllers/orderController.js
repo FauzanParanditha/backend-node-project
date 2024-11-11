@@ -57,7 +57,7 @@ export const orders = async (req, res) => {
       },
     });
   } catch (error) {
-    logger.error("Error fetching order", error.message);
+    logger.error(`Error fetching order ${error.message}`);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -112,7 +112,7 @@ export const createOrder = async (req, res) => {
       orderId: savedOrder._id,
     });
   } catch (error) {
-    logger.error("Error create order", error.message);
+    logger.error(`Error create order ${error.message}`);
     res.status(500).json({
       success: false,
       message: "order creation failed",
@@ -163,7 +163,7 @@ export const order = async (req, res) => {
       .status(200)
       .json({ success: true, message: "order details", data: existOrder });
   } catch (error) {
-    logger.error("Error fetching order", error.message);
+    logger.error(`Error fetching order ${error.message}`);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -217,7 +217,7 @@ export const editOrder = async (req, res) => {
       paymentLink: paymentLink.url,
     });
   } catch (error) {
-    logger.error("Error edit order", error.message);
+    logger.error(`Error edit order ${error.message}`);
     res.status(500).json({
       success: false,
       message: "order update failed",

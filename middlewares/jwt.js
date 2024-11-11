@@ -12,7 +12,6 @@ export const jwtMiddleware = (req, res, next) => {
   if (!token) {
     return res.status(403).json({
       success: false,
-
       message: "unauthorized!",
     });
   }
@@ -30,10 +29,9 @@ export const jwtMiddleware = (req, res, next) => {
       throw new Error("error in the token ");
     }
   } catch (error) {
-    logger.error("Error jwtMiddleware:", error.message);
+    logger.error(`Error jwtMiddleware: ${error.message}`);
     return res.status(500).json({
       success: false,
-
       message: error.message,
     });
   }

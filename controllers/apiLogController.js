@@ -48,7 +48,6 @@ export const apiLogs = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-
       message: "all api logs",
       data: orders,
       pagination: {
@@ -60,10 +59,9 @@ export const apiLogs = async (req, res) => {
       },
     });
   } catch (error) {
-    logger.error("Error fetching api logs:", error.message);
+    logger.error(`Error fetching api logs: ${error.message}`);
     return res.status(500).json({
       success: false,
-
       message: error.message,
     });
   }

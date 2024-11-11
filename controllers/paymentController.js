@@ -176,7 +176,7 @@ export const paylabsCallback = async (req, res) => {
 
     res.set(responseHeaders).status(200).json(responsePayload);
   } catch (error) {
-    logger.error("Error handling webhook:", error);
+    logger.error(`Error handling webhook: ${error.message}`);
     res
       .status(500)
       .json({ success: false, message: "webhook handling failed" });
@@ -259,7 +259,7 @@ export const paylabsVaStaticCallback = async (req, res) => {
 
     res.set(responseHeaders).status(200).json(responsePayload);
   } catch (error) {
-    logger.error("Error handling webhook:", error);
+    logger.error(`Error handling webhook: ${error.message}`);
     res
       .status(500)
       .json({ success: false, message: "webhook handling failed" });

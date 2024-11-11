@@ -164,7 +164,7 @@ export const createVASNAP = async (req, res) => {
     });
   } catch (error) {
     // Handle unexpected errors
-    logger.error("Error creating va snap:", error.message);
+    logger.error(`Error creating va snap: ${error.message}`);
     return res.status(500).json({
       success: false,
       status: error.status,
@@ -277,7 +277,7 @@ export const vaSNAPOrderStatus = async (req, res) => {
     res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
     // Handle unexpected errors
-    logger.error("Error fetching va snap status:", error.message);
+    logger.error(`Error fetching va snap status: ${error.message}`);
     return res.status(500).json({
       success: false,
       status: error.status,
@@ -420,7 +420,7 @@ export const VaSnapCallback = async (req, res) => {
       .json(generateResponsePayload(existOrder));
   } catch (error) {
     // Handle unexpected errors
-    logger.error("Error handling webhook va snap:", error.message);
+    logger.error(`Error handling webhook va snap: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: "an error occurred",
@@ -599,7 +599,7 @@ export const updateVASNAP = async (req, res) => {
     });
   } catch (error) {
     // Handle unexpected errors
-    logger.error("Error update va snap:", error.message);
+    logger.error(`Error update va snap: ${error.message}`);
     return res.status(500).json({
       success: false,
       status: error.status,

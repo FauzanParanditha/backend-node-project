@@ -128,7 +128,7 @@ export const xenditCallback = async (req, res) => {
 
     res.status(200).json({ success: true, message: "successfully" });
   } catch (error) {
-    logger.error("Error handling webhook:", error);
+    logger.error(`Error handling webhook: ${error.message}`);
     res
       .status(500)
       .json({ success: false, message: "webhook handling failed" });

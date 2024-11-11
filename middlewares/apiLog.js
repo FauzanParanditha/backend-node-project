@@ -34,8 +34,8 @@ const apiLogger = async (req, res, next) => {
         );
     } else {
       logger.error(
-        "Log validation failed:",
-        error.details.map((e) => e.message)
+        `Log validation failed:
+        ${error.details.map((e) => e.message)}`
       );
     }
 

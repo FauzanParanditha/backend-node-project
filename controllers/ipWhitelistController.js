@@ -52,7 +52,6 @@ export const ipWhitelists = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-
       message: "all ip whitelist",
       data: orders,
       pagination: {
@@ -64,7 +63,7 @@ export const ipWhitelists = async (req, res) => {
       },
     });
   } catch (error) {
-    logger.error("Error fetching ip whitelist:", error.message);
+    logger.error(`Error fetching ip whitelist: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -80,7 +79,6 @@ export const create = async (req, res) => {
     if (error) {
       return res.status(401).json({
         success: false,
-
         message: error.details[0].message,
       });
     }
@@ -105,7 +103,7 @@ export const create = async (req, res) => {
       data: newIP,
     });
   } catch (error) {
-    logger.error("Error create ip whitelist:", error.message);
+    logger.error(`Error create ip whitelist: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -133,7 +131,7 @@ export const ipWhitelist = async (req, res) => {
       data: ip,
     });
   } catch (error) {
-    logger.error("Error fetching ip whitelist:", error.message);
+    logger.error(`Error fetching ip whitelist: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -151,7 +149,6 @@ export const updateIpWhitelist = async (req, res) => {
     if (error) {
       return res.status(401).json({
         success: false,
-
         message: error.details[0].message,
       });
     }
@@ -177,10 +174,9 @@ export const updateIpWhitelist = async (req, res) => {
       message: "successfully update ip ",
     });
   } catch (error) {
-    logger.error("Error update ip whitelist:", error.message);
+    logger.error(`Error update ip whitelist: ${error.message}`);
     return res.status(500).json({
       success: false,
-
       message: error.message,
     });
   }
@@ -195,28 +191,24 @@ export const deleteIpWhitelist = async (req, res) => {
     if (!existIpWhitelist) {
       return res.status(404).json({
         success: false,
-
         message: "ip whitelist not found",
       });
     }
     if (existIpWhitelist.adminId.toString() != adminId) {
       return res.status(403).json({
         success: false,
-
         message: "unatuhorized",
       });
     }
     await IPWhitelist.deleteOne({ _id: id });
     return res.status(200).json({
       success: true,
-
       message: "successfully delete ip whitelist",
     });
   } catch (error) {
-    logger.error("Error delete ip whitelist", error.message);
+    logger.error(`Error delete ip whitelist ${error.message}`);
     return res.status(500).json({
       success: false,
-
       message: error.message,
     });
   }

@@ -154,7 +154,7 @@ export const createVA = async (req, res) => {
     });
   } catch (error) {
     // Handle unexpected errors
-    logger.error("Error creating va:", error.message);
+    logger.error(`Error creating va: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: "an error occurred",
@@ -273,7 +273,7 @@ export const vaOrderStatus = async (req, res) => {
     res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
     // Handle unexpected errors
-    logger.error("Error fetching va status:", error.message);
+    logger.error(`Error fetching va status: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: "an error occurred",
@@ -396,7 +396,7 @@ export const createStaticVa = async (req, res) => {
     });
   } catch (error) {
     // Handle unexpected errors
-    logger.error("Error creating va static:", error.message);
+    logger.error(`Error creating va static: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: "an error occurred",

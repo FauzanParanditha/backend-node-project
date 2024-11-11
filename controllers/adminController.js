@@ -51,7 +51,6 @@ export const getAllAdmin = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-
       message: "all admins",
       data: admins,
       pagination: {
@@ -63,7 +62,7 @@ export const getAllAdmin = async (req, res) => {
       },
     });
   } catch (error) {
-    logger.error("Error fetching admins:", error.message);
+    logger.error(`Error fetching admins: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -79,21 +78,18 @@ export const deleteAdmin = async (req, res) => {
     if (!existAdmin) {
       return res.status(404).json({
         success: false,
-
         message: "admin not found",
       });
     }
     await Admin.deleteOne({ _id: id });
     return res.status(200).json({
       success: true,
-
       message: "successfully delete admin",
     });
   } catch (error) {
-    logger.error("Error delete admin:", error.message);
+    logger.error(`Error delete admin: ${error.message}`);
     return res.status(500).json({
       success: false,
-
       message: error.message,
     });
   }
