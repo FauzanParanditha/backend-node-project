@@ -101,28 +101,29 @@ function handleShutdownGracefully(signal) {
   return () => {
     serverIsClosing = true;
     console.log(
-      `Received ${signal} signal \n Start Closing server gracefully, incoming request will be denied`
+      `Received ${signal} signal. Starting graceful shutdown... New requests will be denied.`
     );
 
-    // Set timeout
-    setTimeout(() => {
+    // Stop accepting new connections and complete ongoing requests
+    server.close(() => {
+      console.log("HTTP server closed gracefully.");
+
       // Close the database connection gracefully
       mongoose.connection.close(false, () => {
-        console.log("MongoDB connection closed");
-        process.exit(0);
+        console.log("MongoDB connection closed.");
+        process.exit(0); // Exit cleanly after everything is closed
       });
-      server.close(() => {
-        console.log("HTTP server closed gracefully in peace");
-        process.exit(0);
-      });
+    });
 
-      setTimeout(() => {
-        process.exit(1);
-      }, 5000);
-    }, 10000);
+    // Timeout as a backup to force exit if graceful shutdown takes too long
+    setTimeout(() => {
+      console.error("Forced shutdown due to timeout.");
+      process.exit(1); // Exit with failure if cleanup takes too long
+    }, 10000); // 10 seconds to allow ongoing connections to complete
   };
 }
 
+// Add graceful shutdown signals
 process.on("SIGINT", handleShutdownGracefully("SIGINT"));
 process.on("SIGTERM", handleShutdownGracefully("SIGTERM"));
 process.on("SIGHUP", handleShutdownGracefully("SIGHUP"));
