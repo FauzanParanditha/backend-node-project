@@ -16,6 +16,7 @@ import Admin from "./models/adminModel.js";
 import { jwtMiddlewareAdmin } from "./middlewares/admin_jwt.js";
 import { ensureUploadsDirExists } from "./utils/helper.js";
 import apiLogger from "./middlewares/apiLog.js";
+import rateLimit from "express-rate-limit";
 
 dotenv.config();
 
