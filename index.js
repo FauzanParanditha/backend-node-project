@@ -17,11 +17,24 @@ import { jwtMiddlewareAdmin } from "./middlewares/admin_jwt.js";
 import { ensureUploadsDirExists } from "./utils/helper.js";
 import apiLogger from "./middlewares/apiLog.js";
 import rateLimit from "express-rate-limit";
+import mongoose from "mongoose";
 
 dotenv.config();
 
 ensureUploadsDirExists();
 const app = express();
+
+let serverIsClosing = false;
+app.use((req, res, next) => {
+  if (serverIsClosing) {
+    res.status(503).json({
+      errors: true,
+      message: "Server is shutting down, no new requests accepted.",
+    });
+  } else {
+    next();
+  }
+});
 
 app.use(cors());
 app.use(helmet());
@@ -33,7 +46,7 @@ app.use(apiLogger);
 // Define the rate limit rule
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: process.env.RATE_LIMIT_MAX || 100,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -50,36 +63,67 @@ app.use("/api", paymentRouter);
 app.use("/auth", userRouter);
 
 app.get("/", (req, res) => {
+  const dbStatus =
+    mongoose.connection.readyState === 1 ? "connected" : "disconnected";
   res.json({
     message: "Hello World!",
+    database: dbStatus,
   });
 });
 
 app.get("/me", jwtMiddlewareAdmin, async (req, res) => {
-  const { adminId, verified } = req.admin;
-  if (!adminId) {
-    return res.status(400).json({
+  try {
+    const { adminId, verified } = req.admin;
+    if (!adminId) throw new Error("Admin ID not provided");
+
+    const existAdmin = await Admin.findById(adminId);
+    if (!existAdmin) throw new Error("Admin does not exist");
+
+    res.status(200).json({
+      success: true,
+      message: "Admin data retrieved successfully",
+      data: existAdmin,
+    });
+  } catch (error) {
+    res.status(400).json({
       success: false,
-      message: "admin id is not provide",
+      message: error.message,
     });
   }
-  const existAdmin = await Admin.findOne({ _id: adminId });
-  if (!existAdmin) {
-    return res.status(401).json({
-      success: false,
-
-      message: "admin is not exist!",
-    });
-  }
-  res.status(200).json({
-    success: true,
-
-    message: "me",
-    data: existAdmin,
-  });
 });
 
 app.listen(process.env.PORT, () => {
   connectDB();
   console.log("app run on port:", process.env.PORT);
 });
+
+function handleShutdownGracefully(signal) {
+  return () => {
+    serverIsClosing = true;
+    console.log(
+      `Received ${signal} signal \n Start Closing server gracefully, incoming request will be denied`
+    );
+
+    // Set timeout
+    setTimeout(() => {
+      // Close the database connection gracefully
+      mongoose.connection.close(false, () => {
+        console.log("MongoDB connection closed");
+        process.exit(0);
+      });
+      server.close(() => {
+        console.log("HTTP server closed gracefully in peace");
+        process.exit(0);
+      });
+
+      setTimeout(() => {
+        process.exit(1);
+      }, 5000);
+    }, 10000);
+  };
+}
+
+process.on("SIGINT", handleShutdownGracefully("SIGINT"));
+process.on("SIGTERM", handleShutdownGracefully("SIGTERM"));
+process.on("SIGHUP", handleShutdownGracefully("SIGHUP"));
+process.on("SIGQUIT", handleShutdownGracefully("SIGQUIT"));
