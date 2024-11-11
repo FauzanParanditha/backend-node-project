@@ -29,6 +29,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(apiLogger);
 
+// Define the rate limit rule
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+
 //route
 app.use("/adm/auth", authRouter);
 app.use("/api/adm", adminRouter);
