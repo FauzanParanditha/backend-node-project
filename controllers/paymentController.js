@@ -111,7 +111,36 @@ export const paylabsCallback = async (req, res) => {
     }
 
     const currentDateTime = new Date();
-    const expiredDateTime = new Date(order.paymentExpired);
+
+    const convertToDate = (paymentExpired) => {
+      if (
+        typeof paymentExpired === "string" &&
+        paymentExpired.length === 19 &&
+        paymentExpired.includes("T")
+      ) {
+        // ISO 8601 format: 2024-11-08T11:20:45+07:00
+        return new Date(paymentExpired);
+      } else if (
+        typeof paymentExpired === "string" &&
+        paymentExpired.length === 14
+      ) {
+        // Numerical string format: 20241113094019
+        const formattedDate = `${paymentExpired.slice(
+          0,
+          4
+        )}-${paymentExpired.slice(4, 6)}-${paymentExpired.slice(
+          6,
+          8
+        )}T${paymentExpired.slice(8, 10)}:${paymentExpired.slice(
+          10,
+          12
+        )}:${paymentExpired.slice(12)}+07:00`;
+        return new Date(formattedDate);
+      }
+      return null;
+    };
+
+    const expiredDateTime = convertToDate(order.paymentExpired);
 
     // Process based on notification status
     switch (notificationData.status) {
@@ -155,10 +184,11 @@ export const paylabsCallback = async (req, res) => {
       };
     };
 
+    const payloadResponse = responsePayload(0, "");
     const signatureResponse = createSignature(
       "POST",
       "/api/order/webhook/paylabs",
-      responsePayload,
+      payloadResponse,
       timestampResponse
     );
 
@@ -170,15 +200,17 @@ export const paylabsCallback = async (req, res) => {
       "X-REQUEST-ID": generateRequestId(),
     };
 
+    const payloadResponseError = responsePayload(
+      "orderExpired",
+      "order expired"
+    );
     if (currentDateTime > expiredDateTime) {
       order.paymentStatus = "expired";
       await order.save();
-      return res
-        .status(400)
-        .json(responsePayload("orderExpired", "order expired"));
+      return res.status(200).json(payloadResponseError);
     }
 
-    res.set(responseHeaders).status(200).json(responsePayload);
+    res.set(responseHeaders).status(200).json(payloadResponse);
   } catch (error) {
     logger.error(`Error handling webhook: ${error.message}`);
     res
