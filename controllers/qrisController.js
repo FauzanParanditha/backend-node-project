@@ -110,7 +110,7 @@ export const createQris = async (req, res) => {
     const response = await axios.post(
       `${paylabsApiUrl}/payment/v2.1/qris/create`,
       requestBody,
-      headers
+      { headers }
     );
     // console.log("Response:", response.data);
 
