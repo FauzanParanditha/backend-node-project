@@ -42,23 +42,13 @@ export const createPaymentLink = async (order) => {
     if (error)
       throw new Error(`Payment validation failed: ${error.details[0].message}`);
 
-    // Generate request signature
-    const signature = createSignature(
+    // Generate headers for Paylabs request
+    const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/h5/createLink",
       requestBody,
-      timestamp
+      requestId
     );
-
-    // Configure headers
-    const headers = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestamp,
-      "X-SIGNATURE": signature,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": requestId,
-    };
-
     // console.log(requestBody);
     // console.log(headers);
 
