@@ -96,15 +96,23 @@ export const createQris = async (req, res) => {
       });
     }
 
-    // Generate headers for Paylabs request
-    const { headers } = generateHeaders(
+    // Generate signature and headers
+    const signature = createSignature(
       "POST",
       "/payment/v2.1/qris/create",
-      requestBody
+      requestBody,
+      timestamp
     );
+    const headers = {
+      "Content-Type": "application/json;charset=utf-8",
+      "X-TIMESTAMP": timestamp,
+      "X-SIGNATURE": signature,
+      "X-PARTNER-ID": merchantId,
+      "X-REQUEST-ID": requestId,
+    };
 
     // console.log(requestBody);
-    console.log(headers);
+    // console.log(headers);
 
     // Send request to Paylabs
     const response = await axios.post(
