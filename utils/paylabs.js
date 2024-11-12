@@ -164,6 +164,5 @@ export const generateHeaders = (
       "X-PARTNER-ID": merchantId,
       "X-REQUEST-ID": requestId,
     },
-    timestamp,
   };
 };
