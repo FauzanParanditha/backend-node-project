@@ -135,7 +135,7 @@ export const paylabsCallback = async (req, res) => {
         break;
 
       default:
-        console.log(
+        logger.error(
           `Unhandled notification status: ${notificationData.status}`
         );
     }
@@ -229,7 +229,7 @@ export const paylabsVaStaticCallback = async (req, res) => {
         break;
 
       default:
-        console.log(
+        logger.error(
           `Unhandled notification status: ${notificationData.status}`
         );
     }

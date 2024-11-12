@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import uuid4 from "uuid4";
 import fs from "fs";
+import logger from "./logger.js";
 
 export const paylabsApiUrl = process.env.PAYLABS_API_URL;
 export const merchantId = process.env.PAYLABS_MERCHANT_ID;
@@ -75,8 +76,8 @@ export const minifyJson = (body) => {
 // Function to create signature
 export const createSignature = (httpMethod, endpointUrl, body, timestamp) => {
   const minifiedBody = minifyJson(body);
-  console.log(minifiedBody);
-  console.log(timestamp);
+  logger.info(minifiedBody);
+  logger.info(timestamp);
   const privateKey = fs.readFileSync("private-key.pem", "utf8");
 
   const hashedBody = crypto
@@ -85,7 +86,7 @@ export const createSignature = (httpMethod, endpointUrl, body, timestamp) => {
     .digest("hex")
     .toLowerCase();
   const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
-  console.log(stringContent);
+  logger.info(stringContent);
 
   const sign = crypto.createSign("RSA-SHA256");
   sign.update(stringContent);
@@ -102,8 +103,8 @@ export const verifySignature = (
   signature
 ) => {
   const minifiedBody = minifyJson(body);
-  console.log("verify", minifiedBody);
-  console.log("verify", timestamp);
+  logger.info("verify", minifiedBody);
+  logger.info("verify", timestamp);
 
   const hashedBody = crypto
     .createHash("sha256")
@@ -112,7 +113,7 @@ export const verifySignature = (
     .toLowerCase();
 
   const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
-  console.log("verify", stringContent);
+  logger.info("verify", stringContent);
 
   const publicKey = fs.readFileSync("public.pem", "utf8");
 
@@ -120,7 +121,7 @@ export const verifySignature = (
   verify.update(stringContent);
 
   const isVerified = verify.verify(publicKey, signature, "base64");
-  console.log("verify", isVerified);
+  logger.info("verify", isVerified);
 
   return isVerified;
 };
