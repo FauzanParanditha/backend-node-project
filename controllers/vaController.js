@@ -311,7 +311,7 @@ export const createStaticVa = async (req, res) => {
     const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/staticva/create",
-      response.data,
+      requestBody,
       requestId
     );
 
