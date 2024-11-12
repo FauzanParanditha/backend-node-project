@@ -62,7 +62,6 @@ export const createQris = async (req, res) => {
     };
 
     // Generate IDs and other necessary fields
-    const timestamp = generateTimestamp();
     const requestId = generateRequestId();
     const merchantTradeNo = generateMerchantTradeNo();
 
@@ -190,7 +189,6 @@ export const qrisOrderStatus = async (req, res) => {
     }
 
     // Prepare request payload for Paylabs
-    const timestamp = generateTimestamp();
     const requestId = generateRequestId();
 
     const requestBody = {
@@ -239,22 +237,13 @@ export const qrisOrderStatus = async (req, res) => {
       });
     }
 
-    // Prepare response payload and headers
-    const timestampResponse = generateTimestamp();
-
-    const signatureResponse = createSignature(
+    // Generate headers for Paylabs request
+    const { responseHeaders } = generateHeaders(
       "POST",
       "/api/order/status/qris/:id",
       response.data,
-      timestampResponse
+      requestId
     );
-    const responseHeaders = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestampResponse,
-      "X-SIGNATURE": signatureResponse,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": generateRequestId(),
-    };
 
     // Respond
     res.set(responseHeaders).status(200).json(response.data);
@@ -303,7 +292,6 @@ export const cancleQris = async (req, res) => {
     }
 
     // Prepare request payload for Paylabs
-    const timestamp = generateTimestamp();
     const requestId = generateRequestId();
 
     const requestBody = {
@@ -352,7 +340,7 @@ export const cancleQris = async (req, res) => {
     }
 
     // Generate headers for Paylabs request
-    const { headersResponse } = generateHeaders(
+    const { responseHeaders } = generateHeaders(
       "POST",
       "/payment/v2.1/qris/cancel",
       response.data,
@@ -366,7 +354,7 @@ export const cancleQris = async (req, res) => {
     await existOrder.save();
 
     // Respond with update order details
-    res.set(headersResponse).status(200).json(response.data);
+    res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error cancel qris: ${error.message}`);

@@ -19,7 +19,6 @@ import logger from "../utils/logger.js";
 export const createPaymentLink = async (order) => {
   try {
     // Configuration and unique identifiers
-    const timestamp = generateTimestamp();
     const requestId = generateRequestId();
     const merchantTradeNo = generateMerchantTradeNo();
 

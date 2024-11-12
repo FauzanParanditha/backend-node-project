@@ -61,7 +61,6 @@ export const createEMoney = async (req, res) => {
     };
 
     // Generate IDs and other necessary fields
-    const timestamp = generateTimestamp();
     const requestId = generateRequestId();
     const merchantTradeNo = generateMerchantTradeNo();
 
@@ -100,20 +99,13 @@ export const createEMoney = async (req, res) => {
       });
     }
 
-    // Generate signature and headers
-    const signature = createSignature(
+    // Generate headers for Paylabs request
+    const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/ewallet/create",
       requestBody,
-      timestamp
+      requestId
     );
-    const headers = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestamp,
-      "X-SIGNATURE": signature,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": requestId,
-    };
 
     // console.log(requestBody);
     // console.log(headers);
@@ -200,7 +192,6 @@ export const eMoneyOrderStatus = async (req, res) => {
     }
 
     // Prepare request payload for Paylabs
-    const timestamp = generateTimestamp();
     const requestId = generateRequestId();
 
     const requestBody = {
@@ -220,22 +211,13 @@ export const eMoneyOrderStatus = async (req, res) => {
       });
     }
 
-    // Generate signature and headers
-    const signature = createSignature(
+    // Generate headers for Paylabs request
+    const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/ewallet/query",
       requestBody,
-      timestamp
+      requestId
     );
-
-    // Configure headers
-    const headers = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestamp,
-      "X-SIGNATURE": signature,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": requestId,
-    };
 
     // console.log(requestBody);
     // console.log(headers);
@@ -258,22 +240,13 @@ export const eMoneyOrderStatus = async (req, res) => {
       });
     }
 
-    // Prepare response payload and headers
-    const timestampResponse = generateTimestamp();
-
-    const signatureResponse = createSignature(
+    // Generate headers for Paylabs request
+    const { responseHeaders } = generateHeaders(
       "POST",
       "/api/order/status/ewallet/:id",
       response.data,
-      timestampResponse
+      generateRequestId()
     );
-    const responseHeaders = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestampResponse,
-      "X-SIGNATURE": signatureResponse,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": generateRequestId(),
-    };
 
     // Respond
     res.set(responseHeaders).status(200).json(response.data);
@@ -321,7 +294,6 @@ export const createEMoneyRefund = async (req, res) => {
     }
 
     // Prepare request payload for Paylabs
-    const timestamp = generateTimestamp();
     const requestId = generateRequestId();
     const refundNo = generateMerchantTradeNo();
 
@@ -353,20 +325,13 @@ export const createEMoneyRefund = async (req, res) => {
       });
     }
 
-    // Generate signature and headers
-    const signature = createSignature(
+    // Generate headers for Paylabs request
+    const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/ewallet/refund",
       requestBody,
-      timestamp
+      requestId
     );
-    const headers = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestamp,
-      "X-SIGNATURE": signature,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": requestId,
-    };
 
     // console.log(requestBody);
     // console.log(headers);
@@ -389,23 +354,13 @@ export const createEMoneyRefund = async (req, res) => {
       });
     }
 
-    // Prepare response payload and headers
-    const timestampResponse = generateTimestamp();
-
-    const signatureResponse = createSignature(
+    // Generate headers for Paylabs request
+    const { responseHeaders } = generateHeaders(
       "POST",
       "/api/order/refund/ewallet/:id",
       response.data,
-      timestampResponse
+      generateRequestId()
     );
-
-    const responseHeaders = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestampResponse,
-      "X-SIGNATURE": signatureResponse,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": generateRequestId(),
-    };
 
     // Respond
     res.set(responseHeaders).status(200).json(response.data);

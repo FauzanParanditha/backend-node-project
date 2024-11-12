@@ -62,7 +62,6 @@ export const createVA = async (req, res) => {
     };
 
     // Generate IDs and other necessary fields
-    const timestamp = generateTimestamp();
     const requestId = generateRequestId();
     const merchantTradeNo = generateMerchantTradeNo();
 
@@ -95,20 +94,13 @@ export const createVA = async (req, res) => {
       });
     }
 
-    // Generate signature and headers
-    const signature = createSignature(
+    // Generate headers for Paylabs request
+    const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/va/create",
       requestBody,
-      timestamp
+      requestId
     );
-    const headers = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestamp,
-      "X-SIGNATURE": signature,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": requestId,
-    };
 
     // console.log(requestBody);
     // console.log(headers);
@@ -195,7 +187,6 @@ export const vaOrderStatus = async (req, res) => {
     }
 
     // Prepare request payload for Paylabs
-    const timestamp = generateTimestamp();
     const requestId = generateRequestId();
 
     const requestBody = {
@@ -215,20 +206,13 @@ export const vaOrderStatus = async (req, res) => {
       });
     }
 
-    // Generate signature and headers
-    const signature = createSignature(
+    // Generate headers for Paylabs request
+    const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/va/query",
       requestBody,
-      timestamp
+      requestId
     );
-    const headers = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestamp,
-      "X-SIGNATURE": signature,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": requestId,
-    };
 
     // console.log(requestBody);
     // console.log(headers);
@@ -251,23 +235,13 @@ export const vaOrderStatus = async (req, res) => {
       });
     }
 
-    // Prepare response payload and headers
-    const timestampResponse = generateTimestamp();
-
-    const signatureResponse = createSignature(
+    // Generate headers for Paylabs request
+    const { responseHeaders } = generateHeaders(
       "POST",
       "/api/order/status/va/:id",
       response.data,
-      timestampResponse
+      generateRequestId()
     );
-
-    const responseHeaders = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestampResponse,
-      "X-SIGNATURE": signatureResponse,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": generateRequestId(),
-    };
 
     // Respond
     res.set(responseHeaders).status(200).json(response.data);
@@ -311,7 +285,6 @@ export const createStaticVa = async (req, res) => {
     };
 
     // Generate IDs and other necessary fields
-    const timestamp = generateTimestamp();
     const requestId = generateRequestId();
 
     // Prepare Paylabs request payload
@@ -333,20 +306,13 @@ export const createStaticVa = async (req, res) => {
       });
     }
 
-    // Generate signature and headers
-    const signature = createSignature(
+    // Generate headers for Paylabs request
+    const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/staticva/create",
-      requestBody,
-      timestamp
+      response.data,
+      requestId
     );
-    const headers = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestamp,
-      "X-SIGNATURE": signature,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": requestId,
-    };
 
     // console.log(requestBody);
     // console.log(headers);
