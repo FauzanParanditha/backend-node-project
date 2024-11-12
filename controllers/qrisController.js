@@ -100,11 +100,12 @@ export const createQris = async (req, res) => {
     const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/qris/create",
-      requestBody
+      requestBody,
+      requestId
     );
 
     // console.log(requestBody);
-    console.log(headers);
+    // console.log(headers);
 
     // Send request to Paylabs
     const response = await axios.post(

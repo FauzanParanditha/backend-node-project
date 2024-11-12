@@ -150,11 +150,11 @@ export const generateHeaders = (
   method,
   endpoint,
   requestBody,
+  requestId,
   offsetMs = 0
 ) => {
   const timestamp = generateTimestamp(offsetMs);
   const signature = createSignature(method, endpoint, requestBody, timestamp);
-  const requestId = generateRequestId();
 
   return {
     headers: {
