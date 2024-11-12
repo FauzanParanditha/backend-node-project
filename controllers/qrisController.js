@@ -104,7 +104,7 @@ export const createQris = async (req, res) => {
     );
 
     // console.log(requestBody);
-    // console.log(headers);
+    console.log(headers);
 
     // Send request to Paylabs
     const response = await axios.post(
