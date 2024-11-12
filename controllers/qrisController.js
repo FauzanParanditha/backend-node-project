@@ -214,7 +214,8 @@ export const qrisOrderStatus = async (req, res) => {
     const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/qris/query",
-      requestBody
+      requestBody,
+      requestId
     );
 
     // console.log(requestBody);
@@ -329,7 +330,8 @@ export const cancleQris = async (req, res) => {
     const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/qris/cancel",
-      requestBody
+      requestBody,
+      requestId
     );
 
     // Send request to Paylabs
@@ -353,7 +355,8 @@ export const cancleQris = async (req, res) => {
     const { headersResponse } = generateHeaders(
       "POST",
       "/payment/v2.1/qris/cancel",
-      response.data
+      response.data,
+      generateRequestId()
     );
 
     // Update order details in the database
