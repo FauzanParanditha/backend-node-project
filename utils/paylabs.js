@@ -103,8 +103,8 @@ export const verifySignature = (
   signature
 ) => {
   const minifiedBody = minifyJson(body);
-  logger.info("verify", minifiedBody);
-  logger.info("verify", timestamp);
+  logger.info(`verify ${minifiedBody}`);
+  logger.info(`verify ${timestamp}`);
 
   const hashedBody = crypto
     .createHash("sha256")
@@ -113,7 +113,7 @@ export const verifySignature = (
     .toLowerCase();
 
   const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
-  logger.info("verify", stringContent);
+  logger.info(`verify ${stringContent}`);
 
   const publicKey = fs.readFileSync("public.pem", "utf8");
 
@@ -121,7 +121,7 @@ export const verifySignature = (
   verify.update(stringContent);
 
   const isVerified = verify.verify(publicKey, signature, "base64");
-  logger.info("verify", isVerified);
+  logger.info(`verify ${isVerified}`);
 
   return isVerified;
 };
