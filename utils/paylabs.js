@@ -146,10 +146,15 @@ export const generateCustomerNumber = () => {
   return customerNumber;
 };
 
-export const generateHeaders = (method, endpoint, requestBody) => {
-  const timestamp = generateTimestamp();
+export const generateHeaders = (
+  method,
+  endpoint,
+  requestBody,
+  offsetMs = 0
+) => {
+  const timestamp = generateTimestamp(offsetMs);
   const signature = createSignature(method, endpoint, requestBody, timestamp);
-  const requestId = uuid4();
+  const requestId = generateRequestId();
 
   return {
     headers: {
