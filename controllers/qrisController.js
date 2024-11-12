@@ -104,7 +104,7 @@ export const createQris = async (req, res) => {
     );
 
     // console.log(requestBody);
-    // console.log(headers);
+    console.log(headers);
 
     // Send request to Paylabs
     const response = await axios.post(
@@ -112,7 +112,7 @@ export const createQris = async (req, res) => {
       requestBody,
       { headers }
     );
-    console.log("Response:", response.data);
+    // console.log("Response:", response.data);
 
     // Check for successful response
     if (!response.data || response.data.errCode != 0) {
