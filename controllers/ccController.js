@@ -100,7 +100,7 @@ export const createCreditCard = async (req, res) => {
     const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/cc/create",
-      response.data,
+      requestBody,
       requestId
     );
 
