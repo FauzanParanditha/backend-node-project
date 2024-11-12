@@ -195,7 +195,7 @@ export const paylabsCallback = async (req, res) => {
       "orderExpired",
       "order expired"
     );
-    if (currentDateTime > expiredDateTime) {
+    if (currentDateTime > expiredDateTime && expiredDateTime != null) {
       order.paymentStatus = "expired";
       await order.save();
       return res.status(200).json(payloadResponseError);
