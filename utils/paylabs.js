@@ -145,3 +145,20 @@ export const generateCustomerNumber = () => {
 
   return customerNumber;
 };
+
+export const generateHeaders = (method, endpoint, requestBody) => {
+  const timestamp = generateTimestamp();
+  const signature = createSignature(method, endpoint, requestBody, timestamp);
+  const requestId = uuid4();
+
+  return {
+    headers: {
+      "Content-Type": "application/json;charset=utf-8",
+      "X-TIMESTAMP": timestamp,
+      "X-SIGNATURE": signature,
+      "X-PARTNER-ID": merchantId,
+      "X-REQUEST-ID": requestId,
+    },
+    timestamp,
+  };
+};

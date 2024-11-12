@@ -3,6 +3,7 @@ import User from "../models/userModel.js";
 import { calculateTotal, validateOrderProducts } from "../utils/helper.js";
 import {
   createSignature,
+  generateHeaders,
   generateMerchantTradeNo,
   generateRequestId,
   generateTimestamp,
@@ -95,20 +96,12 @@ export const createQris = async (req, res) => {
       });
     }
 
-    // Generate signature and headers
-    const signature = createSignature(
+    // Generate headers for Paylabs request
+    const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/qris/create",
-      requestBody,
-      timestamp
+      requestBody
     );
-    const headers = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestamp,
-      "X-SIGNATURE": signature,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": requestId,
-    };
 
     // console.log(requestBody);
     // console.log(headers);
@@ -216,20 +209,12 @@ export const qrisOrderStatus = async (req, res) => {
       });
     }
 
-    // Generate signature and headers
-    const signature = createSignature(
+    // Generate headers for Paylabs request
+    const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/qris/query",
-      requestBody,
-      timestamp
+      requestBody
     );
-    const headers = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestamp,
-      "X-SIGNATURE": signature,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": requestId,
-    };
 
     // console.log(requestBody);
     // console.log(headers);
@@ -339,20 +324,12 @@ export const cancleQris = async (req, res) => {
       });
     }
 
-    // Generate signature and headers
-    const signature = createSignature(
+    // Generate headers for Paylabs request
+    const { headers } = generateHeaders(
       "POST",
       "/payment/v2.1/qris/cancel",
-      requestBody,
-      timestamp
+      requestBody
     );
-    const headers = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestamp,
-      "X-SIGNATURE": signature,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": requestId,
-    };
 
     // Send request to Paylabs
     const response = await axios.post(
@@ -371,20 +348,12 @@ export const cancleQris = async (req, res) => {
       });
     }
 
-    // Generate response signature and headers
-    const signatureResponse = createSignature(
+    // Generate headers for Paylabs request
+    const { headersResponse } = generateHeaders(
       "POST",
       "/payment/v2.1/qris/cancel",
-      response.data,
-      timestamp
+      response.data
     );
-    const headersResponse = {
-      "Content-Type": "application/json;charset=utf-8",
-      "X-TIMESTAMP": timestamp,
-      "X-SIGNATURE": signatureResponse,
-      "X-PARTNER-ID": merchantId,
-      "X-REQUEST-ID": requestId,
-    };
 
     // Update order details in the database
     existOrder.paymentLink = undefined;

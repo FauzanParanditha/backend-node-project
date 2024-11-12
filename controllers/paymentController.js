@@ -138,6 +138,10 @@ export const paylabsCallback = async (req, res) => {
         logger.error(
           `Unhandled notification status: ${notificationData.status}`
         );
+        return res.status(400).json({
+          success: false,
+          message: "Unhandled notification status",
+        });
     }
 
     // Prepare response payload and headers
