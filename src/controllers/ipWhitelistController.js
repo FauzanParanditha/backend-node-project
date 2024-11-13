@@ -104,7 +104,6 @@ export const create = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "ip address added successfully!",
-      data: newIP,
     });
   } catch (error) {
     logger.error(`Error create ip whitelist: ${error.message}`);
