@@ -308,7 +308,7 @@ export const createEMoneyRefund = async (req, res) => {
       refundAmount: existOrder.totalAmount,
       platformRefundNo: refundNo,
       merchantRefundNo: refundNo,
-      notifyUrl: "process.env.NOTIFY_URL/refund",
+      notifyUrl: `${process.env.NOTIFY_URL}/refund`,
       reason: validatedRequest.reason,
       transFeeRate: existOrder.paymentPaylabs.transFeeRate,
       transFeeAmount: existOrder.paymentPaylabs.transFeeAmount,

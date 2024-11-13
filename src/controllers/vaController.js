@@ -295,7 +295,7 @@ export const createStaticVa = async (req, res) => {
       ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
       paymentType: requestBodyForm.paymentType,
       payer: existUser.fullName,
-      notifyUrl: process.env.NOTIFY_URL / va,
+      notifyUrl: `${process.env.NOTIFY_URL}/va`,
     };
 
     // Validate requestBody
