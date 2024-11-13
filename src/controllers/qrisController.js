@@ -73,7 +73,7 @@ export const createQris = async (req, res) => {
       paymentType: requestBodyForm.paymentType,
       amount: requestBodyForm.totalAmount,
       merchantTradeNo,
-      notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs",
+      notifyUrl: process.env.NOTIFY_URL,
       expire: 300,
       feeType: "OUR",
       productName: requestBodyForm.products.map((p) => p.title).join(", "),

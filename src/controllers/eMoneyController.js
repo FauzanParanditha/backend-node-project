@@ -73,9 +73,9 @@ export const createEMoney = async (req, res) => {
       paymentType: requestBodyForm.paymentType,
       amount: requestBodyForm.totalAmount,
       merchantTradeNo,
-      notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs",
+      notifyUrl: process.env.NOTIFY_URL,
       paymentParams: {
-        redirectUrl: "http://103.122.34.186:5000",
+        redirectUrl: process.env.REDIRECT_URL,
         ...(requestBodyForm.paymentType === "OVOBALANCE" && {
           phoneNumber: requestBodyForm.phoneNumber,
         }),
@@ -308,7 +308,7 @@ export const createEMoneyRefund = async (req, res) => {
       refundAmount: existOrder.totalAmount,
       platformRefundNo: refundNo,
       merchantRefundNo: refundNo,
-      notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs/refund",
+      notifyUrl: "process.env.NOTIFY_URL/refund",
       reason: validatedRequest.reason,
       transFeeRate: existOrder.paymentPaylabs.transFeeRate,
       transFeeAmount: existOrder.paymentPaylabs.transFeeAmount,

@@ -74,7 +74,7 @@ export const createVA = async (req, res) => {
       paymentType: requestBodyForm.paymentType,
       amount: requestBodyForm.totalAmount,
       merchantTradeNo,
-      notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs",
+      notifyUrl: process.env.NOTIFY_URL,
       payer: existUser.fullName,
       productName: requestBodyForm.products.map((p) => p.title).join(", "),
       // productInfo: requestBodyForm.products.map((product) => ({
@@ -295,7 +295,7 @@ export const createStaticVa = async (req, res) => {
       ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
       paymentType: requestBodyForm.paymentType,
       payer: existUser.fullName,
-      notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs/va",
+      notifyUrl: process.env.NOTIFY_URL / va,
     };
 
     // Validate requestBody

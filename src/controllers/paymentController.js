@@ -30,10 +30,10 @@ export const createPaymentLink = async (order) => {
       amount: order.totalAmount,
       phoneNumber: order.phoneNumber,
       productName: order.products.map((p) => p.title).join(", "),
-      redirectUrl: "http://103.122.34.186:5000",
+      redirectUrl: process.env.REDIRECT_URL,
       ...(order.paymentType && { paymentType: order.paymentType }),
       ...(order.storeId && { storeId: order.storeId }),
-      notifyUrl: "http://103.122.34.186:5000/api/order/webhook/paylabs",
+      notifyUrl: process.env.NOTIFY_URL,
       feeType: "OUR",
     };
 
@@ -203,13 +203,11 @@ export const paylabsCallback = async (req, res) => {
     res.set(responseHeaders).status(200).json(payloadResponse);
   } catch (error) {
     logger.error(`Error handling webhook: ${error.message}`);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "webhook handling failed",
-        error: error.message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "webhook handling failed",
+      error: error.message,
+    });
   }
 };
 
