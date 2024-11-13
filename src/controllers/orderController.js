@@ -158,10 +158,9 @@ const handlePaymentLink = async (orderData) => {
 // Fetch Single Order
 export const order = async (req, res) => {
   try {
-    const existOrder = await Order.findById(req.params.id).populate(
-      "userId",
-      "email"
-    );
+    const existOrder = await Order.findById(req.params.id)
+      .populate({ path: "userId", select: "email" })
+      .populate({ path: "products.productId", select: "title" });
     if (!existOrder)
       return res
         .status(404)

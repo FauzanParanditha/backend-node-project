@@ -205,7 +205,11 @@ export const paylabsCallback = async (req, res) => {
     logger.error(`Error handling webhook: ${error.message}`);
     res
       .status(500)
-      .json({ success: false, message: "webhook handling failed" });
+      .json({
+        success: false,
+        message: "webhook handling failed",
+        error: error.message,
+      });
   }
 };
 
