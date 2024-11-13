@@ -337,7 +337,7 @@ export const createStaticVa = async (req, res) => {
     }
 
     // Save va details in the database
-    await VirtualAccount.create({
+    const saveVa = await VirtualAccount.create({
       userId: existUser._id,
       phoneNumber: validatedProduct.phoneNumber,
       vaCode: response.data.vaCode,
@@ -345,13 +345,13 @@ export const createStaticVa = async (req, res) => {
     });
 
     // Save order details in the database
-    const savedOrder = await Order.create({
-      ...requestBodyForm,
-      virtualAccountNo: response.data.vaCode,
-      paymentId: response.data.merchantTradeNo,
-      storeId: response.data.storeId,
-      va: response.data,
-    });
+    // const savedOrder = await Order.create({
+    //   ...requestBodyForm,
+    //   virtualAccountNo: response.data.vaCode,
+    //   paymentId: response.data.merchantTradeNo,
+    //   storeId: response.data.storeId,
+    //   va: response.data,
+    // });
 
     // Respond with created order details
     res.status(200).json({
@@ -359,7 +359,7 @@ export const createStaticVa = async (req, res) => {
       virtualAccountNo: response.data.vaCode,
       createTime: response.data.createTime,
       storeId: response.data.storeId,
-      vaId: savedOrder._id,
+      vaId: saveVa._id,
     });
   } catch (error) {
     // Handle unexpected errors
