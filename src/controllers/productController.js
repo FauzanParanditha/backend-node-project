@@ -132,7 +132,7 @@ export const createProduct = async (req, res) => {
     logger.error(`Error create products: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: "an error occurred",
+      message: "An error occurred",
       error: error.message,
     });
   }
@@ -246,7 +246,7 @@ export const updateProduct = async (req, res) => {
     logger.error(`Error update product: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: "an error occurred",
+      message: "An error occurred",
       error: error.message,
     });
   }
@@ -284,7 +284,7 @@ export const deleteProduct = async (req, res) => {
     logger.error(`Error deleting product: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: "an error occurred while deleting the product",
+      message: "An error occurred while deleting the product",
       error: error.message,
     });
   }

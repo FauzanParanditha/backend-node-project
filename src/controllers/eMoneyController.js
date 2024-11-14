@@ -155,7 +155,7 @@ export const createEMoney = async (req, res) => {
     logger.error(`Error creating e-money: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: "an error occurred",
+      message: "An error occurred",
       error: error.message,
     });
   }
@@ -256,7 +256,7 @@ export const eMoneyOrderStatus = async (req, res) => {
     logger.error(`Error fetching e-money status: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: "an error occurred",
+      message: "An error occurred",
       error: error.message,
     });
   }
@@ -370,7 +370,7 @@ export const createEMoneyRefund = async (req, res) => {
     logger.error(`Error refund e-money: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: "an error occurred",
+      message: "An error occurred",
       error: error.message,
     });
   }

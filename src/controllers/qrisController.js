@@ -151,7 +151,7 @@ export const createQris = async (req, res) => {
     logger.error(`Error creating qris: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: "an error occurred",
+      message: "An error occurred",
       error: error.message,
     });
   }
@@ -252,7 +252,7 @@ export const qrisOrderStatus = async (req, res) => {
     logger.error(`Error fetching qris status: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: "an error occurred",
+      message: "An error occurred",
       error: error.message,
     });
   }
@@ -360,7 +360,7 @@ export const cancleQris = async (req, res) => {
     logger.error(`Error cancel qris: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: "an error occurred",
+      message: "An error occurred",
       error: error.message,
     });
   }

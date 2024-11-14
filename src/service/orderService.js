@@ -75,12 +75,9 @@ export const createOrder = async ({ validatedOrder }) => {
     validatedOrder.products,
     validatedOrder.paymentType || undefined
   );
-  if (!validProducts.length) {
-    return res.status(404).json({
-      success: false,
-      message: "no valid products found to create the order",
-    });
-  }
+  if (!validProducts.length)
+    throw new Error("No valid products found to create the order");
+
   const orderData = {
     orderId: uuid4(),
     userId: validatedOrder.userId,

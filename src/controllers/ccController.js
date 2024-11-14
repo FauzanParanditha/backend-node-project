@@ -17,6 +17,7 @@ import {
   validateCreditCardRequest,
 } from "../validators/paymentValidator.js";
 import axios from "axios";
+import * as ccService from "../service/ccService.js";
 import logger from "../application/logger.js";
 
 export const createCreditCard = async (req, res) => {
@@ -26,233 +27,42 @@ export const createCreditCard = async (req, res) => {
       abortEarly: false,
     });
 
-    // Verify user existence
-    const existUser = await User.findById(validatedProduct.userId);
-    if (!existUser) {
-      return res.status(404).json({
-        success: false,
-        message: "user does not exist!",
-      });
-    }
-
-    // Validate products in the order
-    const { validProducts, totalAmount } = await validateOrderProducts(
-      validatedProduct.products,
-      validatedProduct.paymentType
-    );
-    if (!validProducts.length) {
-      return res.status(404).json({
-        success: false,
-        message: "no valid products found to create the order",
-      });
-    }
-
-    // Construct order data
-    const requestBodyForm = {
-      orderId: uuid4(),
-      userId: validatedProduct.userId,
-      products: validProducts,
-      totalAmount,
-      phoneNumber: validatedProduct.phoneNumber,
-      paymentStatus: "pending",
-      paymentMethod: validatedProduct.paymentMethod,
-      paymentType: validatedProduct.paymentType,
-      ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
-    };
-
-    // Generate IDs and other necessary fields
-    const requestId = generateRequestId();
-    const merchantTradeNo = generateMerchantTradeNo();
-
-    // Prepare Paylabs request payload
-    const requestBody = {
-      requestId,
-      merchantId,
-      ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
-      paymentType: requestBodyForm.paymentType,
-      amount: requestBodyForm.totalAmount,
-      merchantTradeNo,
-      notifyUrl: process.env.NOTIFY_URL,
-      paymentParams: {
-        redirectUrl: process.env.REDIRECT_URL,
-      },
-      productName: requestBodyForm.products.map((p) => p.title).join(", "),
-      // productInfo: requestBodyForm.products.map((product) => ({
-      //   id: product.productId.toString(),
-      //   name: product.title,
-      //   price: product.price,
-      //   type: product.category,
-      //   quantity: product.quantity,
-      // })),
-      feeType: "OUR",
-    };
-
-    // Validate requestBody
-    const { error } = validateCreditCardRequest(requestBody);
-    if (error) {
-      return res.status(400).json({
-        success: false,
-        errors: error.details.map((err) => err.message),
-      });
-    }
-
-    // Generate headers for Paylabs request
-    const { headers } = generateHeaders(
-      "POST",
-      "/payment/v2.1/cc/create",
-      requestBody,
-      requestId
-    );
-
-    // console.log(requestBody);
-    // console.log(headers);
-
-    // Send request to Paylabs
-    const response = await axios.post(
-      `${paylabsApiUrl}/payment/v2.1/cc/create`,
-      requestBody,
-      { headers }
-    );
-    // console.log("Response:", response.data);
-
-    // Check for successful response
-    if (!response.data || response.data.errCode != 0) {
-      return res.status(400).json({
-        success: false,
-        message: response.data
-          ? `error: ${response.data.errCodeDes}`
-          : "failed to create payment",
-      });
-    }
-
-    // Save order details in the database
-    const savedOrder = await Order.create({
-      ...requestBodyForm,
-      totalAmount: response.data.amount,
-      paymentLink: response.data.paymentActions.payUrl,
-      paymentId: response.data.merchantTradeNo,
-      paymentExpired: response.data.expiredTime,
-      storeId: response.data.storeId,
-      cc: response.data,
-    });
+    const cc = await ccService.createCC({ validatedProduct });
 
     // Respond with created order details
     res.status(200).json({
       success: true,
-      paymentLink: response.data.paymentActions.payUrl,
-      PaymentExpired: response.data.expiredTime,
-      paymentId: response.data.merchantTradeNo,
-      totalAmount: response.data.amount,
-      storeId: response.data.storeId,
-      orderId: savedOrder._id,
+      paymentLink: cc.response.data.paymentActions.payUrl,
+      PaymentExpired: cc.response.data.expiredTime,
+      paymentId: cc.response.data.merchantTradeNo,
+      totalAmount: cc.response.data.amount,
+      storeId: cc.response.data.storeId,
+      orderId: cc.result._id,
     });
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error creating cc: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: "an error occurred",
+      message: "An error occurred",
       error: error.message,
     });
   }
 };
 
 export const ccOrderStatus = async (req, res) => {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
-
-    // Check if the order exists
-    const existOrder = await Order.findById(id);
-    if (!existOrder) {
-      return res.status(404).json({
-        success: false,
-        message: "order not found",
-      });
-    }
-    if (existOrder.paymentStatus === "paid") {
-      return res.status(200).json({
-        success: true,
-        message: "payment already processed",
-      });
-    }
-    if (existOrder.paymentStatus === "expired") {
-      return res.status(200).json({
-        success: true,
-        message: "payment expired",
-      });
-    }
-    if (!existOrder.cc) {
-      return res.status(400).json({
-        success: false,
-        message: "cc data not found in the order",
-      });
-    }
-
-    // Prepare request payload for Paylabs
-    const requestId = generateRequestId();
-
-    const requestBody = {
-      requestId,
-      merchantId,
-      ...(req.body.storeId && { storeId: req.body.storeId }),
-      merchantTradeNo: existOrder.paymentId,
-      paymentType: existOrder.paymentType,
-    };
-
-    // Validate requestBody
-    const { error } = validateCCStatus(requestBody);
-    if (error) {
-      return res.status(400).json({
-        success: false,
-        errors: error.details.map((err) => err.message),
-      });
-    }
-
-    // Generate headers for Paylabs request
-    const { headers } = generateHeaders(
-      "POST",
-      "/payment/v2.1/cc/query",
-      requestBody,
-      requestId
-    );
-
-    // console.log(requestBody);
-    // console.log(headers);
-
-    // Send request to Paylabs
-    const response = await axios.post(
-      `${paylabsApiUrl}/payment/v2.1/cc/query`,
-      requestBody,
-      { headers }
-    );
-    // console.log(response.data);
-
-    // Check for successful response
-    if (!response.data || response.data.errCode != 0) {
-      return res.status(400).json({
-        success: false,
-        message: response.data
-          ? `error: ${response.data.errCodeDes}`
-          : "failed to create payment",
-      });
-    }
-
-    // Generate headers for Paylabs request
-    const { responseHeaders } = generateHeaders(
-      "POST",
-      "/api/order/status/cc/:id",
-      response.data,
-      generateRequestId()
-    );
+    const cc = await ccService.ccOrderStatus({ id });
 
     // Respond
-    res.set(responseHeaders).status(200).json(response.data);
+    res.set(cc.responseHeaders).status(200).json(cc.response.data);
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error fetching cc status: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: "an error occurred",
+      message: "An error occurred",
       error: error.message,
     });
   }

@@ -150,7 +150,7 @@ export const createVA = async (req, res) => {
     logger.error(`Error creating va: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: "an error occurred",
+      message: "An error occurred",
       error: error.message,
     });
   }
@@ -251,7 +251,7 @@ export const vaOrderStatus = async (req, res) => {
     logger.error(`Error fetching va status: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: "an error occurred",
+      message: "An error occurred",
       error: error.message,
     });
   }
@@ -366,7 +366,7 @@ export const createStaticVa = async (req, res) => {
     logger.error(`Error creating va static: ${error.message}`);
     return res.status(500).json({
       success: false,
-      message: "an error occurred",
+      message: "An error occurred",
       error: error.message,
     });
   }
