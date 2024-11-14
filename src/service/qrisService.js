@@ -214,7 +214,7 @@ export const cancelQris = async ({ id }) => {
   const requestBody = {
     requestId,
     merchantId,
-    ...(req.body.storeId && { storeId: req.body.storeId }),
+    ...(existOrder.storeId && { storeId: existOrder.storeId }),
     merchantTradeNo: existOrder.paymentId,
     platformTradeNo: existOrder.qris.platformTradeNo,
     qrCode: existOrder.qris.qrCode,
