@@ -195,3 +195,28 @@ export const handlePaymentLink = async (orderData) => {
     storeId: paymentLink.storeId || "",
   };
 };
+
+export const convertToDate = (paymentExpired) => {
+  if (
+    typeof paymentExpired === "string" &&
+    paymentExpired.length === 19 &&
+    paymentExpired.includes("T")
+  ) {
+    // ISO 8601 format: 2024-11-08T11:20:45+07:00
+    return new Date(paymentExpired);
+  } else if (
+    typeof paymentExpired === "string" &&
+    paymentExpired.length === 14
+  ) {
+    // Numerical string format: 20241113094019
+    const formattedDate = `${paymentExpired.slice(0, 4)}-${paymentExpired.slice(
+      4,
+      6
+    )}-${paymentExpired.slice(6, 8)}T${paymentExpired.slice(
+      8,
+      10
+    )}:${paymentExpired.slice(10, 12)}:${paymentExpired.slice(12)}+07:00`;
+    return new Date(formattedDate);
+  }
+  return null;
+};
