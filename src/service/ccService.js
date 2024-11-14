@@ -13,6 +13,7 @@ import {
   validateCreditCardRequest,
 } from "../validators/paymentValidator.js";
 import axios from "axios";
+import Order from "../models/orderModel.js";
 
 export const createCC = async ({ validatedProduct }) => {
   // Verify user existence
