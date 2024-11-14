@@ -2,6 +2,8 @@ import crypto from "crypto";
 import uuid4 from "uuid4";
 import fs from "fs";
 import logger from "../application/logger.js";
+import { createPaymentLink } from "../controllers/paymentController.js";
+import { createXenditPaymentLink } from "../controllers/xenditController.js";
 
 export const paylabsApiUrl = process.env.PAYLABS_API_URL;
 export const merchantId = process.env.PAYLABS_MERCHANT_ID;
@@ -165,5 +167,30 @@ export const generateHeaders = (
       "X-REQUEST-ID": requestId,
     },
     timestamp,
+  };
+};
+
+export const handlePaymentLink = async (orderData) => {
+  let paymentLink;
+  switch (orderData.paymentMethod) {
+    case "xendit":
+      paymentLink = await createXenditPaymentLink(orderData);
+      break;
+    case "paylabs":
+      paymentLink = await createPaymentLink(orderData);
+      break;
+    default:
+      throw new Error("Payment method not supported");
+  }
+
+  if (!paymentLink) throw new Error("Failed to create payment link");
+
+  if (paymentLink.errCode != 0 && orderData.paymentMethod === "paylabs") {
+    throw new Error("error, " + paymentLink.errCode);
+  }
+  return {
+    paymentLink: paymentLink.url || paymentLink.invoiceUrl,
+    paymentId: paymentLink.id || paymentLink.merchantTradeNo,
+    storeId: paymentLink.storeId || "",
   };
 };

@@ -1,14 +1,5 @@
-import uuid4 from "uuid4";
-import Order from "../models/orderModel.js";
-import User from "../models/userModel.js";
-import {
-  calculateTotal,
-  escapeRegExp,
-  validateOrderProducts,
-} from "../utils/helper.js";
+import * as orderService from "../service/orderService.js";
 import { orderLinkSchema } from "../validators/orderValidator.js";
-import { createPaymentLink } from "./paymentController.js";
-import { createXenditPaymentLink, expiredXendit } from "./xenditController.js";
 import logger from "../application/logger.js";
 
 // Orders Listing with Pagination and Sorting
@@ -23,46 +14,24 @@ export const orders = async (req, res) => {
   } = req.query;
 
   try {
-    const filter = query.trim()
-      ? {
-          $or: [
-            { userId: new RegExp(escapeRegExp(query), "i") },
-            { status: new RegExp(escapeRegExp(query), "i") },
-          ],
-        }
-      : {};
+    const order = await orderService.getAllOrders({
+      query,
+      limit,
+      page,
+      sort_by,
+      sort,
+      countOnly,
+    });
 
     if (countOnly) {
-      const count = await Order.countDocuments(filter);
-      return res.status(200).json({ count });
+      return res.status(200).json({ count: order.count });
     }
 
-    const orders = await Order.find(filter)
-      .sort({ [sort_by]: sort })
-      .skip((page - 1) * limit)
-      .populate({
-        path: "userId",
-        select: "fullName",
-      })
-      .populate({
-        path: "products.productId",
-        select: "title",
-      })
-      .limit(limit)
-      .exec();
-
-    const total = await Order.countDocuments(filter);
     res.status(200).json({
       success: true,
-      message: "all orders",
-      data: orders,
-      pagination: {
-        totalRecords: total,
-        totalPages: Math.ceil(total / limit),
-        currentPage: page,
-        perPage: limit,
-        recordsOnPage: orders.length,
-      },
+      message: "All orders",
+      data: order.orders,
+      pagination: order.pagination,
     });
   } catch (error) {
     logger.error(`Error fetching order ${error.message}`);
@@ -77,47 +46,14 @@ export const createOrder = async (req, res) => {
       abortEarly: false,
     });
 
-    const existUser = await User.findById(validatedOrder.userId);
-    if (!existUser) throw new Error("User not registered");
+    const order = await orderService.createOrder({ validatedOrder });
 
-    // Validate products in the order
-    const { validProducts, totalAmount } = await validateOrderProducts(
-      validatedOrder.products,
-      validatedOrder.paymentType || undefined
-    );
-    if (!validProducts.length) {
-      return res.status(404).json({
-        success: false,
-        message: "no valid products found to create the order",
-      });
-    }
-    const orderData = {
-      orderId: uuid4(),
-      userId: validatedOrder.userId,
-      products: validProducts,
-      totalAmount,
-      phoneNumber: validatedOrder.phoneNumber,
-      paymentStatus: "pending",
-      paymentMethod: validatedOrder.paymentMethod,
-      ...(validatedOrder.paymentType && {
-        paymentType: validatedOrder.paymentType,
-      }),
-      ...(validatedOrder.storeId && { storeId: validatedOrder.storeId }),
-    };
-
-    const paymentLink = await handlePaymentLink(orderData);
-
-    const savedOrder = await Order.create({
-      ...orderData,
-      ...paymentLink,
-      paymentType: "HTML5",
-    });
     res.status(200).json({
       success: true,
-      paymentLink: paymentLink.paymentLink,
-      paymentId: paymentLink.paymentId,
-      storeId: paymentLink.storeId,
-      orderId: savedOrder._id,
+      paymentLink: order.paymentLink.paymentLink,
+      paymentId: order.paymentLink.paymentId,
+      storeId: order.paymentLink.storeId,
+      orderId: order.result._id,
     });
   } catch (error) {
     logger.error(`Error create order ${error.message}`);
@@ -129,46 +65,15 @@ export const createOrder = async (req, res) => {
   }
 };
 
-// Helper: Handle Payment Link Creation
-const handlePaymentLink = async (orderData) => {
-  let paymentLink;
-  switch (orderData.paymentMethod) {
-    case "xendit":
-      paymentLink = await createXenditPaymentLink(orderData);
-      break;
-    case "paylabs":
-      paymentLink = await createPaymentLink(orderData);
-      break;
-    default:
-      throw new Error("Payment method not supported");
-  }
-
-  if (!paymentLink) throw new Error("Failed to create payment link");
-
-  if (paymentLink.errCode != 0 && orderData.paymentMethod === "paylabs") {
-    throw new Error("error, " + paymentLink.errCode);
-  }
-  return {
-    paymentLink: paymentLink.url || paymentLink.invoiceUrl,
-    paymentId: paymentLink.id || paymentLink.merchantTradeNo,
-    storeId: paymentLink.storeId || "",
-  };
-};
-
 // Fetch Single Order
 export const order = async (req, res) => {
-  try {
-    const existOrder = await Order.findById(req.params.id)
-      .populate({ path: "userId", select: "email" })
-      .populate({ path: "products.productId", select: "title" });
-    if (!existOrder)
-      return res
-        .status(404)
-        .json({ success: false, message: "order not found" });
+  const { id } = req.params;
 
-    res
+  try {
+    const order = await orderService.order({ id });
+    return res
       .status(200)
-      .json({ success: true, message: "order details", data: existOrder });
+      .json({ success: true, message: "Order", data: order });
   } catch (error) {
     logger.error(`Error fetching order ${error.message}`);
     res.status(500).json({ success: false, message: error.message });
@@ -177,51 +82,19 @@ export const order = async (req, res) => {
 
 // Edit Order
 export const editOrder = async (req, res) => {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
     const validatedOrder = await orderLinkSchema.validateAsync(req.body, {
       abortEarly: false,
     });
-    const existingOrder = await Order.findById(id).select(
-      "+paymentLink +paymentId"
-    );
 
-    if (!existingOrder)
-      return res
-        .status(404)
-        .json({ success: false, message: "order not found" });
-    if (existingOrder.paymentStatus === "paid")
-      return res
-        .status(200)
-        .json({ success: true, message: "payment already processed" });
+    const result = await orderService.editOrder({ id, validatedOrder });
 
-    const validProducts = await validateOrderProducts(validatedOrder.products);
-    if (!validProducts.length)
-      throw new Error("No valid products found to update the order");
-
-    const existUser = await User.findById(validatedOrder.userId);
-    if (!existUser) throw new Error("User not registered");
-
-    if (existingOrder.paymentLink && existingOrder.paymentMethod === "xendit") {
-      await expiredXendit(existingOrder.paymentId);
-    }
-
-    existingOrder.set({
-      products: validProducts,
-      totalAmount: calculateTotal(validProducts),
-      phoneNumber: validatedOrder.phoneNumber,
-      paymentMethod: validatedOrder.paymentMethod,
-    });
-
-    const paymentLink = await handlePaymentLink(existingOrder);
-    existingOrder.set(paymentLink);
-    await existingOrder.save();
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "order updated successfully",
-      orderId: existingOrder._id,
-      paymentLink: paymentLink.url,
+      orderId: result._id,
+      paymentLink: result.paymentLink,
     });
   } catch (error) {
     logger.error(`Error edit order ${error.message}`);

@@ -1,6 +1,6 @@
-import Admin from "../models/adminModel.js";
-import { escapeRegExp } from "../utils/helper.js";
+import * as adminService from "../service/adminService.js";
 import logger from "../application/logger.js";
+import { registerSchema } from "../validators/authValidator.js";
 
 export const getAllAdmin = async (req, res) => {
   const {
@@ -13,53 +13,24 @@ export const getAllAdmin = async (req, res) => {
   } = req.query;
 
   try {
-    const filter = {};
-
-    // Parse and handle search term
-    if (query.trim()) {
-      const searchTerm = escapeRegExp(query.trim());
-      filter["$or"] = [
-        { email: { $regex: searchTerm, $options: "i" } },
-        { fullName: { $regex: searchTerm, $options: "i" } },
-      ];
-    }
-
-    // Sort and pagination settings
-    const sortField = sort_by || "_id";
-    const sortValue = Number(sort) || -1;
-    const limitNum = Number(limit);
-    const skip = (Number(page) - 1) * limitNum; // Calculate skip based on page number
-
-    // Connect to DB
-    // const m = await connectDB();
+    const result = await adminService.getAllAdmins({
+      query,
+      limit,
+      page,
+      sort_by,
+      sort,
+      countOnly,
+    });
 
     if (countOnly) {
-      const totalCount = await Admin.countDocuments(filter);
-      return res.status(200).json({ count: totalCount });
+      return res.status(200).json({ count: result.count });
     }
-
-    // Fetch admins with pagination and sorting
-    const admins = await Admin.find(filter)
-      .sort({ [sortField]: sortValue })
-      .limit(limitNum)
-      .skip(skip)
-      .exec();
-
-    // Calculate pagination details
-    const total = await Admin.countDocuments(filter);
-    const totalPages = Math.ceil(total / limitNum);
 
     return res.status(200).json({
       success: true,
-      message: "all admins",
-      data: admins,
-      pagination: {
-        totalRecords: total,
-        totalPages,
-        currentPage: Number(page),
-        perPage: limitNum,
-        recordsOnPage: admins.length,
-      },
+      message: "All admins",
+      data: result.admins,
+      pagination: result.pagination,
     });
   } catch (error) {
     logger.error(`Error fetching admins: ${error.message}`);
@@ -70,24 +41,39 @@ export const getAllAdmin = async (req, res) => {
   }
 };
 
+export const register = async (req, res) => {
+  const { email, password, fullName } = req.body;
+
+  try {
+    const { error } = registerSchema.validate({ email, password, fullName });
+    if (error)
+      return res
+        .status(401)
+        .json({ success: false, message: error.details[0].message });
+
+    const admin = await adminService.registerAdmin({
+      email,
+      password,
+      fullName,
+    });
+    res.status(201).json({ success: true, message: "Registered successfully" });
+  } catch (error) {
+    logger.error(`Error register: ${error.message}`);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const deleteAdmin = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const existAdmin = await Admin.findOne({ _id: id });
-    if (!existAdmin) {
-      return res.status(404).json({
-        success: false,
-        message: "admin not found",
-      });
-    }
-    await Admin.deleteOne({ _id: id });
+    await adminService.deleteAdminById(id);
     return res.status(200).json({
       success: true,
-      message: "successfully delete admin",
+      message: "Successfully deleted admin",
     });
   } catch (error) {
-    logger.error(`Error delete admin: ${error.message}`);
+    logger.error(`Error deleting admin: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: error.message,

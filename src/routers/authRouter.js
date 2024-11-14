@@ -3,9 +3,8 @@ import {
   changePassword,
   login,
   logout,
-  register,
   sendForgotPassword,
-  sendVerficationCode,
+  sendVerificationCode,
   verifyForgotPasswordCode,
   verifyVerificationCode,
 } from "../controllers/authController.js";
@@ -13,14 +12,13 @@ import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
 
 const router = express.Router();
 
-router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", jwtMiddlewareAdmin, logout);
 
 router.patch(
   "/send-verification-code",
   jwtMiddlewareAdmin,
-  sendVerficationCode
+  sendVerificationCode
 );
 router.patch(
   "/verify-verification-code",

@@ -1,5 +1,4 @@
-import IPWhitelist from "../models/ipWhitelistModel.js";
-import { escapeRegExp } from "../utils/helper.js";
+import * as ipWhitelistService from "../service/ipWhitelistService.js";
 import logger from "../application/logger.js";
 import { ipWhitelistSchema } from "../validators/ipWhitelistValidator.js";
 
@@ -14,57 +13,24 @@ export const ipWhitelists = async (req, res) => {
   } = req.query;
 
   try {
-    const filter = {};
-
-    // Parse and handle search term
-    if (query.trim()) {
-      const searchTerm = escapeRegExp(query.trim());
-      filter["$or"] = [
-        { ipAddress: { $regex: searchTerm, $options: "i" } },
-        //   { status: { $regex: searchTerm, $options: "i" } },
-      ];
-    }
-
-    // Sort and pagination settings
-    const sortField = sort_by || "_id";
-    const sortValue = Number(sort) || -1;
-    const limitNum = Number(limit);
-    const skip = (Number(page) - 1) * limitNum; // Calculate skip based on page number
-
-    // Connect to DB
-    // const m = await connectDB();
+    const result = await ipWhitelistService.getAllIpWhitelists({
+      query,
+      limit,
+      page,
+      sort_by,
+      sort,
+      countOnly,
+    });
 
     if (countOnly) {
-      const totalCount = await IPWhitelist.countDocuments(filter);
-      return res.status(200).json({ count: totalCount });
+      return res.status(200).json({ count: result.count });
     }
-
-    // Fetch orders with pagination and sorting
-    const orders = await IPWhitelist.find(filter)
-      .sort({ [sortField]: sortValue })
-      .limit(limitNum)
-      .skip(skip)
-      .populate({
-        path: "adminId",
-        select: "email",
-      })
-      .exec();
-
-    // Calculate pagination details
-    const total = await IPWhitelist.countDocuments(filter);
-    const totalPages = Math.ceil(total / limitNum);
 
     return res.status(200).json({
       success: true,
-      message: "all ip whitelist",
-      data: orders,
-      pagination: {
-        totalRecords: total,
-        totalPages,
-        currentPage: Number(page),
-        perPage: limitNum,
-        recordsOnPage: orders.length,
-      },
+      message: "All ip whitelist",
+      data: result.ipWhitelists,
+      pagination: result.pagination,
     });
   } catch (error) {
     logger.error(`Error fetching ip whitelist: ${error.message}`);
@@ -87,26 +53,17 @@ export const create = async (req, res) => {
       });
     }
 
-    const existingIP = await IPWhitelist.findOne({
-      ipAddress: ipAddress,
+    const ipWhitelist = await ipWhitelistService.createIpWhitelist({
+      adminId,
+      ipAddress,
     });
-    if (existingIP) {
-      return res.status(400).json({
-        success: false,
-        message: "this ip address is already whitelisted.",
-      });
-    }
 
-    const newIP = await IPWhitelist.create({
-      ipAddress: ipAddress,
-      adminId: adminId,
-    });
     res.status(201).json({
       success: true,
-      message: "ip address added successfully!",
+      message: "Ip address add successfully!",
     });
   } catch (error) {
-    logger.error(`Error create ip whitelist: ${error.message}`);
+    logger.error(`Error add ip whitelist: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -115,23 +72,15 @@ export const create = async (req, res) => {
 };
 
 export const ipWhitelist = async (req, res) => {
+  const { id } = req.params;
+
   try {
-    const { id } = req.params;
-    const ip = await IPWhitelist.findById(id).populate({
-      path: "adminId",
-      select: "email",
-    });
-    if (!ip) {
-      return res.status(404).json({
-        success: false,
-        message: "ip address not found.",
-      });
-    }
+    const ipWhitelist = await ipWhitelistService.ipWhitelist({ id });
 
     return res.status(200).json({
       success: true,
       message: "ip whitelist",
-      data: ip,
+      data: ipWhitelist,
     });
   } catch (error) {
     logger.error(`Error fetching ip whitelist: ${error.message}`);
@@ -156,28 +105,18 @@ export const updateIpWhitelist = async (req, res) => {
       });
     }
 
-    const existIpWhitelist = await IPWhitelist.findOne({ _id: id });
-    if (!existIpWhitelist) {
-      return res.status(404).json({
-        success: false,
-        message: "category not found",
-      });
-    }
-    if (existIpWhitelist.adminId.toString() != adminId) {
-      return res.status(403).json({
-        success: false,
-        message: "unatuhorized",
-      });
-    }
+    const ipWhitelist = await ipWhitelistService.updateIpWhitelist({
+      id,
+      adminId,
+      ipAddress,
+    });
 
-    existIpWhitelist.ipAddress = ipAddress;
-    const result = await existIpWhitelist.save();
     return res.status(200).json({
       success: true,
-      message: "successfully update ip ",
+      message: "Successfully update ip",
     });
   } catch (error) {
-    logger.error(`Error update ip whitelist: ${error.message}`);
+    logger.error(`Error update ip address: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -190,26 +129,16 @@ export const deleteIpWhitelist = async (req, res) => {
   const { adminId } = req.admin;
 
   try {
-    const existIpWhitelist = await IPWhitelist.findOne({ _id: id });
-    if (!existIpWhitelist) {
-      return res.status(404).json({
-        success: false,
-        message: "ip whitelist not found",
-      });
-    }
-    if (existIpWhitelist.adminId.toString() != adminId) {
-      return res.status(403).json({
-        success: false,
-        message: "unatuhorized",
-      });
-    }
-    await IPWhitelist.deleteOne({ _id: id });
+    const ipWhitelist = await ipWhitelistService.deleteIpWhitelist({
+      id,
+      adminId,
+    });
     return res.status(200).json({
       success: true,
-      message: "successfully delete ip whitelist",
+      message: "Successfully delete ip address",
     });
   } catch (error) {
-    logger.error(`Error delete ip whitelist ${error.message}`);
+    logger.error(`Error delete ip address ${error.message}`);
     return res.status(500).json({
       success: false,
       message: error.message,

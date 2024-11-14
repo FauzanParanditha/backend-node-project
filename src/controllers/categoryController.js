@@ -1,5 +1,4 @@
-import Category from "../models/categoryModel.js";
-import { escapeRegExp } from "../utils/helper.js";
+import * as categoryService from "../service/categoryService.js";
 import logger from "../application/logger.js";
 import { categorySchema } from "../validators/categoryValidator.js";
 
@@ -14,51 +13,24 @@ export const categories = async (req, res) => {
   } = req.query;
 
   try {
-    const filter = {};
-
-    // Parse and handle search term
-    if (query.trim()) {
-      const searchTerm = escapeRegExp(query.trim());
-      filter["$or"] = [{ name: { $regex: searchTerm, $options: "i" } }];
-    }
-
-    // Sort and pagination settings
-    const sortField = sort_by || "_id";
-    const sortValue = Number(sort) || -1;
-    const limitNum = Number(limit);
-    const skip = (Number(page) - 1) * limitNum; // Calculate skip based on page number
+    const category = await categoryService.getAllCategorys({
+      query,
+      limit,
+      page,
+      sort_by,
+      sort,
+      countOnly,
+    });
 
     if (countOnly) {
-      const totalCount = await Category.countDocuments(filter);
-      return res.status(200).json({ count: totalCount });
+      return res.status(200).json({ count: category.count });
     }
-
-    // Fetch admins with pagination and sorting
-    const categories = await Category.find(filter)
-      .sort({ [sortField]: sortValue })
-      .limit(limitNum)
-      .skip(skip)
-      .populate({
-        path: "adminId",
-        select: "email",
-      })
-      .exec();
-
-    // Calculate pagination details
-    const total = await Category.countDocuments(filter);
-    const totalPages = Math.ceil(total / limitNum);
 
     return res.status(200).json({
       success: true,
-      message: "all categories",
-      data: categories,
-      pagination: {
-        totalRecords: total,
-        totalPages,
-        currentPage: Number(page),
-        perPage: limitNum,
-        recordsOnPage: categories.length,
-      },
+      message: "All categories",
+      data: category.categorys,
+      pagination: category.pagination,
     });
   } catch (error) {
     logger.error(`Error fetching categories: ${error.message}`);
@@ -85,21 +57,12 @@ export const create = async (req, res) => {
       });
     }
 
-    const exist = await Category.findOne({ name });
-    if (!exist) {
-      await Category.create({ name, adminId });
-      return res.status(201).json({
-        success: true,
-        message: "category created successfully!",
-      });
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: `${name} category is already exist`,
-      });
-    }
+    const category = await categoryService.createCategory({ name, adminId });
+    res
+      .status(201)
+      .json({ success: true, message: "Category create successfully" });
   } catch (error) {
-    logger.error(`Error post category: ${error.message}`);
+    logger.error(`Error create category: ${error.message}`);
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -111,20 +74,12 @@ export const category = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const existCategory = await Category.findOne({ _id: id }).populate({
-      path: "adminId",
-      select: "email",
-    });
-    if (!existCategory) {
-      return res.status(404).json({
-        success: false,
-        message: "category not found",
-      });
-    }
+    const category = await categoryService.category({ id });
+
     return res.status(200).json({
       success: true,
-      message: "category",
-      data: existCategory,
+      message: "Category",
+      data: category,
     });
   } catch (error) {
     logger.error(`Error fetching category: ${error.message}`);
@@ -149,25 +104,15 @@ export const updateCategory = async (req, res) => {
       });
     }
 
-    const existCategory = await Category.findOne({ _id: id });
-    if (!existCategory) {
-      return res.status(404).json({
-        success: false,
-        message: "category not found",
-      });
-    }
-    if (existCategory.adminId.toString() != adminId) {
-      return res.status(403).json({
-        success: false,
-        message: "unatuhorized",
-      });
-    }
+    const category = await categoryService.updateCategory({
+      id,
+      adminId,
+      name,
+    });
 
-    existCategory.name = name;
-    const result = await existCategory.save();
     return res.status(200).json({
       success: true,
-      message: "successfully update category",
+      message: "Successfully update category",
     });
   } catch (error) {
     logger.error(`Error update category: ${error.message}`);
@@ -183,23 +128,10 @@ export const deleteCategory = async (req, res) => {
   const { adminId } = req.admin;
 
   try {
-    const existCategory = await Category.findOne({ _id: id });
-    if (!existCategory) {
-      return res.status(404).json({
-        success: false,
-        message: "category not found",
-      });
-    }
-    if (existCategory.adminId.toString() != adminId) {
-      return res.status(403).json({
-        success: false,
-        message: "unatuhorized",
-      });
-    }
-    await Category.deleteOne({ _id: id });
+    const category = await categoryService.deleteCategory({ id, adminId });
     return res.status(200).json({
       success: true,
-      message: "successfully delete category",
+      message: "Successfully delete category",
     });
   } catch (error) {
     logger.error(`Error delete category: ${error.message}`);
