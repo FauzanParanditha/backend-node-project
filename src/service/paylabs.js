@@ -2,7 +2,7 @@ import crypto from "crypto";
 import uuid4 from "uuid4";
 import fs from "fs";
 import logger from "../application/logger.js";
-import { createPaymentLink } from "../controllers/paymentController.js";
+import { createPaymentLink } from "../service/paymentService.js";
 import { createXenditPaymentLink } from "../controllers/xenditController.js";
 
 export const paylabsApiUrl = process.env.PAYLABS_API_URL;
