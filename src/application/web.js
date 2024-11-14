@@ -4,7 +4,8 @@ import helmet from "helmet";
 import cors from "cors";
 import dotenv from "dotenv";
 import authRouter from "../routers/authRouter.js";
-import userRouter from "../routers/users/userRouter.js";
+import authRouterUser from "../routers/authRouterUser.js";
+import userRouter from "../routers/userRouter.js";
 import adminRouter from "../routers/adminRouter.js";
 import categoryRouter from "../routers/categoryRouter.js";
 import productRouter from "../routers/productRouter.js";
@@ -56,13 +57,14 @@ web.use(limiter);
 
 //route
 web.use("/adm/auth", authRouter);
+web.use("/api/auth", authRouterUser);
 web.use("/api/adm", adminRouter);
 web.use("/api", ipWhitelistRouter);
 web.use("/api", categoryRouter);
 web.use("/api", productRouter);
 web.use("/api", orderRouter);
 web.use("/api", paymentRouter);
-web.use("/auth", userRouter);
+web.use("/api", userRouter);
 
 web.get("/", (req, res) => {
   const dbStatus =

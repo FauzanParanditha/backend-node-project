@@ -1,4 +1,4 @@
-import * as authService from "../service/authService.js";
+import * as authServiceUser from "../service/authServiceUser.js";
 import {
   acceptCodeSchema,
   acceptFPCodeSchema,
@@ -20,9 +20,9 @@ export const login = async (req, res, next) => {
 
     const {
       token,
-      adminId,
-      email: adminEmail,
-    } = await authService.loginAdmin({ email, password });
+      userId,
+      email: userEmail,
+    } = await authServiceUser.loginUser({ email, password });
     res
       .cookie("Authorization", "Bearer " + token, {
         expires: new Date(Date.now() + 2 * 3600000),
@@ -48,7 +48,7 @@ export const sendVerificationCode = async (req, res, next) => {
   const { email } = req.body;
 
   try {
-    const message = await authService.sendVerificationCodeService(email);
+    const message = await authServiceUser.sendVerificationCodeService(email);
     res.status(200).json({ success: true, message });
   } catch (error) {
     logger.error(`Error send verification code: ${error.message}`);
@@ -69,7 +69,7 @@ export const verifyVerificationCode = async (req, res, next) => {
         message: error.details[0].message,
       });
     }
-    const message = await authService.verifyVerificationCodeService(
+    const message = await authServiceUser.verifyVerificationCodeService(
       email,
       provided_code
     );
@@ -84,7 +84,7 @@ export const verifyVerificationCode = async (req, res, next) => {
 };
 
 export const changePassword = async (req, res, next) => {
-  const { adminId, verified } = req.admin;
+  const { userId, verified } = req.user;
   const { old_password, new_password } = req.body;
 
   try {
@@ -98,8 +98,8 @@ export const changePassword = async (req, res, next) => {
         message: error.details[0].message,
       });
     }
-    const message = await authService.changePasswordService(
-      adminId,
+    const message = await authServiceUser.changePasswordService(
+      userId,
       verified,
       old_password,
       new_password
@@ -117,7 +117,7 @@ export const changePassword = async (req, res, next) => {
 export const sendForgotPassword = async (req, res, next) => {
   const { email } = req.body;
   try {
-    const message = await authService.sendForgotPasswordService(email);
+    const message = await authServiceUser.sendForgotPasswordService(email);
     return res.status(200).json({
       success: true,
       message,
@@ -143,7 +143,7 @@ export const verifyForgotPasswordCode = async (req, res, next) => {
       });
     }
 
-    const message = await authService.verifyForgotPasswordCodeService(
+    const message = await authServiceUser.verifyForgotPasswordCodeService(
       email,
       provided_code,
       new_password

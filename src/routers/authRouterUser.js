@@ -3,21 +3,19 @@ import {
   changePassword,
   login,
   logout,
-  register,
   sendForgotPassword,
-  sendVerficationCode,
+  sendVerificationCode,
   verifyForgotPasswordCode,
   verifyVerificationCode,
-} from "../../controllers/userController.js";
-import { jwtMiddleware } from "../../middlewares/jwt.js";
+} from "../controllers/authControllerUser.js";
+import { jwtMiddleware } from "../middlewares/jwt.js";
 
 const router = express.Router();
 
-router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", jwtMiddleware, logout);
 
-router.patch("/send-verification-code", jwtMiddleware, sendVerficationCode);
+router.patch("/send-verification-code", jwtMiddleware, sendVerificationCode);
 router.patch(
   "/verify-verification-code",
   jwtMiddleware,

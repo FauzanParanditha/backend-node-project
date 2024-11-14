@@ -9,6 +9,12 @@ const adminSchema = new mongoose.Schema(
       unique: [true, "Email must be unique!"],
       minLength: [1, "Email must have 1 characters!"],
     },
+    fullName: {
+      type: String,
+      required: [true, "Name is required"],
+      trim: true,
+      minLength: [1],
+    },
     password: {
       type: String,
       required: [true, "Password must be provided!"],
