@@ -11,6 +11,8 @@ import {
 } from "./paylabs.js";
 import Order from "../models/orderModel.js";
 import { ResponseError } from "../error/responseError.js";
+import VirtualAccount from "../models/vaModel.js";
+import uuid4 from "uuid4";
 
 export const createPaymentLink = async (order) => {
   // Configuration and unique identifiers
@@ -132,10 +134,7 @@ export const callbackPaylabs = async ({ payload }) => {
 
     default:
       logger.error(`Unhandled notification status: ${notificationData.status}`);
-      return res.status(400).json({
-        success: false,
-        message: "Unhandled notification status",
-      });
+      throw new ResponseError(400, "Unhandled notification status");
   }
 
   // Prepare response payload and headers
@@ -170,8 +169,72 @@ export const callbackPaylabs = async ({ payload }) => {
   if (currentDateTime > expiredDateTime && expiredDateTime != null) {
     order.paymentStatus = "expired";
     await order.save();
-    return res.status(200).json(payloadResponseError);
+    return { currentDateTime, expiredDateTime, payloadResponseError };
   }
 
   return { responseHeaders, payloadResponse };
+};
+
+export const callbackPaylabsVaStatic = async ({ payload }) => {
+  // Retrieve notification data and order
+  const notificationData = payload;
+  const va = await VirtualAccount.findOne({
+    vaCode: notificationData.paymentMethodInfo.vaCode,
+  });
+
+  if (!va)
+    throw new ResponseError(
+      404,
+      `virtual account not found for vaCode: ${notificationData.paymentMethodInfo.vaCode}`
+    );
+
+  // Process based on notification status
+  switch (notificationData.status) {
+    case "02": // Payment successful
+      await Order.create({
+        orderId: uuid4(),
+        userId: va.userId,
+        totalAmount: notificationData.amount,
+        phoneNumber: va.phoneNumber,
+        paymentStatus: "paid",
+        paymentMethod: "paylabs",
+        paymentType: notificationData.paymentType,
+        virtualAccountNo: notificationData.paymentMethodInfo.vaCode,
+        paymentId: notificationData.merchantTradeNo,
+        paymentPaylabs: { ...notificationData },
+      });
+      break;
+
+    case "09": // Payment failed
+      break;
+
+    default:
+      logger.error(`Unhandled notification status: ${notificationData.status}`);
+      throw new ResponseError(400, "Unhandled notification status");
+  }
+
+  // Prepare response payload and headers
+  const timestampResponse = generateTimestamp();
+  const responsePayload = {
+    merchantId: process.env.PAYLABS_MERCHANT_ID,
+    requestId: generateRequestId(),
+    errCode: notificationData.errCode,
+  };
+
+  const signatureResponse = createSignature(
+    "POST",
+    "/api/order/webhook/paylabs/va",
+    responsePayload,
+    timestampResponse
+  );
+
+  const responseHeaders = {
+    "Content-Type": "application/json;charset=utf-8",
+    "X-TIMESTAMP": timestampResponse,
+    "X-SIGNATURE": signatureResponse,
+    "X-PARTNER-ID": process.env.PAYLABS_MERCHANT_ID,
+    "X-REQUEST-ID": generateRequestId(),
+  };
+
+  return { responseHeaders, responsePayload };
 };
