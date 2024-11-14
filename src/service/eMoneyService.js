@@ -15,6 +15,7 @@ import {
   validateEmoneyStatus,
 } from "../validators/paymentValidator.js";
 import axios from "axios";
+import Order from "../models/orderModel.js";
 
 export const createEMoney = async ({ validatedProduct }) => {
   // Verify user existence
@@ -109,7 +110,7 @@ export const createEMoney = async ({ validatedProduct }) => {
     );
 
   // Save order details in the database
-  const savedOrder = await Order.create({
+  const result = await Order.create({
     ...requestBodyForm,
     totalAmount: response.data.amount,
     paymentActions: response.data.paymentActions,
