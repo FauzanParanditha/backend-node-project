@@ -180,13 +180,14 @@ export const handlePaymentLink = async (orderData) => {
       paymentLink = await createPaymentLink(orderData);
       break;
     default:
-      throw new Error("Payment method not supported");
+      throw new ResponseError(400, "Payment method not supported");
   }
 
-  if (!paymentLink) throw new Error("Failed to create payment link");
+  if (!paymentLink)
+    throw new ResponseError(400, "Failed to create payment link");
 
   if (paymentLink.errCode != 0 && orderData.paymentMethod === "paylabs") {
-    throw new Error("error, " + paymentLink.errCode);
+    throw new ResponseError(400, "error, " + paymentLink.errCode);
   }
   return {
     paymentLink: paymentLink.url || paymentLink.invoiceUrl,

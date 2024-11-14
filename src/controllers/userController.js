@@ -74,7 +74,7 @@ export const login = async (req, res) => {
     if (!existUser) {
       return res.status(401).json({
         success: false,
-        message: "user is not exist!",
+        message: "user does not exist!",
       });
     }
 
@@ -134,7 +134,7 @@ export const sendVerficationCode = async (req, res) => {
     if (!existUser) {
       return res.status(404).json({
         success: false,
-        message: "user is not exist!",
+        message: "user does not exist!",
       });
     }
     if (existUser.verified) {
@@ -200,7 +200,7 @@ export const verifyVerificationCode = async (req, res) => {
     if (!existUser) {
       return res.status(401).json({
         success: false,
-        message: "user is not exist!",
+        message: "user does not exist!",
       });
     }
 
@@ -281,7 +281,7 @@ export const changePassword = async (req, res) => {
     if (!existUser) {
       return res.status(401).json({
         success: false,
-        message: "user is not exist!",
+        message: "user does not exist!",
       });
     }
 
@@ -316,7 +316,7 @@ export const sendForgotPassword = async (req, res) => {
     if (!existUser) {
       return res.status(404).json({
         success: false,
-        message: "user is not exist",
+        message: "user does not exist",
       });
     }
 
@@ -376,7 +376,7 @@ export const verifyForgotPasswordCode = async (req, res) => {
     if (existUser) {
       return res.status(401).json({
         success: false,
-        message: "user is not exist!",
+        message: "user does not exist!",
       });
     }
     if (

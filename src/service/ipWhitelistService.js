@@ -1,3 +1,4 @@
+import { ResponseError } from "../error/responseError.js";
 import IPWhitelist from "../models/ipWhitelistModel.js";
 import { escapeRegExp } from "../utils/helper.js";
 
@@ -54,7 +55,7 @@ export const getAllIpWhitelists = async ({
 export const createIpWhitelist = async ({ adminId, ipAddress }) => {
   const existIpWhitelist = await IPWhitelist.findOne({ ipAddress });
   if (existIpWhitelist)
-    throw new Error(`IpAddress ${ipAddress} already exist!`);
+    throw new ResponseError(400, `IpAddress ${ipAddress} already exist!`);
 
   const newIP = new IPWhitelist({ adminId, ipAddress });
   const result = await newIP.save();
@@ -67,18 +68,19 @@ export const ipWhitelist = async ({ id }) => {
     path: "adminId",
     select: "email",
   });
-  if (!result) throw new Error("IpAddress is not exist!");
+  if (!result) throw new ResponseError(404, "IpAddress does not exist!");
   return result;
 };
 
 export const updateIpWhitelist = async ({ id, adminId, ipAddress }) => {
   const existIpWhitelist = await IPWhitelist.findOne({ _id: id });
-  if (!existIpWhitelist) throw new Error("IpAddress is not exist!");
+  if (!existIpWhitelist)
+    throw new ResponseError(404, "IpAddress does not exist!");
   if (existIpWhitelist.adminId.toString() != adminId)
-    throw new Error("Unauthorized!");
+    throw new ResponseError(401, "Unauthorized!");
   const existingIpWhitelist = await IPWhitelist.findOne({ ipAddress });
   if (existingIpWhitelist)
-    throw new Error(`IpAddress ${ipAddress} already exist!`);
+    throw new ResponseError(400, `IpAddress ${ipAddress} already exist!`);
 
   existIpWhitelist.ipAddress = ipAddress;
   const result = await existIpWhitelist.save();
@@ -87,10 +89,11 @@ export const updateIpWhitelist = async ({ id, adminId, ipAddress }) => {
 
 export const deleteIpWhitelist = async ({ id, adminId }) => {
   const existIpWhitelist = await IPWhitelist.findOne({ _id: id });
-  if (!existIpWhitelist) throw new Error("IpWhitelist is not exist!");
+  if (!existIpWhitelist)
+    throw new ResponseError(404, "IpWhitelist does not exist!");
 
   if (existIpWhitelist.adminId.toString() != adminId)
-    throw new Error("Unauthorized!");
+    throw new ResponseError(401, "Unauthorized!");
 
   await IPWhitelist.deleteOne({ _id: id });
   return true;

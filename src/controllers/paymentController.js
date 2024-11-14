@@ -14,6 +14,7 @@ import uuid4 from "uuid4";
 import Order from "../models/orderModel.js";
 import VirtualAccount from "../models/vaModel.js";
 import logger from "../application/logger.js";
+import { ResponseError } from "../error/responseError.js";
 
 // Create a payment link with Paylabs
 export const createPaymentLink = async (order) => {
@@ -40,7 +41,10 @@ export const createPaymentLink = async (order) => {
     // Validate request body
     const { error } = validateCreateLinkRequest(requestBody);
     if (error)
-      throw new Error(`Payment validation failed: ${error.details[0].message}`);
+      throw new ResponseError(
+        400,
+        `Payment validation failed: ${error.details[0].message}`
+      );
 
     // Generate headers for Paylabs request
     const { headers } = generateHeaders(
@@ -63,7 +67,7 @@ export const createPaymentLink = async (order) => {
     return response.data;
   } catch (error) {
     logger.error(`Payment initiation failed: ${error.message}`);
-    throw new Error(`Payment initiation failed: ${error.message}`);
+    throw new ResponseError(500, `Payment initiation failed: ${error.message}`);
   }
 };
 

@@ -2,13 +2,14 @@ import transport from "../middlewares/sendMail.js";
 import jwt from "jsonwebtoken";
 import Admin from "../models/adminModel.js";
 import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
+import { ResponseError } from "../error/responseError.js";
 
 export const loginAdmin = async ({ email, password }) => {
   const existAdmin = await Admin.findOne({ email }).select("+password");
-  if (!existAdmin) throw new Error("Admin does not exist!");
+  if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
   const isValidPassword = await compareDoHash(password, existAdmin.password);
-  if (!isValidPassword) throw new Error("Invalid credentials!");
+  if (!isValidPassword) throw new ResponseError(400, "Invalid credentials!");
 
   const token = jwt.sign(
     {
@@ -25,9 +26,10 @@ export const loginAdmin = async ({ email, password }) => {
 
 export const sendVerificationCodeService = async (email) => {
   const existAdmin = await Admin.findOne({ email });
-  if (!existAdmin) throw new Error("Admin does not exist!");
+  if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
-  if (existAdmin.verified) throw new Error("Admin is already verified!");
+  if (existAdmin.verified)
+    throw new ResponseError(400, "Admin is already verified!");
 
   const codeValue = Math.floor(Math.random() * 1000000).toString();
   const info = await transport.sendMail({
@@ -38,7 +40,7 @@ export const sendVerificationCodeService = async (email) => {
   });
 
   if (info.accepted[0] !== existAdmin.email)
-    throw new Error("Code sent failed!");
+    throw new ResponseError(400, "Code sent failed!");
 
   existAdmin.verificationCode = hmacProcess(
     codeValue,
@@ -55,15 +57,15 @@ export const verifyVerificationCodeService = async (email, provided_code) => {
   const existAdmin = await Admin.findOne({ email }).select(
     "+verificationCode +verificationCodeValidation"
   );
-  if (!existAdmin) throw new Error("Admin does not exist!");
+  if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
-  if (existAdmin.verified) throw new Error("Admin is verified!");
+  if (existAdmin.verified) throw new ResponseError(400, "Admin is verified!");
 
   if (!existAdmin.verificationCode || !existAdmin.verificationCodeValidation)
-    throw new Error("Something is wrong with the code!");
+    throw new ResponseError(400, "Something is wrong with the code!");
 
   if (Date.now() - existAdmin.verificationCodeValidation > 5 * 60 * 1000)
-    throw new Error("Code has been expired!");
+    throw new ResponseError(400, "Code has been expired!");
 
   const hashedCodeValue = hmacProcess(
     codeValue,
@@ -71,7 +73,7 @@ export const verifyVerificationCodeService = async (email, provided_code) => {
   );
 
   if (hashedCodeValue !== existAdmin.verificationCode)
-    throw new Error("Unexpected occured!");
+    throw new ResponseError(400, "Unexpected occured!");
 
   existAdmin.verified = true;
   existAdmin.verificationCode = undefined;
@@ -87,13 +89,13 @@ export const changePasswordService = async (
   old_password,
   new_password
 ) => {
-  if (!verified) throw new Error("Admin not verified!");
+  if (!verified) throw new ResponseError(400, "Admin not verified!");
 
   const existAdmin = await Admin.findOne({ _id: adminId }).select("+password");
-  if (!existAdmin) throw new Error("Admin is not exist!");
+  if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
   const result = await compareDoHash(old_password, existAdmin.password);
-  if (!result) throw new Error("Invalid credentials!");
+  if (!result) throw new ResponseError(400, "Invalid credentials!");
 
   const hashedPassword = await doHash(new_password, 12);
   existAdmin.password = hashedPassword;
@@ -104,7 +106,7 @@ export const changePasswordService = async (
 
 export const sendForgotPasswordService = async (email) => {
   const existAdmin = await Admin.findOne({ email: email });
-  if (!existAdmin) throw new Error("Admin is not exist!");
+  if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
   const codeValue = Math.floor(Math.random() * 100000).toString();
   let info = await transport.sendMail({
@@ -114,7 +116,7 @@ export const sendForgotPasswordService = async (email) => {
     html: "<h1>" + codeValue + "</h1>",
   });
   if (info.accepted[0] !== existAdmin.email)
-    throw new Error("Code sent failed!");
+    throw new ResponseError(400, "Code sent failed!");
 
   existAdmin.forgotPasswordCode = hmacProcess(
     codeValue,
@@ -135,16 +137,16 @@ export const verifyForgotPasswordCodeService = async (
   const existAdmin = await Admin.findOne({ email }).select(
     "+forgotPasswordCode +forgotPasswordCodeValidation"
   );
-  if (!existAdmin) throw new Error("Admin does not exist!");
+  if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
   if (
     !existAdmin.forgotPasswordCode ||
     !existAdmin.forgotPasswordCodeValidation
   )
-    throw new Error("Something is wrong with the code!");
+    throw new ResponseError(400, "Something is wrong with the code!");
 
   if (Date.now() - existAdmin.forgotPasswordCodeValidation > 5 * 60 * 1000)
-    throw new Error("Code has been expired!");
+    throw new ResponseError(400, "Code has been expired!");
 
   const hashedCodeValue = hmacProcess(
     codeValue,
@@ -152,7 +154,7 @@ export const verifyForgotPasswordCodeService = async (
   );
 
   if (hashedCodeValue !== existAdmin.forgotPasswordCode)
-    throw new Error("Unexpected occured!");
+    throw new ResponseError(400, "Unexpected occured!");
 
   const hashedPassword = await doHash(new_password, 12);
   existAdmin.password = hashedPassword;

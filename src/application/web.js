@@ -18,6 +18,7 @@ import apiLogger from "../middlewares/apiLog.js";
 import rateLimit from "express-rate-limit";
 import mongoose from "mongoose";
 import logger from "../application/logger.js";
+import { ResponseError } from "../error/responseError.js";
 
 dotenv.config();
 
@@ -74,10 +75,10 @@ web.get("/", (req, res) => {
 web.get("/me", jwtMiddlewareAdmin, async (req, res) => {
   try {
     const { adminId, verified } = req.admin;
-    if (!adminId) throw new Error("Admin ID not provided");
+    if (!adminId) throw new ResponseError(400, "Admin ID not provided");
 
     const existAdmin = await Admin.findById(adminId);
-    if (!existAdmin) throw new Error("Admin does not exist");
+    if (!existAdmin) throw new ResponseError(400, "Admin does not exist");
 
     res.status(200).json({
       success: true,

@@ -1,3 +1,4 @@
+import { ResponseError } from "../error/responseError.js";
 import Admin from "../models/adminModel.js";
 import { doHash, escapeRegExp } from "../utils/helper.js";
 
@@ -52,7 +53,7 @@ export const getAllAdmins = async ({
 
 export const registerAdmin = async ({ email, password, fullName }) => {
   const existAdmin = await Admin.findOne({ email });
-  if (existAdmin) throw new Error("Admin already exists!");
+  if (existAdmin) throw new ResponseError(400, "Admin already exists!");
 
   const hashPassword = await doHash(password, 12);
   const newAdmin = new Admin({ email, password: hashPassword, fullName });
@@ -63,7 +64,7 @@ export const registerAdmin = async ({ email, password, fullName }) => {
 
 export const deleteAdminById = async (id) => {
   const existAdmin = await Admin.findById(id);
-  if (!existAdmin) throw new Error("admin not found");
+  if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
   await Admin.deleteOne({ _id: id });
   return { success: true, message: "successfully deleted admin" };
 };

@@ -8,6 +8,7 @@ import {
   validateOrderProducts,
 } from "../utils/helper.js";
 import { handlePaymentLink } from "./paylabs.js";
+import { ResponseError } from "../error/responseError.js";
 
 export const getAllOrders = async ({
   query,
@@ -68,7 +69,7 @@ export const getAllOrders = async ({
 
 export const createOrder = async ({ validatedOrder }) => {
   const existUser = await User.findById(validatedOrder.userId);
-  if (!existUser) throw new Error("User not registered");
+  if (!existUser) throw new ResponseError("User does not exist!");
 
   // Validate products in the order
   const { validProducts, totalAmount } = await validateOrderProducts(
@@ -76,7 +77,7 @@ export const createOrder = async ({ validatedOrder }) => {
     validatedOrder.paymentType || undefined
   );
   if (!validProducts.length)
-    throw new Error("No valid products found to create the order");
+    throw new ResponseError(404, "No valid products found to create the order");
 
   const orderData = {
     orderId: uuid4(),
@@ -110,7 +111,7 @@ export const order = async ({ id }) => {
   const result = await Order.findOne({ _id: id })
     .populate({ path: "userId", select: "email" })
     .populate({ path: "products.productId", select: "title" });
-  if (!result) throw new Error("Order is not exist!");
+  if (!result) throw new ResponseError(404, "Order does not exist!");
 
   return result;
 };
@@ -120,17 +121,17 @@ export const editOrder = async ({ id, validatedOrder }) => {
     "+paymentLink +paymentId"
   );
 
-  if (!result) throw new Error("Order is not exist!");
+  if (!result) throw new ResponseError(404, "Order does not exist!");
 
   if (result.paymentStatus === "paid")
-    throw new Error("Payment already processed!");
+    throw new ResponseError(200, "Payment already processed!");
 
   const validProducts = await validateOrderProducts(validatedOrder.products);
   if (!validProducts.length)
-    throw new Error("No valid products found to update the order");
+    throw new ResponseError(404, "No valid products found to update the order");
 
   const existUser = await User.findById(validatedOrder.userId);
-  if (!existUser) throw new Error("User not registered");
+  if (!existUser) throw new ResponseError(404, "User does not exist!");
 
   if (result.paymentLink && result.paymentMethod === "xendit") {
     await expiredXendit(result.paymentId);

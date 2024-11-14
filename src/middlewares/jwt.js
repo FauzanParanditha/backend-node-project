@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import logger from "../application/logger.js";
+import { ResponseError } from "../error/responseError.js";
 
 export const jwtMiddleware = (req, res, next) => {
   let token;
@@ -12,7 +13,7 @@ export const jwtMiddleware = (req, res, next) => {
   if (!token) {
     return res.status(403).json({
       success: false,
-      message: "unauthorized!",
+      message: "Unauthorized!",
     });
   }
 
@@ -26,7 +27,7 @@ export const jwtMiddleware = (req, res, next) => {
       req.user = jwtVerified;
       next();
     } else {
-      throw new Error("error in the token ");
+      throw new ResponseError(400, "Error in the token ");
     }
   } catch (error) {
     logger.error(`Error jwtMiddleware: ${error.message}`);

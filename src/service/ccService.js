@@ -14,11 +14,12 @@ import {
 } from "../validators/paymentValidator.js";
 import axios from "axios";
 import Order from "../models/orderModel.js";
+import { ResponseError } from "../error/responseError.js";
 
 export const createCC = async ({ validatedProduct }) => {
   // Verify user existence
   const existUser = await User.findById(validatedProduct.userId);
-  if (!existUser) throw new error("User is not exist!");
+  if (!existUser) throw new ResponseError(404, "User does not exist!");
 
   // Validate products in the order
   const { validProducts, totalAmount } = await validateOrderProducts(
@@ -26,7 +27,7 @@ export const createCC = async ({ validatedProduct }) => {
     validatedProduct.paymentType
   );
   if (!validProducts.length)
-    throw new Error("No valid products found to update the order");
+    throw new ResponseError(404, "No valid products found to update the order");
 
   // Construct order data
   const requestBodyForm = {
@@ -70,7 +71,11 @@ export const createCC = async ({ validatedProduct }) => {
 
   // Validate requestBody
   const { error } = validateCreditCardRequest(requestBody);
-  if (error) throw new Error(error.details.map((err) => err.message));
+  if (error)
+    throw new ResponseError(
+      400,
+      error.details.map((err) => err.message)
+    );
 
   // Generate headers for Paylabs request
   const { headers } = generateHeaders(
@@ -93,7 +98,8 @@ export const createCC = async ({ validatedProduct }) => {
 
   // Check for successful response
   if (!response.data || response.data.errCode != 0)
-    throw new Error(
+    throw new ResponseError(
+      400,
       response.data
         ? `error: ${response.data.errCodeDes}`
         : "failed to create payment"
@@ -115,15 +121,16 @@ export const createCC = async ({ validatedProduct }) => {
 export const ccOrderStatus = async ({ id }) => {
   // Check if the order exists
   const existOrder = await Order.findById(id);
-  if (!existOrder) throw new error("Order is not exist!");
+  if (!existOrder) throw new ResponseError(404, "Order does not exist!");
 
   if (existOrder.paymentStatus === "paid")
-    throw new Error("Payment already processed!");
+    throw new ResponseError(200, "Payment already processed!");
 
   if (existOrder.paymentStatus === "expired")
-    throw new Error("Payment expired!");
+    throw new ResponseError(200, "Payment expired!");
 
-  if (!existOrder.cc) throw new Error("CC data not found in the order");
+  if (!existOrder.cc)
+    throw new ResponseError(400, "CC data not found in the order");
 
   // Prepare request payload for Paylabs
   const requestId = generateRequestId();
@@ -138,7 +145,11 @@ export const ccOrderStatus = async ({ id }) => {
 
   // Validate requestBody
   const { error } = validateCCStatus(requestBody);
-  if (error) throw new Error(error.details.map((err) => err.message));
+  if (error)
+    throw new ResponseError(
+      400,
+      error.details.map((err) => err.message)
+    );
 
   // Generate headers for Paylabs request
   const { headers } = generateHeaders(
@@ -161,7 +172,8 @@ export const ccOrderStatus = async ({ id }) => {
 
   // Check for successful response
   if (!response.data || response.data.errCode != 0)
-    throw new Error(
+    throw new ResponseError(
+      400,
       response.data
         ? `error: ${response.data.errCodeDes}`
         : "failed to create payment"

@@ -96,7 +96,7 @@ export const createProduct = async (req, res) => {
   if (!existCategory) {
     return res.status(404).json({
       success: false,
-      message: "category is not exist!",
+      message: "category does not exist!",
     });
   }
 
@@ -196,7 +196,7 @@ export const updateProduct = async (req, res) => {
     if (!existCategory) {
       return res.status(404).json({
         success: false,
-        message: "category is not exist!",
+        message: "category does not exist!",
       });
     }
 

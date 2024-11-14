@@ -1,3 +1,4 @@
+import { ResponseError } from "../error/responseError.js";
 import Category from "../models/categoryModel.js";
 import { escapeRegExp } from "../utils/helper.js";
 
@@ -53,7 +54,8 @@ export const getAllCategorys = async ({
 
 export const createCategory = async ({ name, adminId }) => {
   const existCategory = await Category.findOne({ name });
-  if (existCategory) throw new Error(`Category ${name} already exists!`);
+  if (existCategory)
+    throw new ResponseError(400, `Category ${name} already exists!`);
 
   const newCategory = new Category({ name, adminId });
   const result = await newCategory.save();
@@ -66,17 +68,18 @@ export const category = async ({ id }) => {
     path: "adminId",
     select: "email",
   });
-  if (!result) throw new Error("Category is not exist!");
+  if (!result) throw new ResponseError(404, "Category does not exist!");
   return result;
 };
 
 export const updateCategory = async ({ id, adminId, name }) => {
   const existCategory = await Category.findOne({ _id: id });
-  if (!existCategory) throw new Error("Category is not exist!");
+  if (!existCategory) throw new ResponseError(404, "Category does not exist!");
   if (existCategory.adminId.toString() != adminId)
-    throw new Error("Unauthorized!");
+    throw new ResponseError(401, "Unauthorized!");
   const existingCategory = await Category.findOne({ name });
-  if (existingCategory) throw new Error(`Category ${name} already exists!`);
+  if (existingCategory)
+    throw new ResponseError(400, `Category ${name} already exists!`);
 
   existCategory.name = name;
   const result = await existCategory.save();
@@ -85,10 +88,10 @@ export const updateCategory = async ({ id, adminId, name }) => {
 
 export const deleteCategory = async ({ id, adminId }) => {
   const existCategory = await Category.findOne({ _id: id });
-  if (!existCategory) throw new Error("Category is not exist!");
+  if (!existCategory) throw new ResponseError(404, "Category does not exist!");
 
   if (existCategory.adminId.toString() != adminId)
-    throw new Error("Unauthorized!");
+    throw new ResponseError(401, "Unauthorized!");
 
   await Category.deleteOne({ _id: id });
   return true;

@@ -5,6 +5,7 @@ import { createHmac } from "crypto";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import Product from "../models/productModel.js";
+import { ResponseError } from "../error/responseError.js";
 const { hash, compare } = pkg;
 
 // Define transaction limits
@@ -122,13 +123,13 @@ export const validateOrderProducts = async (
   // Ensure the payment type has defined transaction limits
   const limits = transactionLimits[paymentType];
   if (!limits) {
-    throw new Error(`Unsupported payment type: ${paymentType}`);
+    throw new ResponseError(400, `Unsupported payment type: ${paymentType}`);
   }
 
   for (const product of products) {
     const foundProduct = await Product.findById(product.productId);
     if (!foundProduct) {
-      throw new Error(`Product not found: ${product.productId}`);
+      throw new ResponseError(404, `Product not found: ${product.productId}`);
     }
 
     const productTotal = foundProduct.price * product.quantity;
@@ -149,7 +150,8 @@ export const validateOrderProducts = async (
 
   // Validate totalAmount against the paymentType limits
   if (totalAmount < limits.min || totalAmount > limits.max) {
-    throw new Error(
+    throw new ResponseError(
+      400,
       `Total amount must be between IDR ${limits.min.toLocaleString()} and IDR ${limits.max.toLocaleString()} for ${paymentType} payment method.`
     );
   }

@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import IPWhitelist from "../models/ipWhitelistModel.js";
 import logger from "../application/logger.js";
+import { ResponseError } from "../error/responseError.js";
 
 export const jwtMiddlewareAdmin = async (req, res, next) => {
   let token;
@@ -16,7 +17,7 @@ export const jwtMiddlewareAdmin = async (req, res, next) => {
   if (!token) {
     return res.status(403).json({
       success: false,
-      message: "unauthorized!",
+      message: "Unauthorized!",
     });
   }
 
@@ -25,7 +26,7 @@ export const jwtMiddlewareAdmin = async (req, res, next) => {
   if (!whitelistedIP) {
     return res.status(403).json({
       success: false,
-      message: "access forbidden: Your IP address is not whitelisted.",
+      message: "Access forbidden: Your IP address does not whitelisted.",
     });
   }
 
@@ -39,7 +40,7 @@ export const jwtMiddlewareAdmin = async (req, res, next) => {
       req.admin = jwtVerified;
       next();
     } else {
-      throw new Error("error in the token ");
+      throw new ResponseError(400, "Error in the token ");
     }
   } catch (error) {
     logger.error(`Error jwtMiddleware: ${error.message}`);
