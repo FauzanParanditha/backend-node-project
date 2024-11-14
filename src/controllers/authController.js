@@ -10,7 +10,7 @@ import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
 import transport from "../middlewares/sendMail.js";
 import logger from "../application/logger.js";
 
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
@@ -36,18 +36,18 @@ export const login = async (req, res) => {
       .json({ success: true, message: "Login successful", token });
   } catch (error) {
     logger.error(`Error login: ${error.message}`);
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const logout = async (req, res) => {
+export const logout = async (req, res, next) => {
   res.clearCookie("Authorization").status(200).json({
     success: true,
     message: "logout is successfully",
   });
 };
 
-export const sendVerificationCode = async (req, res) => {
+export const sendVerificationCode = async (req, res, next) => {
   const { email } = req.body;
 
   try {
@@ -55,11 +55,11 @@ export const sendVerificationCode = async (req, res) => {
     res.status(200).json({ success: true, message });
   } catch (error) {
     logger.error(`Error send verification code: ${error.message}`);
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const verifyVerificationCode = async (req, res) => {
+export const verifyVerificationCode = async (req, res, next) => {
   const { email, provided_code } = req.body;
   try {
     const { error, value } = acceptCodeSchema.validate({
@@ -82,14 +82,11 @@ export const verifyVerificationCode = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error verify verification code: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const changePassword = async (req, res) => {
+export const changePassword = async (req, res, next) => {
   const { adminId, verified } = req.admin;
   const { old_password, new_password } = req.body;
 
@@ -116,14 +113,11 @@ export const changePassword = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error change password: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const sendForgotPassword = async (req, res) => {
+export const sendForgotPassword = async (req, res, next) => {
   const { email } = req.body;
   try {
     const message = await authService.sendForgotPasswordService(email);
@@ -133,14 +127,11 @@ export const sendForgotPassword = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error send forgot password: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const verifyForgotPasswordCode = async (req, res) => {
+export const verifyForgotPasswordCode = async (req, res, next) => {
   const { email, provided_code, new_password } = req.body;
   try {
     const { error, value } = acceptFPCodeSchema.validate({
@@ -167,9 +158,6 @@ export const verifyForgotPasswordCode = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error verify forgot password: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };

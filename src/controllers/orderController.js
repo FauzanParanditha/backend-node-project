@@ -3,7 +3,7 @@ import { orderLinkSchema } from "../validators/orderValidator.js";
 import logger from "../application/logger.js";
 
 // Orders Listing with Pagination and Sorting
-export const orders = async (req, res) => {
+export const orders = async (req, res, next) => {
   const {
     query = "",
     limit = 10,
@@ -35,12 +35,12 @@ export const orders = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error fetching order ${error.message}`);
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
 // Create Order
-export const createOrder = async (req, res) => {
+export const createOrder = async (req, res, next) => {
   try {
     const validatedOrder = await orderLinkSchema.validateAsync(req.body, {
       abortEarly: false,
@@ -57,16 +57,12 @@ export const createOrder = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error create order ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: "order creation failed",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
 // Fetch Single Order
-export const order = async (req, res) => {
+export const order = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -76,12 +72,12 @@ export const order = async (req, res) => {
       .json({ success: true, message: "Order", data: order });
   } catch (error) {
     logger.error(`Error fetching order ${error.message}`);
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
 // Edit Order
-export const editOrder = async (req, res) => {
+export const editOrder = async (req, res, next) => {
   const { id } = req.params;
   try {
     const validatedOrder = await orderLinkSchema.validateAsync(req.body, {
@@ -98,10 +94,6 @@ export const editOrder = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error edit order ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: "order update failed",
-      error: error.message,
-    });
+    next(error);
   }
 };

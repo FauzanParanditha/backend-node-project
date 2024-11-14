@@ -67,12 +67,12 @@ export const createPaymentLink = async (order) => {
     return response.data;
   } catch (error) {
     logger.error(`Payment initiation failed: ${error.message}`);
-    throw new ResponseError(500, `Payment initiation failed: ${error.message}`);
+    next(error);
   }
 };
 
 // Handle Paylabs callback notifications
-export const paylabsCallback = async (req, res) => {
+export const paylabsCallback = async (req, res, next) => {
   try {
     // Extract and verify signature
     const { "x-signature": signature, "x-timestamp": timestamp } = req.headers;
@@ -207,15 +207,11 @@ export const paylabsCallback = async (req, res) => {
     res.set(responseHeaders).status(200).json(payloadResponse);
   } catch (error) {
     logger.error(`Error handling webhook: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: "webhook handling failed",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const paylabsVaStaticCallback = async (req, res) => {
+export const paylabsVaStaticCallback = async (req, res, next) => {
   try {
     // Extract and verify signature
     const { "x-signature": signature, "x-timestamp": timestamp } = req.headers;
@@ -264,6 +260,10 @@ export const paylabsVaStaticCallback = async (req, res) => {
         logger.error(
           `Unhandled notification status: ${notificationData.status}`
         );
+        return res.status(400).json({
+          success: false,
+          message: "Unhandled notification status",
+        });
     }
 
     // Prepare response payload and headers
@@ -292,8 +292,6 @@ export const paylabsVaStaticCallback = async (req, res) => {
     res.set(responseHeaders).status(200).json(responsePayload);
   } catch (error) {
     logger.error(`Error handling webhook: ${error.message}`);
-    res
-      .status(500)
-      .json({ success: false, message: "webhook handling failed" });
+    next(error);
   }
 };

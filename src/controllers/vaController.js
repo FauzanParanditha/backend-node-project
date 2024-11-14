@@ -21,7 +21,7 @@ import Order from "../models/orderModel.js";
 import VirtualAccount from "../models/vaModel.js";
 import logger from "../application/logger.js";
 
-export const createVA = async (req, res) => {
+export const createVA = async (req, res, next) => {
   try {
     // Validate request payload
     const validatedProduct = await orderSchema.validateAsync(req.body, {
@@ -148,15 +148,11 @@ export const createVA = async (req, res) => {
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error creating va: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const vaOrderStatus = async (req, res) => {
+export const vaOrderStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -249,15 +245,11 @@ export const vaOrderStatus = async (req, res) => {
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error fetching va status: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const createStaticVa = async (req, res) => {
+export const createStaticVa = async (req, res, next) => {
   try {
     // Validate request payload
     const validatedProduct = await vaStaticSchema.validateAsync(req.body, {
@@ -364,10 +356,6 @@ export const createStaticVa = async (req, res) => {
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error creating va static: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred",
-      error: error.message,
-    });
+    next(error);
   }
 };

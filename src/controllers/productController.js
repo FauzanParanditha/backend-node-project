@@ -10,7 +10,7 @@ import logger from "../application/logger.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export const products = async (req, res) => {
+export const products = async (req, res, next) => {
   const {
     query = "",
     limit = 10,
@@ -69,14 +69,11 @@ export const products = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error fetching products: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const createProduct = async (req, res) => {
+export const createProduct = async (req, res, next) => {
   const parsedColors = JSON.parse(req.body.colors);
   const parsedSizes = JSON.parse(req.body.sizes);
   const { adminId } = req.admin;
@@ -130,15 +127,11 @@ export const createProduct = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error create products: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const product = async (req, res) => {
+export const product = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -159,14 +152,11 @@ export const product = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error fetching product: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const updateProduct = async (req, res) => {
+export const updateProduct = async (req, res, next) => {
   const { id } = req.params;
   const parsedColors = JSON.parse(req.body.colors);
   const parsedSizes = JSON.parse(req.body.sizes);
@@ -244,15 +234,11 @@ export const updateProduct = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error update product: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const deleteProduct = async (req, res) => {
+export const deleteProduct = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -282,10 +268,6 @@ export const deleteProduct = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error deleting product: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred while deleting the product",
-      error: error.message,
-    });
+    next(error);
   }
 };

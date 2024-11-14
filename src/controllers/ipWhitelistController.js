@@ -2,7 +2,7 @@ import * as ipWhitelistService from "../service/ipWhitelistService.js";
 import logger from "../application/logger.js";
 import { ipWhitelistSchema } from "../validators/ipWhitelistValidator.js";
 
-export const ipWhitelists = async (req, res) => {
+export const ipWhitelists = async (req, res, next) => {
   const {
     query = "",
     limit = 10,
@@ -34,14 +34,11 @@ export const ipWhitelists = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error fetching ip whitelist: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const create = async (req, res) => {
+export const create = async (req, res, next) => {
   const { adminId } = req.admin;
   const { ipAddress } = req.body;
   try {
@@ -64,14 +61,11 @@ export const create = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error add ip whitelist: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const ipWhitelist = async (req, res) => {
+export const ipWhitelist = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -84,14 +78,11 @@ export const ipWhitelist = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error fetching ip whitelist: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const updateIpWhitelist = async (req, res) => {
+export const updateIpWhitelist = async (req, res, next) => {
   const { id } = req.params;
   const { ipAddress } = req.body;
   const { adminId } = req.admin;
@@ -117,14 +108,11 @@ export const updateIpWhitelist = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error update ip address: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const deleteIpWhitelist = async (req, res) => {
+export const deleteIpWhitelist = async (req, res, next) => {
   const { id } = req.params;
   const { adminId } = req.admin;
 
@@ -139,9 +127,6 @@ export const deleteIpWhitelist = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error delete ip address ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };

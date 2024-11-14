@@ -11,7 +11,7 @@ import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
 import transport from "../middlewares/sendMail.js";
 import logger from "../application/logger.js";
 
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
   const { email, fullName, password } = req.body;
 
   try {
@@ -52,14 +52,11 @@ export const register = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error register: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
   const { email, password } = req.body;
   try {
     const { error, value } = loginSchema.validate({ email, password });
@@ -112,22 +109,18 @@ export const login = async (req, res) => {
       });
   } catch (error) {
     logger.error(`Error login: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const logout = async (req, res) => {
+export const logout = async (req, res, next) => {
   res.clearCookie("Authorization").status(200).json({
     success: true,
-
     message: "logout is successfully",
   });
 };
 
-export const sendVerficationCode = async (req, res) => {
+export const sendVerficationCode = async (req, res, next) => {
   const { email } = req.body;
   try {
     const existUser = await User.findOne({ email: email });
@@ -172,14 +165,11 @@ export const sendVerficationCode = async (req, res) => {
     }
   } catch (error) {
     logger.error(`Error send verification code: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const verifyVerificationCode = async (req, res) => {
+export const verifyVerificationCode = async (req, res, next) => {
   const { email, provided_code } = req.body;
   try {
     const { error, value } = acceptCodeSchema.validate({
@@ -247,14 +237,11 @@ export const verifyVerificationCode = async (req, res) => {
     }
   } catch (error) {
     logger.error(`Error verify verification code: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const changePassword = async (req, res) => {
+export const changePassword = async (req, res, next) => {
   const { userId, verified } = req.user;
   const { old_password, new_password } = req.body;
 
@@ -302,14 +289,11 @@ export const changePassword = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error change password: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const sendForgotPassword = async (req, res) => {
+export const sendForgotPassword = async (req, res, next) => {
   const { email } = req.body;
   try {
     const existUser = await User.findOne({ email: email });
@@ -347,14 +331,11 @@ export const sendForgotPassword = async (req, res) => {
     }
   } catch (error) {
     logger.error(`Error send forgot password: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const verifyForgotPasswordCode = async (req, res) => {
+export const verifyForgotPasswordCode = async (req, res, next) => {
   const { email, provided_code, new_password } = req.body;
   try {
     const { error, value } = acceptFPCodeSchema.validate({
@@ -417,9 +398,6 @@ export const verifyForgotPasswordCode = async (req, res) => {
     }
   } catch (error) {
     logger.error(`Error verify forgot password: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };

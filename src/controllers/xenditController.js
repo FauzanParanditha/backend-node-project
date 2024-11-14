@@ -7,6 +7,7 @@ import User from "../models/userModel.js";
 import mongoose from "mongoose";
 import Order from "../models/orderModel.js";
 import logger from "../application/logger.js";
+import { ResponseError } from "../error/responseError.js";
 
 const xenditInvoiceClient = new InvoiceClient({
   secretKey: process.env.XENDIT_SECRET_KEY,
@@ -16,7 +17,7 @@ export const createXenditPaymentLink = async (order) => {
     const buyerObjectId = new mongoose.Types.ObjectId(order.userId);
     const existUser = await User.findOne({ _id: buyerObjectId });
     if (!existUser) {
-      throw new Error("user not registerd!");
+      throw new ResponseError(404, "User does not exist!");
     }
 
     const data = {
@@ -51,11 +52,12 @@ export const createXenditPaymentLink = async (order) => {
     };
     return result;
   } catch (error) {
-    throw new Error(`Error creating Xendit payment link: ${error.message}`);
+    logger.error(`Error creating Xendit payment link: ${error.message}`);
+    next(error);
   }
 };
 
-export const xenditCallback = async (req, res) => {
+export const xenditCallback = async (req, res, next) => {
   try {
     // Verify the webhook signature
     const signature = req.headers["x-callback-token"];
@@ -129,9 +131,7 @@ export const xenditCallback = async (req, res) => {
     res.status(200).json({ success: true, message: "successfully" });
   } catch (error) {
     logger.error(`Error handling webhook: ${error.message}`);
-    res
-      .status(500)
-      .json({ success: false, message: "webhook handling failed" });
+    next(error);
   }
 };
 
@@ -140,8 +140,8 @@ export const expiredXendit = async (id) => {
     const response = await xenditInvoiceClient.expireInvoice({ invoiceId: id });
     return response;
   } catch (error) {
-    logger.error(`Error expiring Xendit invoice with ID: ${id}`, error);
-    throw new Error(`Failed to expire invoice: ${error.message}`);
+    logger.error(`Error expiring Xendit invoice with ID: ${id}`, error.message);
+    next(error);
   }
 };
 

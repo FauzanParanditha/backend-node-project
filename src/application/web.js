@@ -19,6 +19,7 @@ import rateLimit from "express-rate-limit";
 import mongoose from "mongoose";
 import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
+import { errorMiddleware } from "../middlewares/errorMiddleware.js";
 
 dotenv.config();
 
@@ -72,7 +73,7 @@ web.get("/", (req, res) => {
   });
 });
 
-web.get("/me", jwtMiddlewareAdmin, async (req, res) => {
+web.get("/me", jwtMiddlewareAdmin, async (req, res, next) => {
   try {
     const { adminId, verified } = req.admin;
     if (!adminId) throw new ResponseError(400, "Admin ID not provided");
@@ -87,13 +88,11 @@ web.get("/me", jwtMiddlewareAdmin, async (req, res) => {
     });
   } catch (error) {
     logger.error(error.message);
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 });
 
+web.use(errorMiddleware);
 function handleShutdownGracefully(signal) {
   return () => {
     serverIsClosing = true;

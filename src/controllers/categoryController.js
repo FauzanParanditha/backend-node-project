@@ -2,7 +2,7 @@ import * as categoryService from "../service/categoryService.js";
 import logger from "../application/logger.js";
 import { categorySchema } from "../validators/categoryValidator.js";
 
-export const categories = async (req, res) => {
+export const categories = async (req, res, next) => {
   const {
     query = "",
     limit = 10,
@@ -34,14 +34,11 @@ export const categories = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error fetching categories: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const create = async (req, res) => {
+export const create = async (req, res, next) => {
   const { name } = req.body;
   const { adminId } = req.admin;
 
@@ -63,14 +60,11 @@ export const create = async (req, res) => {
       .json({ success: true, message: "Category create successfully" });
   } catch (error) {
     logger.error(`Error create category: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const category = async (req, res) => {
+export const category = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -83,14 +77,11 @@ export const category = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error fetching category: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const updateCategory = async (req, res) => {
+export const updateCategory = async (req, res, next) => {
   const { id } = req.params;
   const { name } = req.body;
   const { adminId } = req.admin;
@@ -116,14 +107,11 @@ export const updateCategory = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error update category: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const deleteCategory = async (req, res) => {
+export const deleteCategory = async (req, res, next) => {
   const { id } = req.params;
   const { adminId } = req.admin;
 
@@ -135,9 +123,6 @@ export const deleteCategory = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error delete category: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };

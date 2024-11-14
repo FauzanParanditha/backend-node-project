@@ -2,7 +2,7 @@ import * as adminService from "../service/adminService.js";
 import logger from "../application/logger.js";
 import { registerSchema } from "../validators/authValidator.js";
 
-export const getAllAdmin = async (req, res) => {
+export const getAllAdmin = async (req, res, next) => {
   const {
     query = "",
     limit = 10,
@@ -34,14 +34,11 @@ export const getAllAdmin = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error fetching admins: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
   const { email, password, fullName } = req.body;
 
   try {
@@ -59,11 +56,11 @@ export const register = async (req, res) => {
     res.status(201).json({ success: true, message: "Registered successfully" });
   } catch (error) {
     logger.error(`Error register: ${error.message}`);
-    res.status(500).json({ success: false, message: error.message });
+    next(error);
   }
 };
 
-export const deleteAdmin = async (req, res) => {
+export const deleteAdmin = async (req, res, next) => {
   const { id } = req.params;
 
   try {
@@ -74,9 +71,6 @@ export const deleteAdmin = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error deleting admin: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };

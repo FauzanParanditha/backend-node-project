@@ -20,7 +20,7 @@ import axios from "axios";
 import Order from "../models/orderModel.js";
 import logger from "../application/logger.js";
 
-export const createQris = async (req, res) => {
+export const createQris = async (req, res, next) => {
   try {
     // Validate request payload
     const validatedProduct = await orderSchema.validateAsync(req.body, {
@@ -149,15 +149,11 @@ export const createQris = async (req, res) => {
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error creating qris: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const qrisOrderStatus = async (req, res) => {
+export const qrisOrderStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -250,15 +246,11 @@ export const qrisOrderStatus = async (req, res) => {
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error fetching qris status: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const cancleQris = async (req, res) => {
+export const cancleQris = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -358,10 +350,6 @@ export const cancleQris = async (req, res) => {
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error cancel qris: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred",
-      error: error.message,
-    });
+    next(error);
   }
 };

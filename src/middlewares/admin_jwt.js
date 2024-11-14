@@ -44,9 +44,6 @@ export const jwtMiddlewareAdmin = async (req, res, next) => {
     }
   } catch (error) {
     logger.error(`Error jwtMiddleware: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };

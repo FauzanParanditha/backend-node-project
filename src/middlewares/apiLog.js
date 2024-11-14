@@ -37,6 +37,7 @@ const apiLogger = async (req, res, next) => {
         `Log validation failed:
         ${error.details.map((e) => e.message)}`
       );
+      next(error);
     }
 
     // Send the response to the client

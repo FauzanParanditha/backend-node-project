@@ -1,7 +1,7 @@
 import * as apiLogService from "../service/apiLogService.js";
 import logger from "../application/logger.js";
 
-export const getAllApiLog = async (req, res) => {
+export const getAllApiLog = async (req, res, next) => {
   const {
     query = "",
     limit = 10,
@@ -33,9 +33,6 @@ export const getAllApiLog = async (req, res) => {
     });
   } catch (error) {
     logger.error(`Error fetching api logs: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    next(error);
   }
 };

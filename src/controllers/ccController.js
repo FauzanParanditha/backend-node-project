@@ -2,7 +2,7 @@ import { orderSchema } from "../validators/orderValidator.js";
 import * as ccService from "../service/ccService.js";
 import logger from "../application/logger.js";
 
-export const createCreditCard = async (req, res) => {
+export const createCreditCard = async (req, res, next) => {
   try {
     // Validate request payload
     const validatedProduct = await orderSchema.validateAsync(req.body, {
@@ -24,15 +24,11 @@ export const createCreditCard = async (req, res) => {
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error creating cc: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
-export const ccOrderStatus = async (req, res) => {
+export const ccOrderStatus = async (req, res, next) => {
   const { id } = req.params;
   try {
     const cc = await ccService.ccOrderStatus({ id });
@@ -42,10 +38,6 @@ export const ccOrderStatus = async (req, res) => {
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error fetching cc status: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred",
-      error: error.message,
-    });
+    next(error);
   }
 };
