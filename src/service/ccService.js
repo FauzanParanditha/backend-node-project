@@ -7,11 +7,11 @@ import {
   generateRequestId,
   merchantId,
   paylabsApiUrl,
-} from "./paylabs";
+} from "./paylabs.js";
 import {
   validateCCStatus,
   validateCreditCardRequest,
-} from "../validators/paymentValidator";
+} from "../validators/paymentValidator.js";
 import axios from "axios";
 
 export const createCC = async ({ validatedProduct }) => {
