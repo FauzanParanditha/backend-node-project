@@ -16,7 +16,7 @@ import {
 } from "../validators/paymentValidator.js";
 import axios from "axios";
 
-export const createEMoney = async (validatedProduct) => {
+export const createEMoney = async ({ validatedProduct }) => {
   // Verify user existence
   const existUser = await User.findById(validatedProduct.userId);
   if (!existUser) throw new ResponseError(404, "User does not exist!");
