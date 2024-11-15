@@ -98,6 +98,13 @@ export const updateVASNAP = async (req, res) => {
       id,
       validatedUpdateData,
     });
+
+    if (vaSnap.currentDateTime > vaSnap.expiredDateTime) {
+      return res.status(200).json({
+        success: true,
+        message: "payment expired",
+      });
+    }
     // Send a response with the updated order details
     res.status(200).json({
       success: true,

@@ -332,12 +332,12 @@ export const updateVASNAP = async ({ id, validatedUpdateData }) => {
 
   //check expired
   const currentDateTime = new Date();
-  const expiredDateTime = convertToDate(existingOrder.paymentExpired);
+  const expiredDateTime = new Date(existingOrder.paymentExpired);
 
   if (currentDateTime > expiredDateTime) {
     existingOrder.paymentStatus = "expired";
     await existingOrder.save();
-    throw new ResponseError(200, "Payment expired!");
+    return { currentDateTime, expiredDateTime };
   }
 
   if (!existingOrder.vaSnap)
