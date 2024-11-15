@@ -1,19 +1,5 @@
-import axios from "axios";
-import {
-  createSignature,
-  generateHeaders,
-  generateMerchantTradeNo,
-  generateRequestId,
-  generateTimestamp,
-  merchantId,
-  paylabsApiUrl,
-  verifySignature,
-} from "../service/paylabs.js";
-import { validateCreateLinkRequest } from "../validators/paymentValidator.js";
-import uuid4 from "uuid4";
+import { verifySignature } from "../service/paylabs.js";
 import * as paymentService from "../service/paymentService.js";
-import Order from "../models/orderModel.js";
-import VirtualAccount from "../models/vaModel.js";
 import logger from "../application/logger.js";
 
 // Handle Paylabs callback notifications
@@ -60,12 +46,10 @@ export const paylabsVaStaticCallback = async (req, res, next) => {
       return res.status(401).send("Invalid signature");
     }
 
-    const callback = await paymentService.callbackPaylabsVaStatic({ payload });
+    const { responseHeaders, payloadResponseError } =
+      await paymentService.callbackPaylabsVaStatic({ payload });
 
-    return res
-      .set(callback.responseHeaders)
-      .status(200)
-      .json(callback.responsePayload);
+    return res.set(responseHeaders).status(200).json(responsePayload);
   } catch (error) {
     logger.error(`Error handling webhook: ${error.message}`);
     next(error);

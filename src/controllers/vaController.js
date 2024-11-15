@@ -9,17 +9,17 @@ export const createVA = async (req, res, next) => {
       abortEarly: false,
     });
 
-    const va = await vaService.createVa({ validatedProduct });
+    const { response, result } = await vaService.createVa({ validatedProduct });
 
     // Respond with created order details
     res.status(200).json({
       success: true,
-      virtualAccountNo: va.response.data.vaCode,
-      paymentExpired: va.response.data.expiredTime,
-      paymentId: va.response.data.merchantTradeNo,
-      totalAmount: va.response.data.amount,
-      storeId: va.response.data.storeId,
-      orderId: va.result._id,
+      virtualAccountNo: response.data.vaCode,
+      paymentExpired: response.data.expiredTime,
+      paymentId: response.data.merchantTradeNo,
+      totalAmount: response.data.amount,
+      storeId: response.data.storeId,
+      orderId: result._id,
     });
   } catch (error) {
     // Handle unexpected errors
@@ -31,10 +31,10 @@ export const createVA = async (req, res, next) => {
 export const vaOrderStatus = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const va = await vaService.vaOrderStatus({ id });
+    const { responseHeaders, response } = await vaService.vaOrderStatus({ id });
 
     // Respond
-    res.set(va.responseHeaders).status(200).json(va.response.data);
+    res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error fetching va status: ${error.message}`);
@@ -49,15 +49,17 @@ export const createStaticVa = async (req, res, next) => {
       abortEarly: false,
     });
 
-    const vaStatic = await vaService.createVaStatic({ validatedProduct });
+    const { response, result } = await vaService.createVaStatic({
+      validatedProduct,
+    });
 
     // Respond with created order details
     res.status(200).json({
       success: true,
-      virtualAccountNo: vaStatic.response.data.vaCode,
-      createTime: vaStatic.response.data.createTime,
-      storeId: vaStatic.response.data.storeId,
-      vaId: vaStatic.result._id,
+      virtualAccountNo: response.data.vaCode,
+      createTime: response.data.createTime,
+      storeId: response.data.storeId,
+      vaId: result._id,
     });
   } catch (error) {
     // Handle unexpected errors

@@ -9,17 +9,17 @@ export const createCreditCard = async (req, res, next) => {
       abortEarly: false,
     });
 
-    const cc = await ccService.createCC({ validatedProduct });
+    const { response, result } = await ccService.createCC({ validatedProduct });
 
     // Respond with created order details
     res.status(200).json({
       success: true,
-      paymentLink: cc.response.data.paymentActions.payUrl,
-      PaymentExpired: cc.response.data.expiredTime,
-      paymentId: cc.response.data.merchantTradeNo,
-      totalAmount: cc.response.data.amount,
-      storeId: cc.response.data.storeId,
-      orderId: cc.result._id,
+      paymentLink: response.data.paymentActions.payUrl,
+      PaymentExpired: response.data.expiredTime,
+      paymentId: response.data.merchantTradeNo,
+      totalAmount: response.data.amount,
+      storeId: response.data.storeId,
+      orderId: result._id,
     });
   } catch (error) {
     // Handle unexpected errors
@@ -31,10 +31,10 @@ export const createCreditCard = async (req, res, next) => {
 export const ccOrderStatus = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const cc = await ccService.ccOrderStatus({ id });
+    const { responseHeaders, response } = await ccService.ccOrderStatus({ id });
 
     // Respond
-    res.set(cc.responseHeaders).status(200).json(cc.response.data);
+    res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error fetching cc status: ${error.message}`);

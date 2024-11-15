@@ -9,20 +9,21 @@ export const createVASNAP = async (req, res) => {
     const validatedProduct = await orderSchema.validateAsync(req.body, {
       abortEarly: false,
     });
-    const vaSnap = await vaSnapService.createVASNAP({ req, validatedProduct });
+    const { response, result } = await vaSnapService.createVASNAP({
+      req,
+      validatedProduct,
+    });
 
     // Respond with created order details
     res.status(200).json({
       success: true,
-      partnerServiceId:
-        vaSnap.response.data.virtualAccountData.partnerServiceId,
-      customerNo: vaSnap.response.data.virtualAccountData.customerNo,
-      virtualAccountNo:
-        vaSnap.response.data.virtualAccountData.virtualAccountNo,
-      totalAmount: vaSnap.response.data.virtualAccountData.totalAmount.value,
-      paymentExpired: vaSnap.response.data.virtualAccountData.expiredDate,
-      paymentId: vaSnap.response.data.virtualAccountData.trxId,
-      orderId: vaSnap.result._id,
+      partnerServiceId: response.data.virtualAccountData.partnerServiceId,
+      customerNo: response.data.virtualAccountData.customerNo,
+      virtualAccountNo: response.data.virtualAccountData.virtualAccountNo,
+      totalAmount: response.data.virtualAccountData.totalAmount.value,
+      paymentExpired: response.data.virtualAccountData.expiredDate,
+      paymentId: response.data.virtualAccountData.trxId,
+      orderId: result._id,
     });
   } catch (error) {
     // Handle unexpected errors
@@ -41,9 +42,11 @@ export const createVASNAP = async (req, res) => {
 export const vaSNAPOrderStatus = async (req, res) => {
   const { id } = req.params;
   try {
-    const vaSnap = await vaSnapService.vaSNAPOrderStatus({ id });
+    const { responseHeaders, response } = await vaSnapService.vaSNAPOrderStatus(
+      { id }
+    );
     // Respond
-    res.set(vaSnap.responseHeaders).status(200).json(vaSnap.response.data);
+    res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error fetching va snap status: ${error.message}`);
@@ -100,13 +103,14 @@ export const updateVASNAP = async (req, res) => {
       abortEarly: false,
     });
 
-    const vaSnap = await vaSnapService.updateVASNAP({
-      id,
-      validatedUpdateData,
-      req,
-    });
+    const { currentDateTime, expiredDateTime, response } =
+      await vaSnapService.updateVASNAP({
+        id,
+        validatedUpdateData,
+        req,
+      });
 
-    if (vaSnap.currentDateTime > vaSnap.expiredDateTime) {
+    if (currentDateTime > expiredDateTime) {
       return res.status(200).json({
         success: true,
         message: "payment expired",
@@ -115,14 +119,12 @@ export const updateVASNAP = async (req, res) => {
     // Send a response with the updated order details
     res.status(200).json({
       success: true,
-      partnerServiceId:
-        vaSnap.response.data.virtualAccountData.partnerServiceId,
-      customerNo: vaSnap.response.data.virtualAccountData.customerNo,
-      virtualAccountNo:
-        vaSnap.response.data.virtualAccountData.virtualAccountNo,
-      totalAmount: vaSnap.response.data.virtualAccountData.totalAmount.value,
-      expiredDate: vaSnap.response.data.virtualAccountData.expiredDate,
-      paymentId: vaSnap.response.data.virtualAccountData.trxId,
+      partnerServiceId: response.data.virtualAccountData.partnerServiceId,
+      customerNo: response.data.virtualAccountData.customerNo,
+      virtualAccountNo: response.data.virtualAccountData.virtualAccountNo,
+      totalAmount: response.data.virtualAccountData.totalAmount.value,
+      expiredDate: response.data.virtualAccountData.expiredDate,
+      paymentId: response.data.virtualAccountData.trxId,
       orderId: id,
     });
   } catch (error) {

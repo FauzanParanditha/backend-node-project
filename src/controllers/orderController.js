@@ -46,14 +46,16 @@ export const createOrder = async (req, res, next) => {
       abortEarly: false,
     });
 
-    const order = await orderService.createOrder({ validatedOrder });
+    const { paymentLink, result } = await orderService.createOrder({
+      validatedOrder,
+    });
 
     res.status(200).json({
       success: true,
-      paymentLink: order.paymentLink.paymentLink,
-      paymentId: order.paymentLink.paymentId,
-      storeId: order.paymentLink.storeId,
-      orderId: order.result._id,
+      paymentLink: paymentLink.paymentLink,
+      paymentId: paymentLink.paymentId,
+      storeId: paymentLink.storeId,
+      orderId: result._id,
     });
   } catch (error) {
     logger.error(`Error create order ${error.message}`);

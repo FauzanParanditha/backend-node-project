@@ -1,23 +1,4 @@
-import uuid4 from "uuid4";
-import User from "../models/userModel.js";
-import { calculateTotal, validateOrderProducts } from "../utils/helper.js";
 import { orderSchema, refundSchema } from "../validators/orderValidator.js";
-import {
-  createSignature,
-  generateHeaders,
-  generateMerchantTradeNo,
-  generateRequestId,
-  generateTimestamp,
-  merchantId,
-  paylabsApiUrl,
-} from "../service/paylabs.js";
-import {
-  validateEMoneyRefund,
-  validateEMoneyRequest,
-  validateEmoneyStatus,
-} from "../validators/paymentValidator.js";
-import axios from "axios";
-import Order from "../models/orderModel.js";
 import * as eMoneyService from "../service/eMoneyService.js";
 import logger from "../application/logger.js";
 
@@ -28,17 +9,19 @@ export const createEMoney = async (req, res, next) => {
       abortEarly: false,
     });
 
-    const eMoney = await eMoneyService.createEMoney({ validatedProduct });
+    const { response, result } = await eMoneyService.createEMoney({
+      validatedProduct,
+    });
 
     // Respond with created order details
     res.status(200).json({
       success: true,
-      paymentActions: eMoney.response.data.paymentActions,
-      paymentExpired: eMoney.response.data.expiredTime,
-      paymentId: eMoney.response.data.merchantTradeNo,
-      totalAmount: eMoney.response.data.amount,
-      storeId: eMoney.response.data.storeId,
-      orderId: eMoney.result._id,
+      paymentActions: response.data.paymentActions,
+      paymentExpired: response.data.expiredTime,
+      paymentId: response.data.merchantTradeNo,
+      totalAmount: response.data.amount,
+      storeId: response.data.storeId,
+      orderId: result._id,
     });
   } catch (error) {
     // Handle unexpected errors
@@ -50,9 +33,11 @@ export const createEMoney = async (req, res, next) => {
 export const eMoneyOrderStatus = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const eMoney = await eMoneyService.eMoneyOrderStatus({ id });
+    const { responseHeaders, response } = await eMoneyService.eMoneyOrderStatus(
+      { id }
+    );
     // Respond
-    res.set(eMoney.responseHeaders).status(200).json(eMoney.response.data);
+    res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error fetching e-money status: ${error.message}`);
@@ -68,9 +53,12 @@ export const createEMoneyRefund = async (req, res, next) => {
       abortEarly: false,
     });
 
-    const eMoney = await eMoneyService.refundEmoney({ id, validatedRequest });
+    const { responseHeaders, response } = await eMoneyService.refundEmoney({
+      id,
+      validatedRequest,
+    });
     // Respond
-    res.set(eMoney.responseHeaders).status(200).json(eMoney.response.data);
+    res.set(responseHeaders).status(200).json(response.data);
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error refund e-money: ${error.message}`);
