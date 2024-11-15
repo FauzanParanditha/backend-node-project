@@ -27,18 +27,6 @@ dotenv.config();
 ensureUploadsDirExists();
 export const web = express();
 
-let serverIsClosing = false;
-web.use((req, res, next) => {
-  if (serverIsClosing) {
-    res.status(503).json({
-      errors: true,
-      message: "Server is shutting down, no new requests accepted.",
-    });
-  } else {
-    next();
-  }
-});
-
 web.use(cors());
 web.use(helmet());
 web.use(cookieParser());
@@ -95,34 +83,3 @@ web.get("/me", jwtMiddlewareAdmin, async (req, res, next) => {
 });
 
 web.use(errorMiddleware);
-function handleShutdownGracefully(signal) {
-  return () => {
-    serverIsClosing = true;
-    logger.info(
-      `Received ${signal} signal. Starting graceful shutdown... New requests will be denied.`
-    );
-
-    // Stop accepting new connections and complete ongoing requests
-    server.close(() => {
-      logger.info("HTTP server closed gracefully.");
-
-      // Close the database connection gracefully
-      mongoose.connection.close(false, () => {
-        logger.info("MongoDB connection closed.");
-        process.exit(0); // Exit cleanly after everything is closed
-      });
-    });
-
-    // Timeout as a backup to force exit if graceful shutdown takes too long
-    setTimeout(() => {
-      logger.error("Forced shutdown due to timeout.");
-      process.exit(1); // Exit with failure if cleanup takes too long
-    }, 10000); // 10 seconds to allow ongoing connections to complete
-  };
-}
-
-// Add graceful shutdown signals
-process.on("SIGINT", handleShutdownGracefully("SIGINT"));
-process.on("SIGTERM", handleShutdownGracefully("SIGTERM"));
-process.on("SIGHUP", handleShutdownGracefully("SIGHUP"));
-process.on("SIGQUIT", handleShutdownGracefully("SIGQUIT"));
