@@ -69,7 +69,7 @@ export const createStaticVa = async (req, res, next) => {
       abortEarly: false,
     });
 
-    const vaStatic = vaService.createVaStatic({ validatedProduct });
+    const vaStatic = await vaService.createVaStatic({ validatedProduct });
 
     // Respond with created order details
     res.status(200).json({
