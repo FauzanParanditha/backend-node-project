@@ -246,7 +246,7 @@ export const createVaStatic = async ({ validatedProduct }) => {
     requestBody,
     { headers }
   );
-  // console.log("Response:", response.data);
+  console.log("Response:", response.data);
 
   // Check for successful response
   if (!response.data || response.data.errCode != 0) {
@@ -274,6 +274,7 @@ export const createVaStatic = async ({ validatedProduct }) => {
   //   storeId: response.data.storeId,
   //   va: response.data,
   // });
+  console.log(response, result);
 
   return { response, result };
 };

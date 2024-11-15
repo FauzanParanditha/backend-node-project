@@ -70,7 +70,6 @@ export const createStaticVa = async (req, res, next) => {
     });
 
     const vaStatic = vaService.createVaStatic({ validatedProduct });
-    console.log(vaStatic);
 
     // Respond with created order details
     res.status(200).json({
