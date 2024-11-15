@@ -1,6 +1,7 @@
 import uuid4 from "uuid4";
 import User from "../models/userModel.js";
 import { validateOrderProducts } from "../utils/helper.js";
+import { ResponseError } from "../error/responseError.js";
 import {
   generateHeaders,
   generateMerchantTradeNo,
@@ -9,14 +10,15 @@ import {
   paylabsApiUrl,
 } from "./paylabs.js";
 import {
-  validateCCStatus,
-  validateCreditCardRequest,
+  validateGenerateVA,
+  validateStaticVA,
+  validateVaStatus,
 } from "../validators/paymentValidator.js";
 import axios from "axios";
 import Order from "../models/orderModel.js";
-import { ResponseError } from "../error/responseError.js";
+import VirtualAccount from "../models/vaModel.js";
 
-export const createCC = async ({ validatedProduct }) => {
+export const createVa = async ({ validatedProduct }) => {
   // Verify user existence
   const existUser = await User.findById(validatedProduct.userId);
   if (!existUser) throw new ResponseError(404, "User does not exist!");
@@ -55,9 +57,7 @@ export const createCC = async ({ validatedProduct }) => {
     amount: requestBodyForm.totalAmount,
     merchantTradeNo,
     notifyUrl: process.env.NOTIFY_URL,
-    paymentParams: {
-      redirectUrl: process.env.REDIRECT_URL,
-    },
+    payer: existUser.fullName,
     productName: requestBodyForm.products.map((p) => p.title).join(", "),
     // productInfo: requestBodyForm.products.map((product) => ({
     //   id: product.productId.toString(),
@@ -70,7 +70,7 @@ export const createCC = async ({ validatedProduct }) => {
   };
 
   // Validate requestBody
-  const { error } = validateCreditCardRequest(requestBody);
+  const { error } = validateGenerateVA(requestBody);
   if (error)
     throw new ResponseError(
       400,
@@ -80,7 +80,7 @@ export const createCC = async ({ validatedProduct }) => {
   // Generate headers for Paylabs request
   const { headers } = generateHeaders(
     "POST",
-    "/payment/v2.1/cc/create",
+    "/payment/v2.1/va/create",
     requestBody,
     requestId
   );
@@ -90,7 +90,7 @@ export const createCC = async ({ validatedProduct }) => {
 
   // Send request to Paylabs
   const response = await axios.post(
-    `${paylabsApiUrl}/payment/v2.1/cc/create`,
+    `${paylabsApiUrl}/payment/v2.1/va/create`,
     requestBody,
     { headers }
   );
@@ -109,16 +109,17 @@ export const createCC = async ({ validatedProduct }) => {
   const result = await Order.create({
     ...requestBodyForm,
     totalAmount: response.data.amount,
-    paymentLink: response.data.paymentActions.payUrl,
+    virtualAccountNo: response.data.vaCode,
     paymentId: response.data.merchantTradeNo,
     paymentExpired: response.data.expiredTime,
     storeId: response.data.storeId,
-    cc: response.data,
+    va: response.data,
   });
+
   return { response, result };
 };
 
-export const ccOrderStatus = async ({ id }) => {
+export const vaOrderStatus = async ({ id }) => {
   // Check if the order exists
   const existOrder = await Order.findById(id);
   if (!existOrder) throw new ResponseError(404, "Order does not exist!");
@@ -129,8 +130,8 @@ export const ccOrderStatus = async ({ id }) => {
   if (existOrder.paymentStatus === "expired")
     throw new ResponseError(200, "Payment expired!");
 
-  if (!existOrder.cc)
-    throw new ResponseError(400, "CC data not found in the order");
+  if (!existOrder.va)
+    throw new ResponseError(400, "VA data not found in the order");
 
   // Prepare request payload for Paylabs
   const requestId = generateRequestId();
@@ -144,7 +145,7 @@ export const ccOrderStatus = async ({ id }) => {
   };
 
   // Validate requestBody
-  const { error } = validateCCStatus(requestBody);
+  const { error } = validateVaStatus(requestBody);
   if (error)
     throw new ResponseError(
       400,
@@ -154,7 +155,7 @@ export const ccOrderStatus = async ({ id }) => {
   // Generate headers for Paylabs request
   const { headers } = generateHeaders(
     "POST",
-    "/payment/v2.1/cc/query",
+    "/payment/v2.1/va/query",
     requestBody,
     requestId
   );
@@ -164,7 +165,7 @@ export const ccOrderStatus = async ({ id }) => {
 
   // Send request to Paylabs
   const response = await axios.post(
-    `${paylabsApiUrl}/payment/v2.1/cc/query`,
+    `${paylabsApiUrl}/payment/v2.1/va/query`,
     requestBody,
     { headers }
   );
@@ -182,10 +183,97 @@ export const ccOrderStatus = async ({ id }) => {
   // Generate headers for Paylabs request
   const { responseHeaders } = generateHeaders(
     "POST",
-    "/api/order/status/cc/:id",
+    "/api/order/status/va/:id",
     response.data,
     generateRequestId()
   );
 
   return { response, responseHeaders };
+};
+
+export const createVaStatic = async ({ validatedProduct }) => {
+  // Verify user existence
+  const existUser = await User.findById(validatedProduct.userId);
+  if (!existUser) throw new ResponseError(404, "User does not exist!");
+
+  // Construct order data
+  const requestBodyForm = {
+    orderId: uuid4(),
+    userId: validatedProduct.userId,
+    totalAmount: 0,
+    phoneNumber: validatedProduct.phoneNumber,
+    paymentStatus: "pending",
+    paymentMethod: validatedProduct.paymentMethod,
+    paymentType: validatedProduct.paymentType,
+    ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
+  };
+
+  // Generate IDs and other necessary fields
+  const requestId = generateRequestId();
+
+  // Prepare Paylabs request payload
+  const requestBody = {
+    requestId,
+    merchantId,
+    ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
+    paymentType: requestBodyForm.paymentType,
+    payer: existUser.fullName,
+    notifyUrl: `${process.env.NOTIFY_URL}/va`,
+  };
+
+  // Validate requestBody
+  const { error } = validateStaticVA(requestBody);
+  if (error)
+    throw new ResponseError(
+      400,
+      error.details.map((err) => err.message)
+    );
+
+  // Generate headers for Paylabs request
+  const { headers } = generateHeaders(
+    "POST",
+    "/payment/v2.1/staticva/create",
+    requestBody,
+    requestId
+  );
+
+  // console.log(requestBody);
+  // console.log(headers);
+
+  // Send request to Paylabs
+  const response = await axios.post(
+    `${paylabsApiUrl}/payment/v2.1/staticva/create`,
+    requestBody,
+    { headers }
+  );
+  // console.log("Response:", response.data);
+
+  // Check for successful response
+  if (!response.data || response.data.errCode != 0) {
+    return res.status(400).json({
+      success: false,
+      message: response.data
+        ? `error: ${response.data.errCodeDes}`
+        : "failed to create payment",
+    });
+  }
+
+  // Save va details in the database
+  const result = await VirtualAccount.create({
+    userId: existUser._id,
+    phoneNumber: validatedProduct.phoneNumber,
+    vaCode: response.data.vaCode,
+    vaStatic: response.data,
+  });
+
+  // Save order details in the database
+  // const savedOrder = await Order.create({
+  //   ...requestBodyForm,
+  //   virtualAccountNo: response.data.vaCode,
+  //   paymentId: response.data.merchantTradeNo,
+  //   storeId: response.data.storeId,
+  //   va: response.data,
+  // });
+
+  return { response, result };
 };

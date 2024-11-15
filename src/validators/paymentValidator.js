@@ -102,6 +102,7 @@ export const validateGenerateVA = (data) => {
       )
       .min(1)
       .optional(),
+    feeType: joi.string().valid("BEN", "OUR").optional(),
   });
   return schema.validate(data);
 };
