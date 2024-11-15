@@ -21,7 +21,7 @@ import axios from "axios";
 import Order from "../models/orderModel.js";
 import { ResponseError } from "../error/responseError.js";
 
-export const createVASNAP = async ({ validatedProduct }) => {
+export const createVASNAP = async ({ req, validatedProduct }) => {
   // Verify user existence
   const existUser = await User.findById(validatedProduct.userId);
   if (!existUser) throw new ResponseError(404, "User does not exist!");
@@ -322,12 +322,7 @@ export const VaSnapCallback = async ({ payload }) => {
   return { responseHeaders, payloadResponse };
 };
 
-export const updateVASNAP = async ({ id }) => {
-  // Validate the update payload
-  const validatedUpdateData = await orderSchema.validateAsync(req.body, {
-    abortEarly: false,
-  });
-
+export const updateVASNAP = async ({ id, validatedUpdateData }) => {
   // Check if the order exists
   const existingOrder = await Order.findById(id);
   if (!existingOrder) throw new ResponseError(404, "Order does not exist!");

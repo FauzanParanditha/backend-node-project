@@ -9,7 +9,7 @@ export const createVASNAP = async (req, res) => {
     const validatedProduct = await orderSchema.validateAsync(req.body, {
       abortEarly: false,
     });
-    const vaSnap = await vaSnapService.createVASNAP({ validatedProduct });
+    const vaSnap = await vaSnapService.createVASNAP({ req, validatedProduct });
 
     // Respond with created order details
     res.status(200).json({
@@ -89,7 +89,15 @@ export const VaSnapCallback = async (req, res) => {
 export const updateVASNAP = async (req, res) => {
   const { id } = req.params;
   try {
-    const vaSnap = await vaSnapService.updateVASNAP({ id });
+    // Validate the update payload
+    const validatedUpdateData = await orderSchema.validateAsync(req.body, {
+      abortEarly: false,
+    });
+
+    const vaSnap = await vaSnapService.updateVASNAP({
+      id,
+      validatedUpdateData,
+    });
     // Send a response with the updated order details
     res.status(200).json({
       success: true,
