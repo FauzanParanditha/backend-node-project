@@ -78,11 +78,7 @@ export const VaSnapCallback = async (req, res) => {
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error handling webhook va snap: ${error.message}`);
-    return res.status(500).json({
-      success: false,
-      message: "An error occurred",
-      error: error.message,
-    });
+    next(error);
   }
 };
 
@@ -97,6 +93,7 @@ export const updateVASNAP = async (req, res) => {
     const vaSnap = await vaSnapService.updateVASNAP({
       id,
       validatedUpdateData,
+      req,
     });
 
     if (vaSnap.currentDateTime > vaSnap.expiredDateTime) {

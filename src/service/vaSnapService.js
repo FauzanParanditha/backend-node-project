@@ -322,7 +322,7 @@ export const VaSnapCallback = async ({ payload }) => {
   return { responseHeaders, payloadResponse };
 };
 
-export const updateVASNAP = async ({ id, validatedUpdateData }) => {
+export const updateVASNAP = async ({ id, validatedUpdateData, req }) => {
   // Check if the order exists
   const existingOrder = await Order.findById(id);
   if (!existingOrder) throw new ResponseError(404, "Order does not exist!");
