@@ -1,24 +1,4 @@
-import uuid4 from "uuid4";
-import User from "../models/userModel.js";
-import { calculateTotal, validateOrderProducts } from "../utils/helper.js";
 import { orderSchema, vaStaticSchema } from "../validators/orderValidator.js";
-import {
-  createSignature,
-  generateHeaders,
-  generateMerchantTradeNo,
-  generateRequestId,
-  generateTimestamp,
-  merchantId,
-  paylabsApiUrl,
-} from "../service/paylabs.js";
-import {
-  validateGenerateVA,
-  validateStaticVA,
-  validateVaStatus,
-} from "../validators/paymentValidator.js";
-import axios from "axios";
-import Order from "../models/orderModel.js";
-import VirtualAccount from "../models/vaModel.js";
 import * as vaService from "../service/vaService.js";
 import logger from "../application/logger.js";
 
