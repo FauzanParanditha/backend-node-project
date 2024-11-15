@@ -234,7 +234,7 @@ export const VaSnapCallback = async ({ payload }) => {
     throw new ResponseError(200, "Payment already processed!");
 
   const currentDateTime = new Date();
-  const expiredDateTime = convertToDate(
+  const expiredDateTime = new Date(
     existOrder.vaSnap.virtualAccountData.expiredDate
   );
 
@@ -318,7 +318,11 @@ export const VaSnapCallback = async ({ payload }) => {
     );
     return { currentDateTime, expiredDateTime, payloadResponseError };
   }
-  const payloadResponse = generateResponsePayload(existOrder);
+  const payloadResponse = generateResponsePayload(
+    existOrder,
+    "2002500",
+    "Success"
+  );
   return { responseHeaders, payloadResponse };
 };
 

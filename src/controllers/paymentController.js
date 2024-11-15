@@ -29,19 +29,19 @@ export const paylabsCallback = async (req, res, next) => {
       return res.status(401).send("Invalid signature");
     }
 
-    const callback = await paymentService.callbackPaylabs({ payload });
+    const {
+      responseHeaders,
+      payloadResponse,
+      currentDateTime,
+      expiredDateTime,
+      payloadResponseError,
+    } = await paymentService.callbackPaylabs({ payload });
 
-    if (
-      callback.currentDateTime > callback.expiredDateTime &&
-      callback.expiredDateTime != null
-    ) {
-      return res.status(200).json(callback.payloadResponseError);
+    if (currentDateTime > expiredDateTime && expiredDateTime != null) {
+      return res.status(200).json(payloadResponseError);
     }
 
-    return res
-      .set(callback.responseHeaders)
-      .status(200)
-      .json(callback.payloadResponse);
+    return res.set(responseHeaders).status(200).json(payloadResponse);
   } catch (error) {
     logger.error(`Error handling webhook: ${error.message}`);
     next(error);

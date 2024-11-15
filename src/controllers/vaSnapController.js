@@ -58,7 +58,7 @@ export const vaSNAPOrderStatus = async (req, res) => {
   }
 };
 
-export const VaSnapCallback = async (req, res) => {
+export const VaSnapCallback = async (req, res, next) => {
   try {
     // Extract and verify signature
     const { "x-signature": signature, "x-timestamp": timestamp } = req.headers;
@@ -71,10 +71,20 @@ export const VaSnapCallback = async (req, res) => {
       return res.status(401).send("Invalid signature");
     }
 
-    const vaSnap = await vaSnapService.VaSnapCallback({ payload });
+    const {
+      responseHeaders,
+      payloadResponse,
+      currentDateTime,
+      expiredDateTime,
+      payloadResponseError,
+    } = await vaSnapService.VaSnapCallback({ payload });
+
+    if (currentDateTime > expiredDateTime) {
+      res.set(responseHeaders).status(403).json(payloadResponseError);
+    }
 
     // Respond
-    res.set(vaSnap.responseHeaders).status(200).json(vaSnap.payloadResponse);
+    res.set(responseHeaders).status(200).json(payloadResponse);
   } catch (error) {
     // Handle unexpected errors
     logger.error(`Error handling webhook va snap: ${error.message}`);
