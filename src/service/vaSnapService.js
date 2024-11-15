@@ -109,14 +109,13 @@ export const createVASNAP = async ({ validatedProduct }) => {
   // console.log(response.data);
 
   // Check for successful response
-  if (!response.data || response.data.responseCode.charAt(0) !== "2") {
-    return res.status(400).json({
-      success: false,
-      message: response.data
+  if (!response.data || response.data.responseCode.charAt(0) !== "2")
+    throw new ResponseError(
+      400,
+      response.data
         ? `error: ${response.data.responseMessage} with code ${response.data.responseCode}`
-        : "failed to create payment",
-    });
-  }
+        : "failed to create payment"
+    );
 
   // Save order details in the database
   const result = await Order.create({
@@ -195,14 +194,13 @@ export const vaSNAPOrderStatus = async ({ id }) => {
   // console.log(response.data);
 
   // Check for successful response
-  if (!response.data || response.data.responseCode.charAt(0) !== "2") {
-    return res.status(400).json({
-      success: false,
-      message: response.data
+  if (!response.data || response.data.responseCode.charAt(0) !== "2")
+    throw new ResponseError(
+      400,
+      response.data
         ? `error: ${response.data.responseMessage} with code ${response.data.responseCode}`
-        : "failed to create payment",
-    });
-  }
+        : "failed to create payment"
+    );
 
   // Prepare response payload and headers
   const timestampResponse = generateTimestamp();
@@ -432,7 +430,7 @@ export const updateVASNAP = async ({ id }) => {
     throw new ResponseError(
       400,
       response.data
-        ? `error: ${response.data.errCodeDes}`
+        ? `error: ${response.data.responseMessage} with code ${response.data.responseCode}`
         : "failed to create payment"
     );
   // Update validatedUpdateData with validProducts
