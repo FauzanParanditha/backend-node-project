@@ -1,0 +1,49 @@
+import jwt from "jsonwebtoken";
+import IPWhitelist from "../models/ipWhitelistModel.js";
+import logger from "../application/logger.js";
+import { ResponseError } from "../error/responseError.js";
+
+export const jwtMiddlewareAdmin = async (req, res, next) => {
+  let token;
+  const clientIP = req.ip;
+  // console.log(clientIP)
+
+  if (req.headers.client === "not-browser") {
+    token = req.headers.authorization;
+  } else {
+    token = req.cookies["Authorization"];
+  }
+
+  if (!token) {
+    return res.status(403).json({
+      success: false,
+      message: "Unauthorized!",
+    });
+  }
+
+  const whitelistedIP = await IPWhitelist.findOne({ ipAddress: clientIP });
+
+  if (!whitelistedIP) {
+    return res.status(403).json({
+      success: false,
+      message: "Access forbidden: Your IP address does not whitelisted.",
+    });
+  }
+
+  try {
+    const userToken = token.split(" ")[1];
+    const jwtVerified = jwt.verify(
+      userToken,
+      process.env.ACCESS_TOKEN_ADMIN_PRIVATE_KEY
+    );
+    if (jwtVerified) {
+      req.admin = jwtVerified;
+      next();
+    } else {
+      throw new ResponseError(400, "Error in the token ");
+    }
+  } catch (error) {
+    logger.error(`Error jwtMiddleware: ${error.message}`);
+    next(error);
+  }
+};
