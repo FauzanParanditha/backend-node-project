@@ -255,7 +255,7 @@ export const VaSnapCallback = async ({ payload }) => {
           english: statusMessage || "Success",
           indonesia: statusMessage === "Success" ? "Sukses" : "Gagal",
         },
-        partnerServiceId: existOrder?.paymentPaylabsVaSnap?.partnerServiceId,
+        partnerServiceId: existOrder?.partnerServiceId,
         customerNo: existOrder?.paymentPaylabsVaSnap?.customerNo,
         virtualAccountNo: existOrder?.paymentPaylabsVaSnap?.virtualAccountNo,
         virtualAccountName:
