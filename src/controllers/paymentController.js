@@ -46,7 +46,7 @@ export const paylabsVaStaticCallback = async (req, res, next) => {
       return res.status(401).send("Invalid signature");
     }
 
-    const { responseHeaders, payloadResponseError } =
+    const { responseHeaders, responsePayload } =
       await paymentService.callbackPaylabsVaStatic({ payload });
 
     return res.set(responseHeaders).status(200).json(responsePayload);
