@@ -132,16 +132,16 @@ export const updateProduct = async ({ id, adminId, req }) => {
 
   // Handle image upload
   if (req.file) {
-    // Delete the old image file if it exists
-    const oldImagePath = path.join(__dirname, "../..", existingProduct.image);
-    fs.unlink(oldImagePath, (error) => {
-      if (error) {
-        throw new ResponseError(400, "Failed to delete old image!");
-      }
-    });
+    try {
+      // Delete the old image file if it exists
+      const oldImagePath = path.join(__dirname, "../..", existingProduct.image);
+      await fs.promises.unlink(oldImagePath); // Use promises to handle async unlink
 
-    // Update the image path
-    updateData.image = req.file.path; // Use the new image path from multer
+      // Update the image path
+      updateData.image = req.file.path; // Use the new image path from multer
+    } catch (error) {
+      throw new ResponseError(400, "Failed to delete old image!");
+    }
   }
 
   // Update the product
@@ -161,12 +161,13 @@ export const deleteProduct = async ({ id, adminId }) => {
     throw new ResponseError(401, "Unauthorized!");
 
   // Delete the associated image file
-  const imagePath = path.join(__dirname, "../..", product.image);
-  fs.unlink(imagePath, (error) => {
-    if (error) {
-      throw new ResponseError(400, "Failed to delete old image!");
-    }
-  });
+  try {
+    // Delete the old image file if it exists
+    const imagePath = path.join(__dirname, "../..", product.image);
+    await fs.promises.unlink(imagePath); // Use promises to handle async unlink
+  } catch (error) {
+    throw new ResponseError(400, "Failed to delete old image!");
+  }
 
   // Delete the product from the database
   await Product.findByIdAndDelete(id);
