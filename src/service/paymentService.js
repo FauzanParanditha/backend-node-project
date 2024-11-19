@@ -1,5 +1,8 @@
 import axios from "axios";
-import { validateCreateLinkRequest } from "../validators/paymentValidator.js";
+import {
+  validateCallback,
+  validateCreateLinkRequest,
+} from "../validators/paymentValidator.js";
 import {
   convertToDate,
   createSignature,
@@ -65,16 +68,31 @@ export const createPaymentLink = async (order) => {
 };
 
 export const callbackPaylabs = async ({ payload }) => {
+  const { error } = validateCallback(payload);
+  if (error)
+    throw new ResponseError(
+      400,
+      error.details.map((err) => err.message)
+    );
+
   // Retrieve notification data and order
   const notificationData = payload;
-  const order = await Order.findOne({
-    paymentId: notificationData.merchantTradeNo,
-  });
 
+  //validate payment ID
+  const paymentId = notificationData.merchantTradeNo;
+  if (typeof paymentId !== "string" || paymentId.trim() === "") {
+    throw new ResponseError(400, "Invalid transaction ID");
+  }
+
+  //Sanitize and query database
+  const sanitizedPaymentId = paymentId.trim();
+  const order = await Order.findOne({
+    paymentId: sanitizedPaymentId,
+  });
   if (!order)
     throw new ResponseError(
       404,
-      `Order not found for orderID: ${notificationData.merchantTradeNo}`
+      `Order not found for orderID: ${sanitizedPaymentId}`
     );
 
   if (order.paymentStatus === "paid")
@@ -148,16 +166,32 @@ export const callbackPaylabs = async ({ payload }) => {
 };
 
 export const callbackPaylabsVaStatic = async ({ payload }) => {
+  const { error } = validateCallback(payload);
+  if (error)
+    throw new ResponseError(
+      400,
+      error.details.map((err) => err.message)
+    );
+
   // Retrieve notification data and order
   const notificationData = payload;
+
+  //validate va code
+  const vaCode = notificationData.paymentMethodInfo.vaCode;
+  if (typeof vaCode !== "string" || vaCode.trim() === "") {
+    throw new ResponseError(400, "Invalid va code");
+  }
+
+  //Sanitize and query database
+  const sanitizedVaCode = vaCode.trim();
   const va = await VirtualAccount.findOne({
-    vaCode: notificationData.paymentMethodInfo.vaCode,
+    vaCode: sanitizedVaCode,
   });
 
   if (!va)
     throw new ResponseError(
       404,
-      `virtual account not found for vaCode: ${notificationData.paymentMethodInfo.vaCode}`
+      `virtual account not found for vaCode: ${sanitizedVaCode}`
     );
 
   // Process based on notification status

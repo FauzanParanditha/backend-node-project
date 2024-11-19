@@ -53,7 +53,12 @@ export const getAllIpWhitelists = async ({
 };
 
 export const createIpWhitelist = async ({ adminId, ipAddress }) => {
-  const existIpWhitelist = await IPWhitelist.findOne({ ipAddress });
+  // Sanitize the input
+  const sanitizedipAddress = ipAddress.trim();
+
+  const existIpWhitelist = await IPWhitelist.findOne({
+    ipAddress: { $eq: sanitizedipAddress },
+  });
   if (existIpWhitelist)
     throw new ResponseError(400, `IpAddress ${ipAddress} already exist!`);
 
@@ -78,7 +83,13 @@ export const updateIpWhitelist = async ({ id, adminId, ipAddress }) => {
     throw new ResponseError(404, "IpAddress does not exist!");
   if (existIpWhitelist.adminId.toString() != adminId)
     throw new ResponseError(401, "Unauthorized!");
-  const existingIpWhitelist = await IPWhitelist.findOne({ ipAddress });
+
+  // Sanitize the input
+  const sanitizedipAddress = ipAddress.trim();
+
+  const existingIpWhitelist = await IPWhitelist.findOne({
+    ipAddress: { $eq: sanitizedipAddress },
+  });
   if (existingIpWhitelist)
     throw new ResponseError(400, `IpAddress ${ipAddress} already exist!`);
 

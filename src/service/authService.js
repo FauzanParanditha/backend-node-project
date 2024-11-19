@@ -5,7 +5,11 @@ import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
 import { ResponseError } from "../error/responseError.js";
 
 export const loginAdmin = async ({ email, password }) => {
-  const existAdmin = await Admin.findOne({ email }).select("+password");
+  const sanitizedEmail = email.trim();
+
+  const existAdmin = await Admin.findOne({
+    email: { $eq: sanitizedEmail },
+  }).select("+password");
   if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
   const isValidPassword = await compareDoHash(password, existAdmin.password);
@@ -25,7 +29,9 @@ export const loginAdmin = async ({ email, password }) => {
 };
 
 export const sendVerificationCodeService = async (email) => {
-  const existAdmin = await Admin.findOne({ email });
+  const sanitizedEmail = email.trim();
+
+  const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
   if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
   if (existAdmin.verified)
@@ -54,9 +60,11 @@ export const sendVerificationCodeService = async (email) => {
 
 export const verifyVerificationCodeService = async (email, provided_code) => {
   const codeValue = provided_code.toString();
-  const existAdmin = await Admin.findOne({ email }).select(
-    "+verificationCode +verificationCodeValidation"
-  );
+  const sanitizedEmail = email.trim();
+
+  const existAdmin = await Admin.findOne({
+    email: { $eq: sanitizedEmail },
+  }).select("+verificationCode +verificationCodeValidation");
   if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
   if (existAdmin.verified) throw new ResponseError(400, "Admin is verified!");
@@ -105,7 +113,9 @@ export const changePasswordService = async (
 };
 
 export const sendForgotPasswordService = async (email) => {
-  const existAdmin = await Admin.findOne({ email: email });
+  const sanitizedEmail = email.trim();
+
+  const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
   if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
   const codeValue = Math.floor(Math.random() * 100000).toString();
@@ -134,9 +144,11 @@ export const verifyForgotPasswordCodeService = async (
   new_password
 ) => {
   const codeValue = provided_code.toString();
-  const existAdmin = await Admin.findOne({ email }).select(
-    "+forgotPasswordCode +forgotPasswordCodeValidation"
-  );
+  const sanitizedEmail = email.trim();
+
+  const existAdmin = await Admin.findOne({
+    email: { $eq: sanitizedEmail },
+  }).select("+forgotPasswordCode +forgotPasswordCodeValidation");
   if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
   if (

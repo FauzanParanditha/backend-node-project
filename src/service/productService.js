@@ -63,10 +63,16 @@ export const getAllProducts = async ({
 };
 
 export const createProduct = async ({ req, adminId }) => {
-  const existingProduct = await Product.findOne({ title: req.body.title });
+  // Sanitize the input
+  const title = req.body.title.trim();
+
+  const existingProduct = await Product.findOne({ title: { $eq: title } });
   if (existingProduct) throw new ResponseError(400, "Product already exist!");
 
-  const existCategory = await Category.findOne({ name: req.body.category });
+  // Sanitize the input
+  const category = req.body.category.trim();
+
+  const existCategory = await Category.findOne({ name: { $eq: category } });
   if (!existCategory) throw new ResponseError(404, "Category does not exist!");
 
   // Check if an image was uploaded
@@ -103,7 +109,10 @@ export const updateProduct = async ({ id, adminId, req }) => {
   const existingProduct = await Product.findById(id);
   if (!existingProduct) throw new ResponseError(404, "Product does not exist!");
 
-  const existCategory = await Category.findOne({ name: req.body.category });
+  // Sanitize the input
+  const category = req.body.category.trim();
+
+  const existCategory = await Category.findOne({ name: { $eq: category } });
   if (!existCategory) throw new ResponseError(404, "Category does not exist!");
 
   if (existingProduct.adminId.toString() != adminId)

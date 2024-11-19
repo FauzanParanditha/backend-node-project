@@ -53,7 +53,11 @@ export const getAllCategorys = async ({
 };
 
 export const createCategory = async ({ name, adminId }) => {
-  const existCategory = await Category.findOne({ name });
+  const sanitizedName = name.trim();
+
+  const existCategory = await Category.findOne({
+    name: { $eq: sanitizedName },
+  });
   if (existCategory)
     throw new ResponseError(400, `Category ${name} already exists!`);
 
@@ -77,7 +81,12 @@ export const updateCategory = async ({ id, adminId, name }) => {
   if (!existCategory) throw new ResponseError(404, "Category does not exist!");
   if (existCategory.adminId.toString() != adminId)
     throw new ResponseError(401, "Unauthorized!");
-  const existingCategory = await Category.findOne({ name });
+
+  const sanitizedName = name.trim();
+
+  const existingCategory = await Category.findOne({
+    name: { $eq: sanitizedName },
+  });
   if (existingCategory)
     throw new ResponseError(400, `Category ${name} already exists!`);
 

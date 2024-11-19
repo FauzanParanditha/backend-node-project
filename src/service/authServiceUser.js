@@ -5,7 +5,11 @@ import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
 import { ResponseError } from "../error/responseError.js";
 
 export const loginUser = async ({ email, password }) => {
-  const existUser = await User.findOne({ email }).select("+password");
+  const sanitizedEmail = email.trim();
+
+  const existUser = await User.findOne({
+    email: { $eq: sanitizedEmail },
+  }).select("+password");
   if (!existUser) throw new ResponseError(404, "User does not exist!");
 
   const isValidPassword = await compareDoHash(password, existUser.password);
@@ -25,7 +29,9 @@ export const loginUser = async ({ email, password }) => {
 };
 
 export const sendVerificationCodeService = async (email) => {
-  const existUser = await User.findOne({ email });
+  const sanitizedEmail = email.trim();
+
+  const existUser = await User.findOne({ email: { $eq: sanitizedEmail } });
   if (!existUser) throw new ResponseError(404, "User does not exist!");
 
   if (existUser.verified)
@@ -54,9 +60,11 @@ export const sendVerificationCodeService = async (email) => {
 
 export const verifyVerificationCodeService = async (email, provided_code) => {
   const codeValue = provided_code.toString();
-  const existUser = await User.findOne({ email }).select(
-    "+verificationCode +verificationCodeValidation"
-  );
+  const sanitizedEmail = email.trim();
+
+  const existUser = await User.findOne({
+    email: { $eq: sanitizedEmail },
+  }).select("+verificationCode +verificationCodeValidation");
   if (!existUser) throw new ResponseError(404, "User does not exist!");
 
   if (existUser.verified) throw new ResponseError(400, "User is verified!");
@@ -105,7 +113,9 @@ export const changePasswordService = async (
 };
 
 export const sendForgotPasswordService = async (email) => {
-  const existUser = await User.findOne({ email: email });
+  const sanitizedEmail = email.trim();
+
+  const existUser = await User.findOne({ email: { $eq: sanitizedEmail } });
   if (!existUser) throw new ResponseError(404, "User does not exist!");
 
   const codeValue = Math.floor(Math.random() * 100000).toString();
@@ -134,9 +144,11 @@ export const verifyForgotPasswordCodeService = async (
   new_password
 ) => {
   const codeValue = provided_code.toString();
-  const existUser = await User.findOne({ email }).select(
-    "+forgotPasswordCode +forgotPasswordCodeValidation"
-  );
+  const sanitizedEmail = email.trim();
+
+  const existUser = await User.findOne({
+    email: { $eq: sanitizedEmail },
+  }).select("+forgotPasswordCode +forgotPasswordCodeValidation");
   if (!existUser) throw new ResponseError(404, "User does not exist!");
 
   if (!existUser.forgotPasswordCode || !existUser.forgotPasswordCodeValidation)

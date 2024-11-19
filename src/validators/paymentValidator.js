@@ -20,6 +20,87 @@ export const validateCreateLinkRequest = (data) => {
   return schema.validate(data);
 };
 
+export const validateCallback = (data) => {
+  const schema = joi.object({
+    requestId: joi.string().max(64).required(),
+    errCode: joi.string().max(32).required(),
+    errCodeDes: joi.string().max(128).optional(),
+    merchantId: joi.string().max(20).required(),
+    storeId: joi.string().max(30).optional(),
+    paymentType: joi.string().max(20).required(),
+    amount: joi.number().precision(2).required(),
+    merchantTradeNo: joi.string().max(32).required(),
+    platformTradeNo: joi.string().max(32).optional(),
+    createTime: joi.string().max(16).optional(),
+    successTime: joi.string().max(16).optional(),
+    status: joi.string().max(32).optional(),
+    productName: joi.string().max(100).optional(),
+    productInfo: joi
+      .array()
+      .items(
+        joi.object({
+          id: joi.string().max(10).required(),
+          name: joi.string().max(32).required(),
+          price: joi.number().required(),
+          type: joi.string().max(20).required(),
+          url: joi.string().max(200).optional(),
+          quantity: joi.number().max(4).required(),
+        })
+      )
+      .min(1)
+      .optional(),
+    paymentMethodInfo: joi
+      .object()
+      .when("paymentType", [
+        {
+          is: "QRIS",
+          then: joi.object({
+            nmid: joi.string().max(32).required(),
+            rrn: joi.string().max(32).optional(),
+            tid: joi.string().max(32).optional(),
+            payer: joi.string().max(60).optional(),
+            phoneNumber: joi.string().max(20).optional(),
+            issuerId: joi.string().max(20).optional(),
+          }),
+        },
+        {
+          is: joi
+            .string()
+            .valid(
+              "SinarmasVA",
+              "MaybankVA",
+              "DanamonVA",
+              "BNCVA",
+              "BCAVA",
+              "INAVA",
+              "BNIVA",
+              "PermataVA",
+              "MuamalatVA",
+              "BSIVA",
+              "BRIVA",
+              "MandiriVA",
+              "CIMBVA"
+            ),
+          then: joi.object({
+            vaCode: joi.string().max(32).required(),
+          }),
+        },
+        {
+          is: joi.string().valid("Indomaret", "Alfamart", "POS"),
+          then: joi.object({
+            paymentCode: joi.string().max(32).required(),
+          }),
+        },
+      ])
+      .optional(),
+    transFeeRate: joi.number().max(6).precision(6).optional(),
+    transFeeAmount: joi.number().max(12).precision(2).optional(),
+    totalTransFee: joi.number().max(12).precision(2).optional(),
+    vatFee: joi.number().max(12).precision(2).optional(),
+  });
+  return schema.validate(data, { abortEarly: false });
+};
+
 export const validateQrisRequest = (data) => {
   const schema = joi.object({
     requestId: joi.string().max(64).required(),
@@ -283,8 +364,8 @@ export const validatePaymentVASNAP = (data) => {
       .object({
         transFeeRate: joi.number().max(6).precision(6).optional(),
         transFeeAmount: joi.number().max(12).precision(2).optional(),
-        totalTransFee: joi.number().max(6).precision(6).optional(),
-        vatFee: joi.number().max(6).precision(6).optional(),
+        totalTransFee: joi.number().max(12).precision(2).optional(),
+        vatFee: joi.number().max(12).precision(2).optional(),
         paymentType: joi.string().max(20).optional(),
       })
       .optional(),
@@ -406,10 +487,10 @@ export const validateEMoneyRefund = (data) => {
     merchantRefundNo: joi.string().max(32).required(),
     notifyUrl: joi.string().max(200).optional(),
     reason: joi.string().max(200).optional(),
-    transFeeRate: joi.number().precision(2).optional(),
-    transFeeAmount: joi.number().precision(2).optional(),
-    totalTransFee: joi.number().precision(2).optional(),
-    vatFee: joi.number().precision(2).optional(),
+    transFeeRate: joi.number().max(6).precision(6).optional(),
+    transFeeAmount: joi.number().max(12).precision(2).optional(),
+    totalTransFee: joi.number().max(12).precision(2).optional(),
+    vatFee: joi.number().max(12).precision(2).optional(),
   });
 
   return schema.validate(data);

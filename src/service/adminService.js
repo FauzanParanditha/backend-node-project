@@ -52,7 +52,9 @@ export const getAllAdmins = async ({
 };
 
 export const registerAdmin = async ({ email, password, fullName }) => {
-  const existAdmin = await Admin.findOne({ email });
+  const sanitizedEmail = email.trim();
+
+  const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
   if (existAdmin) throw new ResponseError(400, "Admin already exists!");
 
   const hashPassword = await doHash(password, 12);

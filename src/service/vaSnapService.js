@@ -221,8 +221,17 @@ export const VaSnapCallback = async ({ payload }) => {
 
   // Retrieve notification data and order
   const notificationData = payload;
+
+  // Validate transaction ID
+  const trxId = notificationData.trxId;
+  if (typeof trxId !== "string" || trxId.trim() === "") {
+    throw new ResponseError(400, "Invalid transaction ID");
+  }
+
+  // Sanitize and query database
+  const sanitizedTrxId = trxId.trim();
   const existOrder = await Order.findOne({
-    paymentId: notificationData.trxId,
+    paymentId: { $eq: sanitizedTrxId },
   });
   if (!existOrder)
     throw new ResponseError(

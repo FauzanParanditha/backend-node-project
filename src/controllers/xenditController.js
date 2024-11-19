@@ -72,8 +72,11 @@ export const xenditCallback = async (req, res, next) => {
     const event = req.body;
 
     // console.log("Webhook event received:", event);
+    const sanitizedExternalId = event.external_id.trim();
 
-    const order = await Order.findOne({ orderId: event.external_id });
+    const order = await Order.findOne({
+      orderId: { $eq: sanitizedExternalId },
+    });
 
     if (!order) {
       console.error(`Order not found for external_id: ${event.external_id}`);

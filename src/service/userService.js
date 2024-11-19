@@ -52,7 +52,7 @@ export const getAllUsers = async ({
 };
 
 export const registerUser = async ({ email, password, fullName }) => {
-  const existUser = await User.findOne({ email });
+  const existUser = await User.findOne({ email: { $eq: email } });
   if (existUser) throw new ResponseError(400, "User already exists!");
 
   const hashPassword = await doHash(password, 12);
