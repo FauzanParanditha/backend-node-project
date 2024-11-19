@@ -55,7 +55,7 @@ export const validateCallback = (data) => {
         {
           is: "QRIS",
           then: joi.object({
-            nmid: joi.string().max(32).required(),
+            nmid: joi.string().max(32).optional(),
             rrn: joi.string().max(32).optional(),
             tid: joi.string().max(32).optional(),
             payer: joi.string().max(60).optional(),
