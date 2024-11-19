@@ -127,7 +127,8 @@ export const xenditCallback = async (req, res, next) => {
         await order.save();
         break;
       default:
-        console.warn(`Unhandled event status received: ${event.status}`, event);
+        const status = String(event.status).replace(/[^\w\s]/gi, "");
+        console.warn(`Unhandled event status received: ${status}`, event);
         break;
     }
 
