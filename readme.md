@@ -23,7 +23,7 @@ src/
 ├── models/            # MongoDB schemas
 ├── routes/            # API endpoints
 ├── utils/             # Utility functions (e.g., helpers)
-└── index.js             # Main entry point
+└── index.js           # Main entry point
 ```
 
 ---
@@ -58,7 +58,7 @@ Before running the project, ensure you have the following installed:
    ```env
    PORT=5000
    MONGO_URI=mongodb://localhost:27017/your-database
-   PAYLABS_API_URL=https://api.paylabs.com
+   PAYLABS_API_URL=https://paylabs-provide
    PAYLABS_MERCHANT_ID=your_merchant_id
    NOTIFY_URL=https://your-domain.com/callback/paylabs
    REDIRECT_URL=https://your-domain.com/
@@ -104,17 +104,17 @@ Before running the project, ensure you have the following installed:
 {
   "products": [
     {
-      "productId": "671f3ac704e54002f51fe212",
-      "quantity": 2,
-      "colors": ["Red"],
-      "sizes": ["M"]
+      "productId": "xxxx",
+      "quantity": xxxx,
+      "colors": xxxx,
+      "sizes": xxxx
     }
   ],
-  "userId": "670f40a6420d437158a65116",
-  "phoneNumber": "1234567890",
-  // "storeId": "010454S00001", // optional for paylabs sub merchant
-  "paymentMethod": "paylabs",
-  "paymentType": "QRIS"
+  "userId": "xxxx",
+  "phoneNumber": "xxxx",
+  // "storeId": "xxxx", // optional for paylabs sub merchant
+  "paymentMethod": "xxxx",
+  "paymentType": "xxxx"
 }
 ```
 
@@ -122,23 +122,23 @@ Before running the project, ensure you have the following installed:
 
 ```json
 {
-  "merchantId": "010454",
-  "requestId": "N01045420241115454000000051731635137883",
-  "errCode": "0",
-  "paymentType": "BNIVA",
-  "amount": "57500",
-  "createTime": "20241115084435",
-  "successTime": "20241115084536",
-  "merchantTradeNo": "PL-e6e7a44a54c3dcc4",
-  "platformTradeNo": "2024111545400000005",
-  "status": "02",
+  "merchantId": "xxxx",
+  "requestId": "xxxx",
+  "errCode": "xxxx",
+  "paymentType": "xxxx",
+  "amount": "xxx",
+  "createTime": "xxxx",
+  "successTime": "xxxx",
+  "merchantTradeNo": "xxxx",
+  "platformTradeNo": "xxxx",
+  "status": "xxxx",
   "paymentMethodInfo": {
-    "vaCode": "9999987898557871"
+    "vaCode": "xxxx"
   },
-  "productName": "sample",
-  "transFeeRate": "0.000000",
-  "transFeeAmount": "10000.00",
-  "totalTransFee": "10000.00"
+  "productName": "xxxx",
+  "transFeeRate": "xxxx",
+  "transFeeAmount": "xxxx",
+  "totalTransFee": "xxxx"
 }
 ```
 
@@ -146,7 +146,7 @@ Before running the project, ensure you have the following installed:
 
 ## Logging
 
-This project uses **Winston** for structured logging. Logs are stored in the `logs/` directory.
+This project uses **Winston** for structured logging. Logs are stored in the `/src/logs/` directory.
 
 ---
 
