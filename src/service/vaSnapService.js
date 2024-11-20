@@ -4,7 +4,6 @@ import { validateOrderProducts } from "../utils/helper.js";
 import {
   createSignature,
   generateCustomerNumber,
-  generateHeaders,
   generateMerchantTradeNo,
   generateRequestId,
   generateTimestamp,
@@ -261,61 +260,61 @@ export const VaSnapCallback = async ({ payload }) => {
       responseCode: statusCode || "2002500",
       responseMessage: statusMessage || "Success",
       virtualAccountData: {
-        paymentFlagReason: {
-          english: statusMessage || "Success",
-          indonesia: statusMessage === "Success" ? "Sukses" : "Gagal",
-        },
+        // paymentFlagReason: {
+        //   indonesia: statusMessage === "Success" ? "Sukses" : "Gagal",
+        //   english: statusMessage || "Success",
+        // },
         partnerServiceId: existOrder?.partnerServiceId,
         customerNo: existOrder?.paymentPaylabsVaSnap?.customerNo,
         virtualAccountNo: existOrder?.paymentPaylabsVaSnap?.virtualAccountNo,
         virtualAccountName:
           existOrder?.paymentPaylabsVaSnap?.virtualAccountName,
-        virtualAccountEmail:
-          existOrder?.paymentPaylabsVaSnap?.virtualAccountEmail,
-        virtualAccountPhone:
-          existOrder?.paymentPaylabsVaSnap?.virtualAccountPhone,
-        trxId: existOrder?.paymentPaylabsVaSnap?.trxId,
+        // virtualAccountEmail:
+        //   existOrder?.paymentPaylabsVaSnap?.virtualAccountEmail,
+        // virtualAccountPhone:
+        //   existOrder?.paymentPaylabsVaSnap?.virtualAccountPhone,
+        // trxId: existOrder?.paymentPaylabsVaSnap?.trxId,
         paymentRequestId: generateRequestId(),
-        paidAmount: existOrder?.paymentPaylabsVaSnap?.paidAmount,
-        paidBills: existOrder?.paymentPaylabsVaSnap?.paidBills,
-        totalAmount: existOrder?.paymentPaylabsVaSnap?.totalAmount,
-        trxDateTime: existOrder?.paymentPaylabsVaSnap?.trxDateTime,
-        referenceNo: existOrder?.paymentPaylabsVaSnap?.referenceNo,
-        journalNum: existOrder?.paymentPaylabsVaSnap?.journalNum,
-        paymentType: existOrder?.paymentPaylabsVaSnap?.paymentType,
-        flagAdvise: existOrder?.paymentPaylabsVaSnap?.flagAdvise,
-        paymentFlagStatus: statusCode === "2002500" ? "00" : "01",
-        billDetails: {
-          billerReferenceId: generateRequestId(),
-          billCode: existOrder?.paymentPaylabsVaSnap?.billDetails?.billCode,
-          billNo: existOrder?.paymentPaylabsVaSnap?.billDetails?.billNo,
-          billName: existOrder?.paymentPaylabsVaSnap?.billDetails?.billName,
-          billShortName:
-            existOrder?.paymentPaylabsVaSnap?.billDetails?.billShortName,
-          billDescription:
-            existOrder?.paymentPaylabsVaSnap?.billDetails?.billDescription,
-          billSubCompany:
-            existOrder?.paymentPaylabsVaSnap?.billDetails?.billSubCompany,
-          billAmount: existOrder?.paymentPaylabsVaSnap?.billDetails?.billAmount,
-          additionalInfo:
-            existOrder?.paymentPaylabsVaSnap?.billDetails?.additionalInfo,
-          status: statusCode === "2002500" ? "00" : "01",
-          reason: {
-            english: statusMessage || "Success",
-            indonesia: statusMessage === "Success" ? "Sukses" : "Gagal",
-          },
-        },
-        freeTexts: existOrder?.paymentPaylabsVaSnap?.freeTexts,
-        additionalInfo: existOrder?.paymentPaylabsVaSnap?.additionalInfo,
+        // paidAmount: existOrder?.paymentPaylabsVaSnap?.paidAmount,
+        // paidBills: existOrder?.paymentPaylabsVaSnap?.paidBills,
+        // totalAmount: existOrder?.paymentPaylabsVaSnap?.totalAmount,
+        // trxDateTime: existOrder?.paymentPaylabsVaSnap?.trxDateTime,
+        // referenceNo: existOrder?.paymentPaylabsVaSnap?.referenceNo,
+        // journalNum: existOrder?.paymentPaylabsVaSnap?.journalNum,
+        // paymentType: existOrder?.paymentPaylabsVaSnap?.paymentType,
+        // flagAdvise: existOrder?.paymentPaylabsVaSnap?.flagAdvise,
+        // paymentFlagStatus: statusCode === "2002500" ? "00" : "01",
+        // billDetails: {
+        //   billerReferenceId: generateRequestId(),
+        //   billCode: existOrder?.paymentPaylabsVaSnap?.billDetails?.billCode,
+        //   billNo: existOrder?.paymentPaylabsVaSnap?.billDetails?.billNo,
+        //   billName: existOrder?.paymentPaylabsVaSnap?.billDetails?.billName,
+        //   billShortName:
+        //     existOrder?.paymentPaylabsVaSnap?.billDetails?.billShortName,
+        //   billDescription:
+        //     existOrder?.paymentPaylabsVaSnap?.billDetails?.billDescription,
+        //   billSubCompany:
+        //     existOrder?.paymentPaylabsVaSnap?.billDetails?.billSubCompany,
+        //   billAmount: existOrder?.paymentPaylabsVaSnap?.billDetails?.billAmount,
+        //   additionalInfo:
+        //     existOrder?.paymentPaylabsVaSnap?.billDetails?.additionalInfo,
+        //   status: statusCode === "2002500" ? "00" : "01",
+        //   reason: {
+        //     english: statusMessage || "Success",
+        //     indonesia: statusMessage === "Success" ? "Sukses" : "Gagal",
+        //   },
+        // },
+        // freeTexts: existOrder?.paymentPaylabsVaSnap?.freeTexts,
+        // additionalInfo: existOrder?.paymentPaylabsVaSnap?.additionalInfo,
       },
     };
   };
 
-  const payloadResponse = generateResponsePayload(
-    existOrder,
-    "2002500",
-    "Success"
-  );
+  // Generate response headers
+  const responseHeaders = {
+    "Content-Type": "application/json;charset=utf-8",
+    "X-TIMESTAMP": timestampResponse,
+  };
 
   if (currentDateTime > expiredDateTime) {
     existOrder.paymentStatus = "expired";
@@ -325,14 +324,6 @@ export const VaSnapCallback = async ({ payload }) => {
       "4030000",
       "Expired"
     );
-    // Generate headers for Paylabs request
-    const { responseHeaders } = generateHeaders(
-      "POST",
-      "/transfer-va/payment",
-      payloadResponseError,
-      generateRequestId()
-    );
-
     return {
       responseHeaders,
       currentDateTime,
@@ -340,15 +331,11 @@ export const VaSnapCallback = async ({ payload }) => {
       payloadResponseError,
     };
   }
-
-  // Generate headers for Paylabs request
-  const { responseHeaders } = generateHeaders(
-    "POST",
-    "/transfer-va/payment",
-    payloadResponse,
-    generateRequestId()
+  const payloadResponse = generateResponsePayload(
+    existOrder,
+    "2002500",
+    "Success"
   );
-
   return { responseHeaders, payloadResponse };
 };
 
