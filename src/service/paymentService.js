@@ -140,20 +140,12 @@ export const callbackPaylabs = async ({ payload }) => {
 
   const payloadResponse = responsePayload(0, "");
 
-  const signatureResponse = createSignature(
+  const { responseHeaders } = generateHeaders(
     "POST",
     "/api/order/webhook/paylabs",
     payloadResponse,
-    timestampResponse
+    generateRequestId()
   );
-
-  const responseHeaders = {
-    "Content-Type": "application/json;charset=utf-8",
-    "X-TIMESTAMP": timestampResponse,
-    "X-SIGNATURE": signatureResponse,
-    "X-PARTNER-ID": process.env.PAYLABS_MERCHANT_ID,
-    "X-REQUEST-ID": generateRequestId(),
-  };
 
   const payloadResponseError = responsePayload("orderExpired", "order expired");
   if (currentDateTime > expiredDateTime && expiredDateTime != null) {
@@ -227,20 +219,12 @@ export const callbackPaylabsVaStatic = async ({ payload }) => {
     errCode: notificationData.errCode,
   };
 
-  const signatureResponse = createSignature(
+  const { responseHeaders } = generateHeaders(
     "POST",
     "/api/order/webhook/paylabs/va",
     responsePayload,
-    timestampResponse
+    generateRequestId()
   );
-
-  const responseHeaders = {
-    "Content-Type": "application/json;charset=utf-8",
-    "X-TIMESTAMP": timestampResponse,
-    "X-SIGNATURE": signatureResponse,
-    "X-PARTNER-ID": process.env.PAYLABS_MERCHANT_ID,
-    "X-REQUEST-ID": generateRequestId(),
-  };
 
   return { responseHeaders, responsePayload };
 };

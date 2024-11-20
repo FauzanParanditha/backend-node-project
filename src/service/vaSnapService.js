@@ -4,6 +4,7 @@ import { validateOrderProducts } from "../utils/helper.js";
 import {
   createSignature,
   generateCustomerNumber,
+  generateHeaders,
   generateMerchantTradeNo,
   generateRequestId,
   generateTimestamp,
@@ -310,11 +311,11 @@ export const VaSnapCallback = async ({ payload }) => {
     };
   };
 
-  // Generate response headers
-  const responseHeaders = {
-    "Content-Type": "application/json;charset=utf-8",
-    "X-TIMESTAMP": timestampResponse,
-  };
+  const payloadResponse = generateResponsePayload(
+    existOrder,
+    "2002500",
+    "Success"
+  );
 
   if (currentDateTime > expiredDateTime) {
     existOrder.paymentStatus = "expired";
@@ -324,13 +325,30 @@ export const VaSnapCallback = async ({ payload }) => {
       "4030000",
       "Expired"
     );
-    return { currentDateTime, expiredDateTime, payloadResponseError };
+    // Generate headers for Paylabs request
+    const { responseHeaders } = generateHeaders(
+      "POST",
+      "/transfer-va/payment",
+      payloadResponseError,
+      generateRequestId()
+    );
+
+    return {
+      responseHeaders,
+      currentDateTime,
+      expiredDateTime,
+      payloadResponseError,
+    };
   }
-  const payloadResponse = generateResponsePayload(
-    existOrder,
-    "2002500",
-    "Success"
+
+  // Generate headers for Paylabs request
+  const { responseHeaders } = generateHeaders(
+    "POST",
+    "/transfer-va/payment",
+    payloadResponse,
+    generateRequestId()
   );
+
   return { responseHeaders, payloadResponse };
 };
 
