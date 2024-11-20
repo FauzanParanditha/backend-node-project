@@ -21,16 +21,19 @@ export const jwtMiddlewareAdmin = async (req, res, next) => {
     });
   }
 
-  const whitelistedIP = await IPWhitelist.findOne({ ipAddress: clientIP });
-
-  if (!whitelistedIP) {
-    return res.status(403).json({
-      success: false,
-      message: "Access forbidden: Your IP address does not whitelisted.",
-    });
-  }
-
   try {
+    const whitelistedIP = await IPWhitelist.findOne({ ipAddress: clientIP });
+    if (!whitelistedIP) {
+      return res.status(403).json({
+        success: false,
+        message: "Access forbidden: Your IP address does not whitelisted.",
+      });
+    }
+
+    if (!token.startsWith("Bearer ")) {
+      return next(new ResponseError(403, "Invalid token format."));
+    }
+
     const userToken = token.split(" ")[1];
     const jwtVerified = jwt.verify(
       userToken,

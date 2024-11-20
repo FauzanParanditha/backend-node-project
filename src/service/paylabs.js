@@ -137,10 +137,12 @@ export const generateCustomerNumber = () => {
   const day = String(date.getDate()).padStart(2, "0");
   const datePrefix = `${year}${month}${day}`; // e.g., 20241101
 
-  // Generate a random 12-digit number for uniqueness
+  // Generate a cryptographically secure 12-digit random number
   const uniqueNumber = String(
-    Math.floor(100000000000 + Math.random() * 900000000000)
-  );
+    parseInt(crypto.randomBytes(6).toString("hex"), 16)
+  )
+    .padStart(12, "0")
+    .slice(0, 12);
 
   // Combine date prefix with unique number to form a 20-digit customer number
   const customerNumber = `${datePrefix}${uniqueNumber}`;

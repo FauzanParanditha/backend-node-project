@@ -127,7 +127,8 @@ export const xenditCallback = async (req, res, next) => {
         await order.save();
         break;
       default:
-        console.warn(`Unhandled event status received: ${event.status}`, event);
+        logger.error(`Unhandled event status received: ${event.status}`, event);
+        throw new ResponseError(400, "Unhandled notification status");
         break;
     }
 

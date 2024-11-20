@@ -55,7 +55,7 @@ export const validateCallback = (data) => {
         {
           is: "QRIS",
           then: joi.object({
-            nmid: joi.string().max(32).required(),
+            nmid: joi.string().max(32).optional(),
             rrn: joi.string().max(32).optional(),
             tid: joi.string().max(32).optional(),
             payer: joi.string().max(60).optional(),
@@ -93,10 +93,10 @@ export const validateCallback = (data) => {
         },
       ])
       .optional(),
-    transFeeRate: joi.number().max(6).precision(6).optional(),
-    transFeeAmount: joi.number().max(12).precision(2).optional(),
-    totalTransFee: joi.number().max(12).precision(2).optional(),
-    vatFee: joi.number().max(12).precision(2).optional(),
+    transFeeRate: joi.number().precision(6).optional(),
+    transFeeAmount: joi.number().precision(2).optional(),
+    totalTransFee: joi.number().precision(2).optional(),
+    vatFee: joi.number().precision(2).optional(),
   });
   return schema.validate(data, { abortEarly: false });
 };
@@ -362,10 +362,10 @@ export const validatePaymentVASNAP = (data) => {
       .optional(),
     additionalInfo: joi
       .object({
-        transFeeRate: joi.number().max(6).precision(6).optional(),
-        transFeeAmount: joi.number().max(12).precision(2).optional(),
-        totalTransFee: joi.number().max(12).precision(2).optional(),
-        vatFee: joi.number().max(12).precision(2).optional(),
+        transFeeRate: joi.number().precision(6).optional(),
+        transFeeAmount: joi.number().precision(2).optional(),
+        totalTransFee: joi.number().precision(2).optional(),
+        vatFee: joi.number().precision(2).optional(),
         paymentType: joi.string().max(20).optional(),
       })
       .optional(),
@@ -487,10 +487,10 @@ export const validateEMoneyRefund = (data) => {
     merchantRefundNo: joi.string().max(32).required(),
     notifyUrl: joi.string().max(200).optional(),
     reason: joi.string().max(200).optional(),
-    transFeeRate: joi.number().max(6).precision(6).optional(),
-    transFeeAmount: joi.number().max(12).precision(2).optional(),
-    totalTransFee: joi.number().max(12).precision(2).optional(),
-    vatFee: joi.number().max(12).precision(2).optional(),
+    transFeeRate: joi.number().precision(6).optional(),
+    transFeeAmount: joi.number().precision(2).optional(),
+    totalTransFee: joi.number().precision(2).optional(),
+    vatFee: joi.number().precision(2).optional(),
   });
 
   return schema.validate(data);
