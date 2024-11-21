@@ -86,11 +86,12 @@ export const product = async (req, res, next) => {
 
 export const updateProduct = async (req, res, next) => {
   const { id } = req.params;
-  const parsedColors = JSON.parse(req.body.colors);
-  const parsedSizes = JSON.parse(req.body.sizes);
   const { adminId } = req.admin;
 
   try {
+    const parsedColors = JSON.parse(req.body.colors || "[]");
+    const parsedSizes = JSON.parse(req.body.sizes || "[]");
+
     const { error } = productValidationSchema.validate(
       { ...req.body, colors: parsedColors, sizes: parsedSizes, adminId },
       { abortEarly: false }

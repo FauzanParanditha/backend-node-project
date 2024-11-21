@@ -421,6 +421,9 @@ const orderSchema = new mongoose.Schema(
     paymentId: {
       type: String,
     },
+    paymentCode: {
+      type: String,
+    },
     partnerServiceId: {
       type: String,
     },

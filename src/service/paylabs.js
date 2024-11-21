@@ -191,11 +191,17 @@ export const handlePaymentLink = async (orderData) => {
   if (paymentLink.errCode != 0 && orderData.paymentMethod === "paylabs") {
     throw new ResponseError(400, "error, " + paymentLink.errCode);
   }
-  return {
+
+  const responsePayload = {
     paymentLink: paymentLink.url || paymentLink.invoiceUrl,
     paymentId: paymentLink.id || paymentLink.merchantTradeNo,
-    storeId: paymentLink.storeId || "",
   };
+
+  if (paymentLink.storeId) {
+    responsePayload.storeId = paymentLink.storeId;
+  }
+
+  return responsePayload;
 };
 
 export const convertToDate = (paymentExpired) => {

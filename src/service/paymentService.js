@@ -108,12 +108,22 @@ export const callbackPaylabs = async ({ payload }) => {
       order.totalAmount = notificationData.amount;
       order.paymentType = notificationData.paymentType;
       order.paymentLink = undefined;
+      order.paymentActions = undefined;
       order.qris = undefined;
       order.va = undefined;
       order.vaSnap = undefined;
       order.cc = undefined;
       order.eMoney = undefined;
       order.paymentPaylabs = { ...notificationData };
+
+      if (notificationData.paymentMethodInfo?.vaCode) {
+        order.virtualAccountNo = notificationData.paymentMethodInfo.vaCode;
+      }
+
+      if (notificationData.paymentMethodInfo?.paymentCode) {
+        order.paymentCode = notificationData.paymentMethodInfo.paymentCode;
+      }
+
       await order.save();
       break;
 
