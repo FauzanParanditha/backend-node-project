@@ -29,7 +29,7 @@ export const getAllProducts = async ({
   const sortField = sort_by || "_id";
   const sortValue = Number(sort) || -1;
   const limitNum = Number(limit);
-  const skip = (Number(page) - 1) * limitNum; // Calculate skip based on page number
+  const skip = (Number(page) - 1) * limitNum;
 
   if (countOnly) {
     return { count: await Product.countDocuments(filter) };
@@ -125,8 +125,8 @@ export const updateProduct = async ({ id, adminId, req }) => {
     discount: req.body.discount,
     stock: req.body.stock,
     category: existCategory._id,
-    colors: JSON.parse(req.body.colors),
-    sizes: JSON.parse(req.body.sizes),
+    colors: JSON.parse(req.body.colors || "[]"),
+    sizes: JSON.parse(req.body.sizes || "[]"),
     description: req.body.description,
   };
 
@@ -135,10 +135,10 @@ export const updateProduct = async ({ id, adminId, req }) => {
     try {
       // Delete the old image file if it exists
       const oldImagePath = path.join(__dirname, "../..", existingProduct.image);
-      await fs.promises.unlink(oldImagePath); // Use promises to handle async unlink
+      await fs.promises.unlink(oldImagePath);
 
       // Update the image path
-      updateData.image = req.file.path; // Use the new image path from multer
+      updateData.image = req.file.path;
     } catch (error) {
       throw new ResponseError(400, "Failed to delete old image!");
     }
@@ -146,7 +146,8 @@ export const updateProduct = async ({ id, adminId, req }) => {
 
   // Update the product
   await Product.findByIdAndUpdate(id, updateData, {
-    new: true, // Return the updated document
+    new: true,
+    runValidators: true,
   });
 
   return updateData;
@@ -164,7 +165,7 @@ export const deleteProduct = async ({ id, adminId }) => {
   try {
     // Delete the old image file if it exists
     const imagePath = path.join(__dirname, "../..", product.image);
-    await fs.promises.unlink(imagePath); // Use promises to handle async unlink
+    await fs.promises.unlink(imagePath);
   } catch (error) {
     throw new ResponseError(400, "Failed to delete old image!");
   }
