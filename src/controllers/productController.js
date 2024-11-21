@@ -92,7 +92,7 @@ export const updateProduct = async (req, res, next) => {
     const parsedColors = JSON.parse(req.body.colors || "[]");
     const parsedSizes = JSON.parse(req.body.sizes || "[]");
 
-    const { error } = productValidationSchema.validate(
+    const { error, value } = productValidationSchema.validate(
       { ...req.body, colors: parsedColors, sizes: parsedSizes, adminId },
       { abortEarly: false }
     );
@@ -104,7 +104,12 @@ export const updateProduct = async (req, res, next) => {
       });
     }
 
-    const product = await productService.updateProduct({ id, adminId, req });
+    const product = await productService.updateProduct({
+      id,
+      adminId,
+      value,
+      req,
+    });
 
     return res.status(200).json({
       success: true,

@@ -105,12 +105,12 @@ export const product = async ({ id }) => {
   return result;
 };
 
-export const updateProduct = async ({ id, adminId, req }) => {
+export const updateProduct = async ({ id, adminId, value, req }) => {
   const existingProduct = await Product.findById(id);
   if (!existingProduct) throw new ResponseError(404, "Product does not exist!");
 
   // Sanitize the input
-  const category = req.body.category.trim();
+  const category = value.category.trim();
 
   const existCategory = await Category.findOne({ name: { $eq: category } });
   if (!existCategory) throw new ResponseError(404, "Category does not exist!");
@@ -120,14 +120,14 @@ export const updateProduct = async ({ id, adminId, req }) => {
 
   // Prepare the update data
   const updateData = {
-    title: req.body.title,
-    price: req.body.price,
-    discount: req.body.discount,
-    stock: req.body.stock,
+    title: value.title,
+    price: value.price,
+    discount: value.discount,
+    stock: value.stock,
     category: existCategory._id,
-    colors: JSON.parse(req.body.colors || "[]"),
-    sizes: JSON.parse(req.body.sizes || "[]"),
-    description: req.body.description,
+    colors: value.colors || "[]",
+    sizes: value.sizes || "[]",
+    description: value.description,
   };
 
   // Handle image upload
