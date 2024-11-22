@@ -6,12 +6,12 @@ import { ResponseError } from "../error/responseError.js";
 export const jwtMiddlewareAdmin = async (req, res, next) => {
   let token;
   const clientIP = req.ip;
-  // console.log(clientIP)
+  // console.log(clientIP);
 
   if (req.headers.client === "not-browser") {
     token = req.headers.authorization;
   } else {
-    token = req.cookies["Authorization"];
+    token = req.cookies["Authorization"] || req.headers.authorization;
   }
 
   if (!token) {

@@ -89,7 +89,7 @@ export const updateCategory = async (req, res, next) => {
   try {
     const { error, value } = categorySchema.validate({ name, adminId });
     if (error) {
-      return res.status(401).json({
+      return res.status(400).json({
         success: false,
         message: error.details[0].message,
       });
