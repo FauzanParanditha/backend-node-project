@@ -30,7 +30,9 @@ export const loginSchema = joi.object({
   password: joi
     .string()
     .required()
-    .pattern(new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*d).{8,}$")),
+    .pattern(
+      new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,}$")
+    ),
 });
 
 export const acceptCodeSchema = joi.object({
@@ -49,11 +51,15 @@ export const changePasswordSchema = joi.object({
   new_password: joi
     .string()
     .required()
-    .pattern(new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*d).{8,}$")),
+    .pattern(
+      new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,}$")
+    ),
   old_password: joi
     .string()
     .required()
-    .pattern(new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*d).{8,}$")),
+    .pattern(
+      new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,}$")
+    ),
 });
 
 export const acceptFPCodeSchema = joi.object({
@@ -69,5 +75,7 @@ export const acceptFPCodeSchema = joi.object({
   new_password: joi
     .string()
     .required()
-    .pattern(new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*d).{8,}$")),
+    .pattern(
+      new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,}$")
+    ),
 });

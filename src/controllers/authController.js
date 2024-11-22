@@ -14,7 +14,7 @@ export const login = async (req, res, next) => {
     const { error } = loginSchema.validate({ email, password });
     if (error) {
       return res
-        .status(401)
+        .status(400)
         .json({ success: false, message: error.details[0].message });
     }
 
