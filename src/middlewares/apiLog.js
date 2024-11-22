@@ -30,7 +30,7 @@ const apiLogger = async (req, res, next) => {
       log
         .save()
         .catch((error) =>
-          console.error("Error logging API request:", error.message)
+          logger.error("Error logging API request:", error.message)
         );
     } else {
       logger.error(

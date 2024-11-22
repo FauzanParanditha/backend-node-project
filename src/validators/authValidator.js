@@ -13,7 +13,9 @@ export const registerSchema = joi.object({
   password: joi
     .string()
     .required()
-    .pattern(new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*d).{8,}$")),
+    .pattern(
+      new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,}$")
+    ),
 });
 
 export const loginSchema = joi.object({

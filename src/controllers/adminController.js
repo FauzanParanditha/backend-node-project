@@ -45,7 +45,7 @@ export const register = async (req, res, next) => {
     const { error } = registerSchema.validate({ email, password, fullName });
     if (error)
       return res
-        .status(401)
+        .status(400)
         .json({ success: false, message: error.details[0].message });
 
     const admin = await adminService.registerAdmin({
