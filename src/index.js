@@ -18,6 +18,7 @@ web.use((req, res, next) => {
 const server = web.listen(process.env.PORT, () => {
     connectDB();
     logger.info(`App running on port: ${process.env.PORT}`);
+    logger.info(`Running in ${process.env.NODE_ENV} mode`);
 });
 
 function handleShutdownGracefully(signal) {
