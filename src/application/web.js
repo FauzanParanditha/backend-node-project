@@ -36,10 +36,10 @@ web.use(apiLogger);
 
 // Define the rate limit rule
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.RATE_LIMIT_MAX || 100,
-  standardHeaders: true,
-  legacyHeaders: false,
+    windowMs: 15 * 60 * 1000,
+    max: process.env.RATE_LIMIT_MAX || 100,
+    standardHeaders: true,
+    legacyHeaders: false,
 });
 web.use(limiter);
 
@@ -55,31 +55,30 @@ web.use("/api", paymentRouter);
 web.use("/api", userRouter);
 
 web.get("/", (req, res) => {
-  const dbStatus =
-    mongoose.connection.readyState === 1 ? "connected" : "disconnected";
-  res.json({
-    message: "Hello World!",
-    database: dbStatus,
-  });
+    const dbStatus = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
+    res.json({
+        message: "Hello World!",
+        database: dbStatus,
+    });
 });
 
 web.get("/me", jwtMiddlewareAdmin, async (req, res, next) => {
-  try {
-    const { adminId, verified } = req.admin;
-    if (!adminId) throw new ResponseError(400, "Admin ID not provided");
+    try {
+        const { adminId, verified } = req.admin;
+        if (!adminId) throw new ResponseError(400, "Admin ID not provided");
 
-    const existAdmin = await Admin.findById(adminId);
-    if (!existAdmin) throw new ResponseError(400, "Admin does not exist");
+        const existAdmin = await Admin.findById(adminId);
+        if (!existAdmin) throw new ResponseError(400, "Admin does not exist");
 
-    res.status(200).json({
-      success: true,
-      message: "Admin data retrieved successfully",
-      data: existAdmin,
-    });
-  } catch (error) {
-    logger.error(error.message);
-    next(error);
-  }
+        res.status(200).json({
+            success: true,
+            message: "Admin data retrieved successfully",
+            data: existAdmin,
+        });
+    } catch (error) {
+        logger.error(error.message);
+        next(error);
+    }
 });
 
 web.use(errorMiddleware);

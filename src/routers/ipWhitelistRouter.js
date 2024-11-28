@@ -1,10 +1,10 @@
 import express from "express";
 import {
-  create,
-  deleteIpWhitelist,
-  ipWhitelist,
-  ipWhitelists,
-  updateIpWhitelist,
+    create,
+    deleteIpWhitelist,
+    ipWhitelist,
+    ipWhitelists,
+    updateIpWhitelist,
 } from "../controllers/ipWhitelistController.js";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
 

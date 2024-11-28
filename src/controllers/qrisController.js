@@ -3,67 +3,62 @@ import * as qrisService from "../service/qrisService.js";
 import logger from "../application/logger.js";
 
 export const createQris = async (req, res, next) => {
-  try {
-    // Validate request payload
-    const validatedProduct = await orderSchema.validateAsync(req.body, {
-      abortEarly: false,
-    });
-    const { response, result } = await qrisService.createQris({
-      validatedProduct,
-    });
-    // Respond with created order details
-    res.status(200).json({
-      success: true,
-      qrCode: response.data.qrCode,
-      qrUrl: response.data.qrisUrl,
-      paymentExpired: response.data.expiredTime,
-      paymentId: response.data.merchantTradeNo,
-      totalAmount: response.data.amount,
-      storeId: response.data.storeId,
-      orderId: result._id,
-    });
-  } catch (error) {
-    // Handle unexpected errors
-    logger.error(`Error creating qris: ${error.message}`);
-    next(error);
-  }
+    try {
+        // Validate request payload
+        const validatedProduct = await orderSchema.validateAsync(req.body, {
+            abortEarly: false,
+        });
+        const { response, result } = await qrisService.createQris({
+            validatedProduct,
+        });
+        // Respond with created order details
+        res.status(200).json({
+            success: true,
+            qrCode: response.data.qrCode,
+            qrUrl: response.data.qrisUrl,
+            paymentExpired: response.data.expiredTime,
+            paymentId: response.data.merchantTradeNo,
+            totalAmount: response.data.amount,
+            storeId: response.data.storeId,
+            orderId: result._id,
+        });
+    } catch (error) {
+        // Handle unexpected errors
+        logger.error(`Error creating qris: ${error.message}`);
+        next(error);
+    }
 };
 
 export const qrisOrderStatus = async (req, res, next) => {
-  const { id } = req.params;
-  try {
-    const { responseHeaders, response } = await qrisService.qrisOrderStatus({
-      id,
-    });
+    const { id } = req.params;
+    try {
+        const { responseHeaders, response } = await qrisService.qrisOrderStatus({
+            id,
+        });
 
-    // Respond
-    res.set(responseHeaders).status(200).json(response.data);
-  } catch (error) {
-    // Handle unexpected errors
-    logger.error(`Error fetching qris status: ${error.message}`);
-    next(error);
-  }
+        // Respond
+        res.set(responseHeaders).status(200).json(response.data);
+    } catch (error) {
+        // Handle unexpected errors
+        logger.error(`Error fetching qris status: ${error.message}`);
+        next(error);
+    }
 };
 
 export const cancleQris = async (req, res, next) => {
-  const { id } = req.params;
-  try {
-    const {
-      currentDateTime,
-      expiredDateTime,
-      payloadResponseError,
-      responseHeaders,
-      response,
-    } = await qrisService.cancelQris({ id });
+    const { id } = req.params;
+    try {
+        const { currentDateTime, expiredDateTime, payloadResponseError, responseHeaders, response } =
+            await qrisService.cancelQris({ id });
 
-    if (currentDateTime > expiredDateTime && expiredDateTime != null) {
-      return res.status(200).json(payloadResponseError);
+        if (currentDateTime > expiredDateTime && expiredDateTime != null) {
+            return res.status(200).json(payloadResponseError);
+        }
+        // Respond with update order details
+        res.set(responseHeaders).status(200).json(response.data);
+    } catch (error) {
+        // Handle unexpected errors
+        logger.error(`Error cancel qris: ${error.message}`);
+        next(error);
     }
-    // Respond with update order details
-    res.set(responseHeaders).status(200).json(response.data);
-  } catch (error) {
-    // Handle unexpected errors
-    logger.error(`Error cancel qris: ${error.message}`);
-    next(error);
-  }
 };

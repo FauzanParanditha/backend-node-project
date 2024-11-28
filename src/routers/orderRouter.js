@@ -1,41 +1,13 @@
 import express from "express";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
-import {
-  createOrder,
-  editOrder,
-  order,
-  orders,
-} from "../controllers/orderController.js";
+import { createOrder, editOrder, order, orders } from "../controllers/orderController.js";
 import { balance, xenditCallback } from "../controllers/xenditController.js";
-import {
-  paylabsCallback,
-  paylabsVaStaticCallback,
-} from "../controllers/paymentController.js";
-import {
-  cancleQris,
-  createQris,
-  qrisOrderStatus,
-} from "../controllers/qrisController.js";
-import {
-  ccOrderStatus,
-  createCreditCard,
-} from "../controllers/ccController.js";
-import {
-  createVASNAP,
-  updateVASNAP,
-  VaSnapCallback,
-  vaSNAPOrderStatus,
-} from "../controllers/vaSnapController.js";
-import {
-  createStaticVa,
-  createVA,
-  vaOrderStatus,
-} from "../controllers/vaController.js";
-import {
-  createEMoney,
-  createEMoneyRefund,
-  eMoneyOrderStatus,
-} from "../controllers/eMoneyController.js";
+import { paylabsCallback, paylabsVaStaticCallback } from "../controllers/paymentController.js";
+import { cancleQris, createQris, qrisOrderStatus } from "../controllers/qrisController.js";
+import { ccOrderStatus, createCreditCard } from "../controllers/ccController.js";
+import { createVASNAP, updateVASNAP, VaSnapCallback, vaSNAPOrderStatus } from "../controllers/vaSnapController.js";
+import { createStaticVa, createVA, vaOrderStatus } from "../controllers/vaController.js";
+import { createEMoney, createEMoneyRefund, eMoneyOrderStatus } from "../controllers/eMoneyController.js";
 
 const router = express.Router();
 
@@ -67,10 +39,6 @@ router.get("/order/status/cc/:id", jwtMiddlewareAdmin, ccOrderStatus);
 
 router.post("/order/create/ewallet", jwtMiddlewareAdmin, createEMoney);
 router.get("/order/status/ewallet/:id", jwtMiddlewareAdmin, eMoneyOrderStatus);
-router.post(
-  "/order/refund/ewallet/:id",
-  jwtMiddlewareAdmin,
-  createEMoneyRefund
-);
+router.post("/order/refund/ewallet/:id", jwtMiddlewareAdmin, createEMoneyRefund);
 
 export default router;

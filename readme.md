@@ -42,27 +42,27 @@ Before running the project, ensure you have the following installed:
 
 1. Clone the repository:
 
-   ```bash
-   git clone https://github.com/FauzanParanditha/backend-node-project.git
-   cd your-repo
-   ```
+    ```bash
+    git clone https://github.com/FauzanParanditha/backend-node-project.git
+    cd your-repo
+    ```
 
 2. Install dependencies:
 
-   ```bash
-   npm install
-   ```
+    ```bash
+    npm install
+    ```
 
 3. Create a `.env` file and configure the environment variables:
 
-   ```env
-   PORT=5000
-   MONGO_URI=mongodb://localhost:27017/your-database
-   PAYLABS_API_URL=https://paylabs-provide
-   PAYLABS_MERCHANT_ID=your_merchant_id
-   NOTIFY_URL=https://your-domain.com/callback/paylabs
-   REDIRECT_URL=https://your-domain.com/
-   ```
+    ```env
+    PORT=5000
+    MONGO_URI=mongodb://localhost:27017/your-database
+    PAYLABS_API_URL=https://paylabs-provide
+    PAYLABS_MERCHANT_ID=your_merchant_id
+    NOTIFY_URL=https://your-domain.com/callback/paylabs
+    REDIRECT_URL=https://your-domain.com/
+    ```
 
 ---
 
@@ -70,9 +70,9 @@ Before running the project, ensure you have the following installed:
 
 1. Run the project:
 
-   ```bash
-   npm start
-   ```
+    ```bash
+    npm start
+    ```
 
 2. Access the API at `http://localhost:5000`.
 
@@ -122,23 +122,23 @@ Before running the project, ensure you have the following installed:
 
 ```json
 {
-  "merchantId": "xxxx",
-  "requestId": "xxxx",
-  "errCode": "xxxx",
-  "paymentType": "xxxx",
-  "amount": "xxx",
-  "createTime": "xxxx",
-  "successTime": "xxxx",
-  "merchantTradeNo": "xxxx",
-  "platformTradeNo": "xxxx",
-  "status": "xxxx",
-  "paymentMethodInfo": {
-    "vaCode": "xxxx"
-  },
-  "productName": "xxxx",
-  "transFeeRate": "xxxx",
-  "transFeeAmount": "xxxx",
-  "totalTransFee": "xxxx"
+    "merchantId": "xxxx",
+    "requestId": "xxxx",
+    "errCode": "xxxx",
+    "paymentType": "xxxx",
+    "amount": "xxx",
+    "createTime": "xxxx",
+    "successTime": "xxxx",
+    "merchantTradeNo": "xxxx",
+    "platformTradeNo": "xxxx",
+    "status": "xxxx",
+    "paymentMethodInfo": {
+        "vaCode": "xxxx"
+    },
+    "productName": "xxxx",
+    "transFeeRate": "xxxx",
+    "transFeeAmount": "xxxx",
+    "totalTransFee": "xxxx"
 }
 ```
 

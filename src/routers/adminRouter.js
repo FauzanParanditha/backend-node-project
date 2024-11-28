@@ -1,9 +1,5 @@
 import express from "express";
-import {
-  deleteAdmin,
-  getAllAdmin,
-  register,
-} from "../controllers/adminController.js";
+import { deleteAdmin, getAllAdmin, register } from "../controllers/adminController.js";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
 import { getAllApiLog } from "../controllers/apiLogController.js";
 
