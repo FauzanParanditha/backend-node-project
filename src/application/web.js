@@ -58,7 +58,7 @@ web.get("/", (req, res) => {
     const dbStatus = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
     res.json({
         message: "Hello World!",
-        database: dbStatus,
+        connection: dbStatus,
     });
 });
 
