@@ -201,6 +201,12 @@ export const cancelQris = async ({ id }) => {
 
   if (currentDateTime > expiredDateTime) {
     existOrder.paymentStatus = "expired";
+    const payloadResponseError = {
+      merchantId: process.env.PAYLABS_MERCHANT_ID,
+      requestId: generateRequestId(),
+      errCode: "orderExpired",
+      errCodeDes: "order expired",
+    };
     await existOrder.save();
     return { currentDateTime, expiredDateTime, payloadResponseError };
   }

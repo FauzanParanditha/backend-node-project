@@ -76,7 +76,7 @@ export const createProduct = async ({ req, adminId }) => {
   if (!existCategory) throw new ResponseError(404, "Category does not exist!");
 
   // Check if an image was uploaded
-  if (!req.file) throw new ResponseError(400, "Image is required!");
+  // if (!req.file) throw new ResponseError(400, "Image is required!");
 
   const newProduct = new Product({
     title: req.body.title,
