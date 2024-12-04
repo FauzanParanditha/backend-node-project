@@ -349,47 +349,29 @@ const orderSchema = new mongoose.Schema(
             required: true,
             unique: true,
         },
-        userId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
-        },
-        products: [
+        items: [
             {
-                productId: {
-                    type: mongoose.Schema.Types.ObjectId,
-                    ref: "Product",
+                price: {
+                    type: Number,
                     required: true,
                 },
                 quantity: {
                     type: Number,
                     required: true,
                 },
-                price: {
-                    type: Number,
+                name: {
+                    type: String,
                     required: true,
                 },
-                discount: {
-                    required: true,
-                    type: Number,
-                },
-                colors: [
-                    {
-                        color: { type: String, required: true },
-                        _id: false,
-                    },
-                ],
-                sizes: [
-                    {
-                        size: { type: String, required: true },
-                        _id: false,
-                    },
-                ],
                 _id: false,
             },
         ],
         totalAmount: {
             type: Number,
+            required: true,
+        },
+        payer: {
+            type: String,
             required: true,
         },
         phoneNumber: {

@@ -1,19 +1,19 @@
 import joi from "joi";
 
 export const orderSchema = joi.object({
-    products: joi
+    items: joi
         .array()
         .items(
             joi.object({
-                productId: joi.string().required(),
+                price: joi.string().required(),
                 quantity: joi.number().min(1).required(),
-                colors: joi.array().items(joi.string().required()).min(1).optional(),
-                sizes: joi.array().items(joi.string().required()).min(1).optional(),
+                name: joi.string().required().max(255),
             }),
         )
         .min(1)
         .required(),
-    userId: joi.string().required(),
+    totalAmount: joi.string().required(),
+    payer: joi.string().max(255).min(3).required(),
     phoneNumber: joi
         .string()
         .pattern(/^[0-9]+$/)

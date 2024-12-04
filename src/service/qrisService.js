@@ -1,6 +1,5 @@
 import uuid4 from "uuid4";
 import { ResponseError } from "../error/responseError.js";
-import User from "../models/userModel.js";
 import { validateOrderProducts } from "../utils/helper.js";
 import {
     convertToDate,
@@ -15,16 +14,15 @@ import axios from "axios";
 import Order from "../models/orderModel.js";
 
 export const createQris = async ({ validatedProduct }) => {
-    // Verify user existence
-    const existUser = await User.findById(validatedProduct.userId);
-    if (!existUser) throw new ResponseError(404, "User does not exist!");
-
     // Validate products in the order
     const { validProducts, totalAmount } = await validateOrderProducts(
-        validatedProduct.products,
+        validatedProduct.items,
         validatedProduct.paymentType,
+        validatedProduct.totalAmount,
     );
     if (!validProducts.length) throw new ResponseError(404, "No valid products found to update the order");
+
+    console.log(validProducts, totalAmount);
 
     // Construct order data
     const requestBodyForm = {
@@ -54,7 +52,7 @@ export const createQris = async ({ validatedProduct }) => {
         notifyUrl: process.env.NOTIFY_URL,
         expire: 300,
         feeType: "OUR",
-        productName: requestBodyForm.products.map((p) => p.title).join(", "),
+        productName: requestBodyForm.products.map((p) => p.name).join(", "),
         // productInfo: requestBodyForm.products.map((product) => ({
         //   id: product.productId.toString(),
         //   name: product.title,

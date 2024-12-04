@@ -111,9 +111,9 @@ export const calculateTotal = (products) => {
     return total;
 };
 
-export const validateOrderProducts = async (products, paymentType = "DEFAULT") => {
+export const validateOrderProducts = async (products, paymentType = "DEFAULT", totalAmount) => {
     const validProducts = [];
-    let totalAmount = 0;
+    let totalAmountProduct = 0;
 
     // Ensure the payment type has defined transaction limits
     const limits = transactionLimits[paymentType];
@@ -121,26 +121,23 @@ export const validateOrderProducts = async (products, paymentType = "DEFAULT") =
         throw new ResponseError(400, `Unsupported payment type: ${paymentType}`);
     }
 
-    for (const product of products) {
-        const foundProduct = await Product.findById(product.productId);
-        if (!foundProduct) {
-            throw new ResponseError(404, `Product not found: ${product.productId}`);
-        }
+    if (!products) {
+        throw new ResponseError(400, "Product is empty");
+    }
 
-        const productTotal = foundProduct.price * product.quantity;
-        const discountAmount = productTotal * (foundProduct.discount / 100);
-        totalAmount += productTotal - discountAmount;
+    for (const product of products) {
+        const productTotal = product.price * product.quantity;
+        totalAmountProduct += productTotal;
 
         validProducts.push({
-            productId: foundProduct._id,
-            title: foundProduct.title,
-            price: foundProduct.price,
-            discount: foundProduct.discount,
-            category: foundProduct.category,
+            name: product.name,
+            price: product.price,
             quantity: product.quantity,
-            colors: product.colors.map((c) => ({ color: c })),
-            sizes: product.sizes.map((s) => ({ size: s })),
         });
+    }
+
+    if (totalAmount != totalAmountProduct) {
+        throw new ResponseError(400, "Total Amount is not match");
     }
 
     // Validate totalAmount against the paymentType limits
