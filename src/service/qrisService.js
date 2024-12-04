@@ -28,7 +28,7 @@ export const createQris = async ({ validatedProduct }) => {
     const requestBodyForm = {
         orderId: uuid4(),
         userId: validatedProduct.userId,
-        products: validProducts,
+        items: validProducts,
         totalAmount,
         phoneNumber: validatedProduct.phoneNumber,
         paymentStatus: "pending",
