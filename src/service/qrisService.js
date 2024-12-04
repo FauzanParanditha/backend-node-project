@@ -22,8 +22,6 @@ export const createQris = async ({ validatedProduct }) => {
     );
     if (!validProducts.length) throw new ResponseError(404, "No valid products found to update the order");
 
-    console.log(validProducts, totalAmount);
-
     // Construct order data
     const requestBodyForm = {
         orderId: uuid4(),
@@ -53,12 +51,12 @@ export const createQris = async ({ validatedProduct }) => {
         notifyUrl: process.env.NOTIFY_URL,
         expire: 300,
         feeType: "OUR",
-        productName: requestBodyForm.products.map((p) => p.name).join(", "),
-        productInfo: requestBodyForm.products.map((product) => ({
-            id: product.id.toString(),
+        productName: requestBodyForm.items.map((p) => p.name).join(", "),
+        productInfo: requestBodyForm.items.map((product) => ({
+            id: product.id,
             name: product.name,
             price: product.price,
-            type: product.category,
+            type: product.type,
             quantity: product.quantity,
         })),
     };
