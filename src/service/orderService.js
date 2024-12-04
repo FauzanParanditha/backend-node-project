@@ -57,23 +57,22 @@ export const getAllOrders = async ({ query, limit, page, sort_by, sort, countOnl
 };
 
 export const createOrder = async ({ validatedOrder }) => {
-    const existUser = await User.findById(validatedOrder.userId);
-    if (!existUser) throw new ResponseError("User does not exist!");
-
     // Validate products in the order
     const { validProducts, totalAmount } = await validateOrderProducts(
-        validatedOrder.products,
+        validatedOrder.items,
         validatedOrder.paymentType || undefined,
+        validatedOrder.totalAmount,
     );
     if (!validProducts.length) throw new ResponseError(404, "No valid products found to create the order");
 
     const orderData = {
         orderId: uuid4(),
         userId: validatedOrder.userId,
-        products: validProducts,
+        items: validProducts,
         totalAmount,
         phoneNumber: validatedOrder.phoneNumber,
         paymentStatus: "pending",
+        payer: validatedOrder.payer,
         paymentMethod: validatedOrder.paymentMethod,
         ...(validatedOrder.paymentType && {
             paymentType: validatedOrder.paymentType,

@@ -27,7 +27,7 @@ export const createPaymentLink = async (order) => {
         requestId,
         amount: order.totalAmount,
         phoneNumber: order.phoneNumber,
-        productName: order.products.map((p) => p.title).join(", "),
+        productName: order.items.map((p) => p.name).join(", "),
         redirectUrl: process.env.REDIRECT_URL,
         ...(order.paymentType && { paymentType: order.paymentType }),
         ...(order.storeId && { storeId: order.storeId }),
