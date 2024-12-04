@@ -32,6 +32,7 @@ export const createQris = async ({ validatedProduct }) => {
         totalAmount,
         phoneNumber: validatedProduct.phoneNumber,
         paymentStatus: "pending",
+        payer: validatedProduct.payer,
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
