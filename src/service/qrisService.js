@@ -101,9 +101,9 @@ export const qrisOrderStatus = async ({ id }) => {
     const existOrder = await Order.findById(id);
     if (!existOrder) throw new ResponseError(404, "Order does not exist!");
 
-    if (existOrder.paymentStatus === "paid") throw new ResponseError(200, "Payment already processed!");
+    if (existOrder.paymentStatus === "paid") throw new ResponseError(409, "Payment already processed!");
 
-    if (existOrder.paymentStatus === "expired") throw new ResponseError(200, "Payment expired!");
+    if (existOrder.paymentStatus === "expired") ResponseError(408, "Payment already processed!");
 
     if (!existOrder.qris) throw new ResponseError(400, "Qris data not found in the order");
 
@@ -167,7 +167,7 @@ export const cancelQris = async ({ id }) => {
         return { currentDateTime, expiredDateTime, payloadResponseError };
     }
 
-    if (existOrder.paymentStatus === "paid") throw new ResponseError(200, "Payment already processed!");
+    if (existOrder.paymentStatus === "paid") throw new ResponseError(409, "Payment already processed!");
 
     // Prepare request payload for Paylabs
     const requestId = generateRequestId();

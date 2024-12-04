@@ -118,9 +118,9 @@ export const vaSNAPOrderStatus = async ({ id }) => {
     const existOrder = await Order.findById(id);
     if (!existOrder) throw new ResponseError(404, "Order does not exist!");
 
-    if (existOrder.paymentStatus === "paid") throw new ResponseError(200, "Payment already processed!");
+    if (existOrder.paymentStatus === "paid") throw new ResponseError(409, "Payment already processed!");
 
-    if (existOrder.paymentStatus === "expired") throw new ResponseError(200, "Payment expired!");
+    if (existOrder.paymentStatus === "expired") ResponseError(408, "Payment already processed!");
 
     if (!existOrder.vaSnap) throw new ResponseError(400, "VASNAP data not found in the order");
 
@@ -204,7 +204,7 @@ export const VaSnapCallback = async ({ payload }) => {
         paymentId: { $eq: sanitizedTrxId },
     });
     if (!existOrder) throw new ResponseError(404, `Order not found for orderID: ${notificationData.trxId}`);
-    if (existOrder.paymentStatus === "paid") throw new ResponseError(200, "Payment already processed!");
+    if (existOrder.paymentStatus === "paid") throw new ResponseError(409, "Payment already processed!");
 
     const currentDateTime = new Date();
     const expiredDateTime = new Date(existOrder.vaSnap.virtualAccountData.expiredDate);
@@ -298,7 +298,7 @@ export const updateVASNAP = async ({ id, validatedUpdateData, req }) => {
     const existingOrder = await Order.findById(id);
     if (!existingOrder) throw new ResponseError(404, "Order does not exist!");
 
-    if (existingOrder.paymentStatus === "paid") throw new ResponseError(200, "Payment already processed!");
+    if (existingOrder.paymentStatus === "paid") throw new ResponseError(409, "Payment already processed!");
 
     //check expired
     const currentDateTime = new Date();
@@ -310,7 +310,7 @@ export const updateVASNAP = async ({ id, validatedUpdateData, req }) => {
         return { currentDateTime, expiredDateTime };
     }
 
-    if (!existingOrder.vaSnap) throw new ResponseError(200, "Payment already processed!");
+    if (!existingOrder.vaSnap) throw new ResponseError(409, "Payment already processed!");
 
     // Check if the user exists
     const existUser = await User.findById(existingOrder.userId);

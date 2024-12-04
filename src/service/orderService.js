@@ -109,7 +109,7 @@ export const editOrder = async ({ id, validatedOrder }) => {
 
     if (!result) throw new ResponseError(404, "Order does not exist!");
 
-    if (result.paymentStatus === "paid") throw new ResponseError(200, "Payment already processed!");
+    if (result.paymentStatus === "paid") throw new ResponseError(409, "Payment already processed!");
 
     const validProducts = await validateOrderProducts(validatedOrder.products);
     if (!validProducts.length) throw new ResponseError(404, "No valid products found to update the order");

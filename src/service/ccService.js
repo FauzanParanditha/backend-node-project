@@ -97,9 +97,9 @@ export const ccOrderStatus = async ({ id }) => {
     const existOrder = await Order.findById(id);
     if (!existOrder) throw new ResponseError(404, "Order does not exist!");
 
-    if (existOrder.paymentStatus === "paid") throw new ResponseError(200, "Payment already processed!");
+    if (existOrder.paymentStatus === "paid") throw new ResponseError(409, "Payment already processed!");
 
-    if (existOrder.paymentStatus === "expired") throw new ResponseError(200, "Payment expired!");
+    if (existOrder.paymentStatus === "expired") ResponseError(408, "Payment already processed!");
 
     if (!existOrder.cc) throw new ResponseError(400, "CC data not found in the order");
 

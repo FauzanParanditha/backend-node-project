@@ -75,7 +75,7 @@ export const callbackPaylabs = async ({ payload }) => {
     });
     if (!order) throw new ResponseError(404, `Order not found for orderID: ${sanitizedPaymentId}`);
 
-    if (order.paymentStatus === "paid") throw new ResponseError(200, "Payment already processed!");
+    if (order.paymentStatus === "paid") throw new ResponseError(409, "Payment already processed!");
 
     const currentDateTime = new Date();
     const expiredDateTime = convertToDate(order.paymentExpired);
