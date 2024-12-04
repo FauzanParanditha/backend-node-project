@@ -8,14 +8,11 @@ import Order from "../models/orderModel.js";
 import { ResponseError } from "../error/responseError.js";
 
 export const createCC = async ({ validatedProduct }) => {
-    // Verify user existence
-    const existUser = await User.findById(validatedProduct.userId);
-    if (!existUser) throw new ResponseError(404, "User does not exist!");
-
     // Validate products in the order
     const { validProducts, totalAmount } = await validateOrderProducts(
-        validatedProduct.products,
+        validatedProduct.items,
         validatedProduct.paymentType,
+        validatedProduct.totalAmount,
     );
     if (!validProducts.length) throw new ResponseError(404, "No valid products found to create the order");
 
@@ -23,10 +20,11 @@ export const createCC = async ({ validatedProduct }) => {
     const requestBodyForm = {
         orderId: uuid4(),
         userId: validatedProduct.userId,
-        products: validProducts,
+        items: validProducts,
         totalAmount,
         phoneNumber: validatedProduct.phoneNumber,
         paymentStatus: "pending",
+        payer: validatedProduct.payer,
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
@@ -48,14 +46,14 @@ export const createCC = async ({ validatedProduct }) => {
         paymentParams: {
             redirectUrl: process.env.REDIRECT_URL,
         },
-        productName: requestBodyForm.products.map((p) => p.title).join(", "),
-        // productInfo: requestBodyForm.products.map((product) => ({
-        //   id: product.productId.toString(),
-        //   name: product.title,
-        //   price: product.price,
-        //   type: product.category,
-        //   quantity: product.quantity,
-        // })),
+        productName: requestBodyForm.items.map((p) => p.name).join(", "),
+        productInfo: requestBodyForm.items.map((product) => ({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            type: product.type,
+            quantity: product.quantity,
+        })),
         feeType: "OUR",
     };
 

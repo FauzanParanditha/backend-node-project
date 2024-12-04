@@ -14,9 +14,8 @@ const generateVaStaticSchema = new mongoose.Schema({
 
 const vaSchema = new mongoose.Schema(
     {
-        userId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
+        payer: {
+            type: String,
             required: true,
         },
         vaStatic: generateVaStaticSchema,

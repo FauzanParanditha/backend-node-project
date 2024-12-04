@@ -28,7 +28,7 @@ export const orderSchema = joi.object({
 });
 
 export const vaStaticSchema = joi.object({
-    userId: joi.string().required(),
+    payer: joi.string().max(255).min(3).required(),
     phoneNumber: joi
         .string()
         .pattern(/^[0-9]+$/)

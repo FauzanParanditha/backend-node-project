@@ -9,14 +9,11 @@ import Order from "../models/orderModel.js";
 import VirtualAccount from "../models/vaModel.js";
 
 export const createVa = async ({ validatedProduct }) => {
-    // Verify user existence
-    const existUser = await User.findById(validatedProduct.userId);
-    if (!existUser) throw new ResponseError(404, "User does not exist!");
-
     // Validate products in the order
     const { validProducts, totalAmount } = await validateOrderProducts(
-        validatedProduct.products,
+        validatedProduct.items,
         validatedProduct.paymentType,
+        validatedProduct.totalAmount,
     );
     if (!validProducts.length) throw new ResponseError(404, "No valid products found to create the order");
 
@@ -24,10 +21,11 @@ export const createVa = async ({ validatedProduct }) => {
     const requestBodyForm = {
         orderId: uuid4(),
         userId: validatedProduct.userId,
-        products: validProducts,
+        items: validProducts,
         totalAmount,
         phoneNumber: validatedProduct.phoneNumber,
         paymentStatus: "pending",
+        payer: validatedProduct.payer,
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
@@ -46,15 +44,15 @@ export const createVa = async ({ validatedProduct }) => {
         amount: requestBodyForm.totalAmount,
         merchantTradeNo,
         notifyUrl: process.env.NOTIFY_URL,
-        payer: existUser.fullName,
-        productName: requestBodyForm.products.map((p) => p.title).join(", "),
-        // productInfo: requestBodyForm.products.map((product) => ({
-        //   id: product.productId.toString(),
-        //   name: product.title,
-        //   price: product.price,
-        //   type: product.category,
-        //   quantity: product.quantity,
-        // })),
+        payer: requestBodyForm.payer,
+        productName: requestBodyForm.items.map((p) => p.name).join(", "),
+        productInfo: requestBodyForm.items.map((product) => ({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            type: product.type,
+            quantity: product.quantity,
+        })),
         feeType: "OUR",
     };
 
@@ -145,14 +143,10 @@ export const vaOrderStatus = async ({ id }) => {
 };
 
 export const createVaStatic = async ({ validatedProduct }) => {
-    // Verify user existence
-    const existUser = await User.findById(validatedProduct.userId);
-    if (!existUser) throw new ResponseError(404, "User does not exist!");
-
     // Construct order data
     const requestBodyForm = {
         orderId: uuid4(),
-        userId: validatedProduct.userId,
+        payer: validatedProduct.payer,
         totalAmount: 0,
         phoneNumber: validatedProduct.phoneNumber,
         paymentStatus: "pending",
@@ -170,7 +164,7 @@ export const createVaStatic = async ({ validatedProduct }) => {
         merchantId,
         ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
         paymentType: requestBodyForm.paymentType,
-        payer: existUser.fullName,
+        payer: requestBodyForm.payer,
         notifyUrl: `${process.env.NOTIFY_URL}/va`,
     };
 
@@ -190,20 +184,17 @@ export const createVaStatic = async ({ validatedProduct }) => {
 
     // Send request to Paylabs
     const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/staticva/create`, requestBody, { headers });
-    // console.log("Response:", response.data);
+    console.log("Response:", response.data);
 
     // Check for successful response
     if (!response.data || response.data.errCode != 0) {
-        return res.status(400).json({
-            success: false,
-            message: response.data ? `error: ${response.data.errCodeDes}` : "failed to create payment",
-        });
+        throw new ResponseError(400, response.data ? `error: ${response.data.errCodeDes}` : "failed to create payment");
     }
 
     // Save va details in the database
     const result = await VirtualAccount.create({
-        userId: existUser._id,
-        phoneNumber: validatedProduct.phoneNumber,
+        payer: requestBodyForm.payer,
+        phoneNumber: requestBodyForm.phoneNumber,
         vaCode: response.data.vaCode,
         vaStatic: response.data,
     });
