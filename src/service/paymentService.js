@@ -176,7 +176,7 @@ export const callbackPaylabsVaStatic = async ({ payload }) => {
         case "02": // Payment successful
             await Order.create({
                 orderId: uuid4(),
-                userId: va.userId,
+                payer: va.payer,
                 totalAmount: notificationData.amount,
                 phoneNumber: va.phoneNumber,
                 paymentStatus: "paid",
