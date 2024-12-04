@@ -54,13 +54,13 @@ export const createQris = async ({ validatedProduct }) => {
         expire: 300,
         feeType: "OUR",
         productName: requestBodyForm.products.map((p) => p.name).join(", "),
-        // productInfo: requestBodyForm.products.map((product) => ({
-        //   id: product.productId.toString(),
-        //   name: product.title,
-        //   price: product.price,
-        //   type: product.category,
-        //   quantity: product.quantity,
-        // })),
+        productInfo: requestBodyForm.products.map((product) => ({
+            id: product.id.toString(),
+            name: product.name,
+            price: product.price,
+            type: product.category,
+            quantity: product.quantity,
+        })),
     };
 
     // Validate requestBody

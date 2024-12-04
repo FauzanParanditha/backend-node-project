@@ -5,9 +5,11 @@ export const orderSchema = joi.object({
         .array()
         .items(
             joi.object({
+                id: joi.string().required(),
                 price: joi.string().required(),
                 quantity: joi.number().min(1).required(),
-                name: joi.string().required().max(255),
+                name: joi.string().required().max(32),
+                type: joi.string().required(),max(20)
             }),
         )
         .min(1)

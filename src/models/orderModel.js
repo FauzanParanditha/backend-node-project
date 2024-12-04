@@ -351,6 +351,10 @@ const orderSchema = new mongoose.Schema(
         },
         items: [
             {
+                id: {
+                    type: String,
+                    required: true,
+                },
                 price: {
                     type: Number,
                     required: true,
@@ -360,6 +364,10 @@ const orderSchema = new mongoose.Schema(
                     required: true,
                 },
                 name: {
+                    type: String,
+                    required: true,
+                },
+                type: {
                     type: String,
                     required: true,
                 },
