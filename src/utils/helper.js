@@ -130,8 +130,10 @@ export const validateOrderProducts = async (products, paymentType = "DEFAULT", t
         totalAmountProduct += productTotal;
 
         validProducts.push({
+            id: product.id,
             name: product.name,
             price: product.price,
+            type: product.type,
             quantity: product.quantity,
         });
     }
