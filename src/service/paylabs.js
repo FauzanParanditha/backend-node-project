@@ -111,6 +111,46 @@ export const verifySignature = (httpMethod, endpointUrl, body, timestamp, signat
     return isVerified;
 };
 
+export const createSignatureForward = (httpMethod, endpointUrl, body, timestamp) => {
+    const secret = process.env.SECRET_KEY;
+    const minifiedBody = minifyJson(body);
+    logger.info(minifiedBody);
+    logger.info(timestamp);
+    // const privateKey = fs.readFileSync("private-key.pem", "utf8");
+
+    const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
+    const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
+    logger.info(stringContent);
+
+    const sign = crypto.createHmac("sha256", secret);
+    sign.update(stringContent);
+    const signature = sign.digest("base64"); // Sign and encode in Base64
+
+    return signature;
+};
+
+export const verifySignatureForward = (httpMethod, endpointUrl, body, timestamp, signature) => {
+    const secret = process.env.SECRET_KEY;
+    const minifiedBody = minifyJson(body);
+    logger.info(`verify ${minifiedBody}`);
+    logger.info(`verify ${timestamp}`);
+
+    const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
+
+    const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
+    logger.info(`verify ${stringContent}`);
+
+    const verify = crypto.createHmac("sha256", secret);
+    verify.update(stringContent);
+
+    const expectedSignature = verify.digest("base64");
+
+    const isVerified = signature === expectedSignature;
+    logger.info(`verify ${isVerified}`);
+
+    return isVerified;
+};
+
 export const generateCustomerNumber = () => {
     const date = new Date();
 
@@ -141,6 +181,21 @@ export const generateHeaders = (method, endpoint, requestBody, requestId, offset
             "X-TIMESTAMP": timestamp,
             "X-SIGNATURE": signature,
             "X-PARTNER-ID": merchantId,
+            "X-REQUEST-ID": requestId,
+        },
+        timestamp,
+    };
+};
+
+export const generateHeadersForward = (method, endpoint, requestBody, requestId, offsetMs = 0) => {
+    const timestamp = generateTimestamp(offsetMs);
+    const signature = createSignatureForward(method, endpoint, requestBody, timestamp);
+
+    return {
+        headers: {
+            "Content-Type": "application/json;charset=utf-8",
+            "X-TIMESTAMP": timestamp,
+            "X-SIGNATURE": signature,
             "X-REQUEST-ID": requestId,
         },
         timestamp,

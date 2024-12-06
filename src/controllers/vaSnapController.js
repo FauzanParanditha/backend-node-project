@@ -2,6 +2,7 @@ import { orderSchema } from "../validators/orderValidator.js";
 import { verifySignature } from "../service/paylabs.js";
 import * as vaSnapService from "../service/vaSnapService.js";
 import logger from "../application/logger.js";
+import { forwardCallback } from "../service/forwadCallback.js";
 
 export const createVASNAP = async (req, res) => {
     try {
@@ -79,6 +80,8 @@ export const VaSnapCallback = async (req, res, next) => {
 
         // Respond
         res.set(responseHeaders).status(200).json(payloadResponse);
+
+        await forwardCallback({ payload });
     } catch (error) {
         // Handle unexpected errors
         logger.error(`Error handling webhook va snap: ${error.message}`);

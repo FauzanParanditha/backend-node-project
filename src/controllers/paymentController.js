@@ -1,6 +1,7 @@
 import { verifySignature } from "../service/paylabs.js";
 import * as paymentService from "../service/paymentService.js";
 import logger from "../application/logger.js";
+import { forwardCallback } from "../service/forwadCallback.js";
 
 // Handle Paylabs callback notifications
 export const paylabsCallback = async (req, res, next) => {
@@ -20,7 +21,9 @@ export const paylabsCallback = async (req, res, next) => {
             return res.status(200).json(payloadResponseError);
         }
 
-        return res.set(responseHeaders).status(200).json(payloadResponse);
+        res.set(responseHeaders).status(200).json(payloadResponse);
+
+        await forwardCallback({ payload });
     } catch (error) {
         logger.error(`Error handling webhook: ${error.message}`);
         next(error);
@@ -39,7 +42,9 @@ export const paylabsVaStaticCallback = async (req, res, next) => {
 
         const { responseHeaders, responsePayload } = await paymentService.callbackPaylabsVaStatic({ payload });
 
-        return res.set(responseHeaders).status(200).json(responsePayload);
+        res.set(responseHeaders).status(200).json(responsePayload);
+
+        await forwardCallback({ payload });
     } catch (error) {
         logger.error(`Error handling webhook: ${error.message}`);
         next(error);

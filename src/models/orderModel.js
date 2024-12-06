@@ -426,6 +426,10 @@ const orderSchema = new mongoose.Schema(
         storeId: {
             type: String,
         },
+        notifyUrl: {
+            type: String,
+            required: true,
+        },
         paymentXendit: paymentXenditSchema,
         paymentPaylabs: paymentPaylabsSchema,
         paymentPaylabsVaSnap: paymentPaylabsVaSnap,

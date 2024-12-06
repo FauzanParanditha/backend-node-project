@@ -12,6 +12,7 @@ import productRouter from "../routers/productRouter.js";
 import orderRouter from "../routers/orderRouter.js";
 import paymentRouter from "../routers/paymentRouter.js";
 import ipWhitelistRouter from "../routers/ipWhitelistRouter.js";
+import availablePaymentRouter from "../routers/availablePaymentRoute.js";
 import Admin from "../models/adminModel.js";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
 import { ensureUploadsDirExists } from "../utils/helper.js";
@@ -21,6 +22,7 @@ import mongoose from "mongoose";
 import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
 import { errorMiddleware } from "../middlewares/errorMiddleware.js";
+import { generateHeadersForward, generateRequestId, verifySignatureForward } from "../service/paylabs.js";
 
 dotenv.config();
 
@@ -48,6 +50,7 @@ web.use("/adm/auth", authRouter);
 web.use("/api/auth", authRouterUser);
 web.use("/api/adm", adminRouter);
 web.use("/api", ipWhitelistRouter);
+web.use("/api", availablePaymentRouter);
 web.use("/api", categoryRouter);
 web.use("/api", productRouter);
 web.use("/api", orderRouter);
@@ -60,6 +63,39 @@ web.get("/", (req, res) => {
         message: "Hello World!",
         connection: dbStatus,
     });
+});
+
+// test purpose only
+web.post("/callback", (req, res) => {
+    // Extract and verify signature
+    const { "x-signature": signature, "x-timestamp": timestamp } = req.headers;
+    const { body: payload, method: httpMethod, originalUrl: endpointUrl } = req;
+
+    if (!verifySignatureForward(httpMethod, endpointUrl, payload, timestamp, signature)) {
+        return res.status(401).send("Invalid signature");
+    }
+
+    // Retrieve notification data and order
+    const notificationData = payload;
+
+    const responsePayload = (errorCode, errCodeDes) => {
+        return {
+            requestId: generateRequestId(),
+            errCode: errorCode ? errorCode : notificationData.errCode,
+            ...(errCodeDes && { errCodeDes: errCodeDes }),
+        };
+    };
+
+    const payloadResponse = responsePayload(0, "");
+
+    const { headers: responseHeaders } = generateHeadersForward(
+        "POST",
+        "/callback",
+        payloadResponse,
+        generateRequestId(),
+    );
+
+    return res.set(responseHeaders).status(200).json(payloadResponse);
 });
 
 web.get("/me", jwtMiddlewareAdmin, async (req, res, next) => {
