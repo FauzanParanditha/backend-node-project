@@ -39,7 +39,7 @@ export const vaStaticSchema = joi.object({
     paymentMethod: joi.string().required(),
     storeId: joi.string().optional(),
     paymentType: joi.string().required(),
-    notifyUrl: joi.string().uri().required(),
+    forwardUrl: joi.string().uri().required(),
 });
 
 export const orderLinkSchema = joi.object({
@@ -67,7 +67,7 @@ export const orderLinkSchema = joi.object({
     paymentMethod: joi.string().required(),
     storeId: joi.string().optional(),
     paymentType: joi.string().optional(),
-    notifyUrl: joi.string().uri().required(),
+    forwardUrl: joi.string().uri().required(),
 });
 
 export const paymentSNAPSchema = joi.object({
