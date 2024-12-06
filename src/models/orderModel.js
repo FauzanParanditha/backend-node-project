@@ -426,7 +426,7 @@ const orderSchema = new mongoose.Schema(
         storeId: {
             type: String,
         },
-        notifyUrl: {
+        forwardUrl: {
             type: String,
             required: true,
         },

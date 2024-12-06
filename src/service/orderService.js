@@ -74,6 +74,7 @@ export const createOrder = async ({ validatedOrder }) => {
         paymentStatus: "pending",
         payer: validatedOrder.payer,
         paymentMethod: validatedOrder.paymentMethod,
+        forwardUrl: validatedOrder.forwardUrl,
         ...(validatedOrder.paymentType && {
             paymentType: validatedOrder.paymentType,
         }),

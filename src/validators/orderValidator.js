@@ -25,7 +25,7 @@ export const orderSchema = joi.object({
     paymentMethod: joi.string().required(),
     storeId: joi.string().optional(),
     paymentType: joi.string().required(),
-    notifyUrl: joi.string().uri().required(),
+    forwardUrl: joi.string().uri().required(),
 });
 
 export const vaStaticSchema = joi.object({

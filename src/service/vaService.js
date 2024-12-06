@@ -28,6 +28,7 @@ export const createVa = async ({ validatedProduct }) => {
         payer: validatedProduct.payer,
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
+        forwardUrl: validatedProduct.forwardUrl,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 
@@ -152,6 +153,7 @@ export const createVaStatic = async ({ validatedProduct }) => {
         paymentStatus: "pending",
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
+        forwardUrl: validatedProduct.forwardUrl,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 

@@ -99,7 +99,7 @@ export const forwardCallback = async ({ payload }) => {
             throw new ResponseError(404, `Order not found for orderID: ${sanitizedPaymentId}`);
         }
 
-        const callbackUrl = order.notifyUrl;
+        const callbackUrl = order.forwardUrl;
         if (!callbackUrl) {
             throw new ResponseError(400, "Missing callback URL in the order");
         }

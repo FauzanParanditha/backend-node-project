@@ -36,6 +36,7 @@ export const createVASNAP = async ({ req, validatedProduct }) => {
         payer: validatedProduct.payer,
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
+        forwardUrl: validatedProduct.forwardUrl,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 
