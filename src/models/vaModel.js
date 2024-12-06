@@ -24,6 +24,10 @@ const vaSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        forwardUrl: {
+            type: String,
+            required: true,
+        },
     },
     { timestamps: true },
 );

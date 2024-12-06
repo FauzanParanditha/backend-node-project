@@ -184,6 +184,7 @@ export const callbackPaylabsVaStatic = async ({ payload }) => {
                 paymentType: notificationData.paymentType,
                 virtualAccountNo: notificationData.paymentMethodInfo.vaCode,
                 paymentId: notificationData.merchantTradeNo,
+                forwardUrl: va.forwardUrl,
                 paymentPaylabs: { ...notificationData },
             });
             break;
