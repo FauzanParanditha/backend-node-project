@@ -349,6 +349,10 @@ const orderSchema = new mongoose.Schema(
             required: true,
             unique: true,
         },
+        clientId: {
+            type: String,
+            required: true,
+        },
         items: [
             {
                 id: {

@@ -13,7 +13,7 @@ import { cancelQrisValidator, validateQrisRequest, validateQrisStatus } from "..
 import axios from "axios";
 import Order from "../models/orderModel.js";
 
-export const createQris = async ({ validatedProduct }) => {
+export const createQris = async ({ validatedProduct, partnerId }) => {
     // Validate products in the order
     const { validProducts, totalAmount } = await validateOrderProducts(
         validatedProduct.items,
@@ -33,7 +33,7 @@ export const createQris = async ({ validatedProduct }) => {
         payer: validatedProduct.payer,
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
-        forwardUrl: validatedProduct.forwardUrl,
+        clientId: partnerId,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 

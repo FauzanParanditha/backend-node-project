@@ -24,6 +24,7 @@ export const createQris = async (req, res, next) => {
         });
         const { response, result } = await qrisService.createQris({
             validatedProduct,
+            partnerId,
         });
         // Respond with created order details
         res.status(200).json({

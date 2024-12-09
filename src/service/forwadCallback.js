@@ -5,6 +5,7 @@ import FailedCallback from "../models/failedForwardModel.js";
 import Order from "../models/orderModel.js";
 import { validateCallback } from "../validators/paymentValidator.js";
 import { generateHeadersForward, generateRequestId, verifySignatureForward } from "./paylabs.js";
+import Client from "../models/clientModel.js";
 
 export const forwardCallback = async ({ payload }) => {
     const retryIntervals = [5, 15, 30, 60, 300, 900, 1800]; // Retry intervals in seconds
@@ -99,7 +100,8 @@ export const forwardCallback = async ({ payload }) => {
             throw new ResponseError(404, `Order not found for orderID: ${sanitizedPaymentId}`);
         }
 
-        const callbackUrl = order.forwardUrl;
+        const clientId = await Client.findOne({ clientId: order.clientId });
+        const callbackUrl = clientId.notifyUrl;
         if (!callbackUrl) {
             throw new ResponseError(400, "Missing callback URL in the order");
         }
