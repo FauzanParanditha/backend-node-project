@@ -198,7 +198,7 @@ export const createVaStatic = async ({ validatedProduct, partnerId }) => {
         phoneNumber: requestBodyForm.phoneNumber,
         vaCode: response.data.vaCode,
         vaStatic: response.data,
-        forwardUrl: requestBodyForm.forwardUrl,
+        clientId: requestBodyForm.clientId,
     });
 
     // Save order details in the database

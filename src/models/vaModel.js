@@ -18,13 +18,13 @@ const vaSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
-        vaStatic: generateVaStaticSchema,
-        vaCode: { type: String },
-        phoneNumber: {
+        clientId: {
             type: String,
             required: true,
         },
-        forwardUrl: {
+        vaStatic: generateVaStaticSchema,
+        vaCode: { type: String },
+        phoneNumber: {
             type: String,
             required: true,
         },
