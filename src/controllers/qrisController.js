@@ -3,6 +3,7 @@ import * as qrisService from "../service/qrisService.js";
 import logger from "../application/logger.js";
 
 export const createQris = async (req, res, next) => {
+    const { partnerId } = req.partnerId;
     try {
         // Validate request payload
         const validatedProduct = await orderSchema.validateAsync(req.body, {
@@ -10,6 +11,7 @@ export const createQris = async (req, res, next) => {
         });
         const { response, result } = await qrisService.createQris({
             validatedProduct,
+            partnerId,
         });
         // Respond with created order details
         res.status(200).json({
