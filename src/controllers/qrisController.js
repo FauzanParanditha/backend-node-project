@@ -1,30 +1,15 @@
 import { orderSchema } from "../validators/orderValidator.js";
 import * as qrisService from "../service/qrisService.js";
 import logger from "../application/logger.js";
-import Client from "../models/clientModel.js";
-import { verifySignatureForward } from "../service/paylabs.js";
 
 export const createQris = async (req, res, next) => {
     try {
-        // Extract and verify signature
-        const { "x-partner-id": partnerId, "x-signature": signature, "x-timestamp": timestamp } = req.headers;
-        const { body: payload, method: httpMethod, originalUrl: endpointUrl } = req;
-
-        const allowedPartnerId = await Client.findOne({ clientId: { $eq: partnerId } });
-        if (!allowedPartnerId) {
-            return res.status(401).send("Invalid partner ID");
-        }
-        if (!verifySignatureForward(httpMethod, endpointUrl, payload, timestamp, signature)) {
-            return res.status(401).send("Invalid signature");
-        }
-
         // Validate request payload
         const validatedProduct = await orderSchema.validateAsync(req.body, {
             abortEarly: false,
         });
         const { response, result } = await qrisService.createQris({
             validatedProduct,
-            partnerId,
         });
         // Respond with created order details
         res.status(200).json({
@@ -47,18 +32,6 @@ export const createQris = async (req, res, next) => {
 export const qrisOrderStatus = async (req, res, next) => {
     const { id } = req.params;
     try {
-        // Extract and verify signature
-        const { "x-partner-id": partnerId, "x-signature": signature, "x-timestamp": timestamp } = req.headers;
-        const { body: payload, method: httpMethod, originalUrl: endpointUrl } = req;
-
-        const allowedPartnerId = await Client.findOne({ clientId: { $eq: partnerId } });
-        if (!allowedPartnerId) {
-            return res.status(401).send("Invalid partner ID");
-        }
-        if (!verifySignatureForward(httpMethod, endpointUrl, payload, timestamp, signature)) {
-            return res.status(401).send("Invalid signature");
-        }
-
         const { responseHeaders, response } = await qrisService.qrisOrderStatus({
             id,
         });
@@ -75,18 +48,6 @@ export const qrisOrderStatus = async (req, res, next) => {
 export const cancleQris = async (req, res, next) => {
     const { id } = req.params;
     try {
-        // Extract and verify signature
-        const { "x-partner-id": partnerId, "x-signature": signature, "x-timestamp": timestamp } = req.headers;
-        const { body: payload, method: httpMethod, originalUrl: endpointUrl } = req;
-
-        const allowedPartnerId = await Client.findOne({ clientId: { $eq: partnerId } });
-        if (!allowedPartnerId) {
-            return res.status(401).send("Invalid partner ID");
-        }
-        if (!verifySignatureForward(httpMethod, endpointUrl, payload, timestamp, signature)) {
-            return res.status(401).send("Invalid signature");
-        }
-
         const { currentDateTime, expiredDateTime, payloadResponseError, responseHeaders, response } =
             await qrisService.cancelQris({ id });
 

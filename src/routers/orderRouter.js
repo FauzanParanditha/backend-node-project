@@ -8,37 +8,40 @@ import { ccOrderStatus, createCreditCard } from "../controllers/ccController.js"
 import { createVASNAP, updateVASNAP, VaSnapCallback, vaSNAPOrderStatus } from "../controllers/vaSnapController.js";
 import { createStaticVa, createVA, vaOrderStatus } from "../controllers/vaController.js";
 import { createEMoney, createEMoneyRefund, eMoneyOrderStatus } from "../controllers/eMoneyController.js";
+import { jwtMiddlewareVerify } from "../middlewares/verifyMiddleware.js";
 
 const router = express.Router();
 
 router.get("/orders", jwtMiddlewareAdmin, orders);
 router.post("/order/create", jwtMiddlewareAdmin, createOrder);
 router.post("/order/webhook/xendit", xenditCallback);
-router.post("/order/webhook/paylabs", paylabsCallback);
 router.get("/order/:id", jwtMiddlewareAdmin, order);
 router.put("/order/:id", jwtMiddlewareAdmin, editOrder);
 
 router.get("/xendit/balance", jwtMiddlewareAdmin, balance);
 
-router.post("/order/create/qris", jwtMiddlewareAdmin, createQris);
-router.get("/order/status/qris/:id", jwtMiddlewareAdmin, qrisOrderStatus);
-router.post("/order/cancel/qris/:id", jwtMiddlewareAdmin, cancleQris);
+// paylabs
+router.post("/order/webhook/paylabs", paylabsCallback);
 
-router.post("/order/create/va/snap", jwtMiddlewareAdmin, createVASNAP);
-router.get("/order/status/va/snap/:id", jwtMiddlewareAdmin, vaSNAPOrderStatus);
+router.post("/order/create/qris", jwtMiddlewareVerify, createQris);
+router.get("/order/status/qris/:id", jwtMiddlewareVerify, qrisOrderStatus);
+router.post("/order/cancel/qris/:id", jwtMiddlewareVerify, cancleQris);
+
+router.post("/order/create/va/snap", jwtMiddlewareVerify, createVASNAP);
+router.get("/order/status/va/snap/:id", jwtMiddlewareVerify, vaSNAPOrderStatus);
 router.post("/order/webhook/paylabs/vaSnap", VaSnapCallback);
-router.post("/order/update/va/snap/:id", jwtMiddlewareAdmin, updateVASNAP);
+router.post("/order/update/va/snap/:id", jwtMiddlewareVerify, updateVASNAP);
 
-router.post("/order/create/va", jwtMiddlewareAdmin, createVA);
-router.get("/order/status/va/:id", jwtMiddlewareAdmin, vaOrderStatus);
-router.post("/order/create/va/static", jwtMiddlewareAdmin, createStaticVa);
+router.post("/order/create/va", jwtMiddlewareVerify, createVA);
+router.get("/order/status/va/:id", jwtMiddlewareVerify, vaOrderStatus);
+router.post("/order/create/va/static", jwtMiddlewareVerify, createStaticVa);
 router.post("/order/webhook/paylabs/va", paylabsVaStaticCallback);
 
-router.post("/order/create/cc", jwtMiddlewareAdmin, createCreditCard);
-router.get("/order/status/cc/:id", jwtMiddlewareAdmin, ccOrderStatus);
+router.post("/order/create/cc", jwtMiddlewareVerify, createCreditCard);
+router.get("/order/status/cc/:id", jwtMiddlewareVerify, ccOrderStatus);
 
-router.post("/order/create/ewallet", jwtMiddlewareAdmin, createEMoney);
-router.get("/order/status/ewallet/:id", jwtMiddlewareAdmin, eMoneyOrderStatus);
-router.post("/order/refund/ewallet/:id", jwtMiddlewareAdmin, createEMoneyRefund);
+router.post("/order/create/ewallet", jwtMiddlewareVerify, createEMoney);
+router.get("/order/status/ewallet/:id", jwtMiddlewareVerify, eMoneyOrderStatus);
+router.post("/order/refund/ewallet/:id", jwtMiddlewareVerify, createEMoneyRefund);
 
 export default router;

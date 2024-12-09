@@ -12,6 +12,7 @@ import {
 import { cancelQrisValidator, validateQrisRequest, validateQrisStatus } from "../validators/paymentValidator.js";
 import axios from "axios";
 import Order from "../models/orderModel.js";
+import { forwardCallback } from "./forwadCallback.js";
 
 export const createQris = async ({ validatedProduct, partnerId }) => {
     // Validate products in the order
@@ -215,6 +216,9 @@ export const cancelQris = async ({ id }) => {
     existOrder.paymentStatus = "cancel";
     existOrder.qris.set(response.data);
     await existOrder.save();
+
+    const payload = response.data;
+    await forwardCallback({ payload });
 
     return { response, responseHeaders };
 };
