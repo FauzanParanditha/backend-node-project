@@ -6,7 +6,7 @@ export const availablePayments = async (req, res, next) => {
     const { query = "", limit = 10, page = 1, sort_by = "_id", sort = -1, countOnly = false } = req.query;
 
     try {
-        const availablePayment = await availablePaymentService.getAllAvailablePayment({
+        const result = await availablePaymentService.getAllAvailablePayment({
             query,
             limit,
             page,
@@ -16,14 +16,14 @@ export const availablePayments = async (req, res, next) => {
         });
 
         if (countOnly) {
-            return res.status(200).json({ count: product.count });
+            return res.status(200).json({ count: result.count });
         }
 
         return res.status(200).json({
             success: true,
             message: "All available payment",
-            data: availablePayment.availablePayment,
-            pagination: availablePayment.pagination,
+            data: result.availablePayment,
+            pagination: result.pagination,
         });
     } catch (error) {
         logger.error(`Error fetching available payment: ${error.message}`);

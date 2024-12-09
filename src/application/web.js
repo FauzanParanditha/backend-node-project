@@ -11,6 +11,7 @@ import categoryRouter from "../routers/categoryRouter.js";
 import productRouter from "../routers/productRouter.js";
 import orderRouter from "../routers/orderRouter.js";
 import paymentRouter from "../routers/paymentRouter.js";
+import clientRouter from "../routers/clientRouter.js";
 import ipWhitelistRouter from "../routers/ipWhitelistRouter.js";
 import availablePaymentRouter from "../routers/availablePaymentRoute.js";
 import Admin from "../models/adminModel.js";
@@ -20,11 +21,15 @@ import apiLogger from "../middlewares/apiLog.js";
 import rateLimit from "express-rate-limit";
 import mongoose from "mongoose";
 import logger from "../application/logger.js";
+import path, { dirname } from "path";
 import { ResponseError } from "../error/responseError.js";
 import { errorMiddleware } from "../middlewares/errorMiddleware.js";
 import { generateHeadersForward, generateRequestId, verifySignatureForward } from "../service/paylabs.js";
+import { fileURLToPath } from "url";
 
 dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 ensureUploadsDirExists();
 export const web = express();
@@ -35,6 +40,7 @@ web.use(cookieParser());
 web.use(express.json());
 web.use(express.urlencoded({ extended: true }));
 web.use(apiLogger);
+web.use("/public", express.static(path.join(__dirname, "../public")));
 
 // Define the rate limit rule
 const limiter = rateLimit({
@@ -53,6 +59,7 @@ web.use("/api", ipWhitelistRouter);
 web.use("/api", availablePaymentRouter);
 web.use("/api", categoryRouter);
 web.use("/api", productRouter);
+web.use("/api", clientRouter);
 web.use("/api", orderRouter);
 web.use("/api", paymentRouter);
 web.use("/api", userRouter);

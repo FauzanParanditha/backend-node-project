@@ -426,10 +426,6 @@ const orderSchema = new mongoose.Schema(
         storeId: {
             type: String,
         },
-        forwardUrl: {
-            type: String,
-            required: true,
-        },
         paymentXendit: paymentXenditSchema,
         paymentPaylabs: paymentPaylabsSchema,
         paymentPaylabsVaSnap: paymentPaylabsVaSnap,

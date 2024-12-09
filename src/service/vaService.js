@@ -186,7 +186,7 @@ export const createVaStatic = async ({ validatedProduct }) => {
 
     // Send request to Paylabs
     const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/staticva/create`, requestBody, { headers });
-    console.log("Response:", response.data);
+    // console.log("Response:", response.data);
 
     // Check for successful response
     if (!response.data || response.data.errCode != 0) {

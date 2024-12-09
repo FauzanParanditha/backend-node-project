@@ -7,8 +7,13 @@ import { forwardCallback } from "../service/forwadCallback.js";
 export const paylabsCallback = async (req, res, next) => {
     try {
         // Extract and verify signature
-        const { "x-signature": signature, "x-timestamp": timestamp } = req.headers;
+        const { "x-partner-id": partnerId, "x-signature": signature, "x-timestamp": timestamp } = req.headers;
         const { body: payload, method: httpMethod, originalUrl: endpointUrl } = req;
+
+        const allowedPartnerId = process.env.PAYLABS_MERCHANT_ID;
+        if (partnerId !== allowedPartnerId) {
+            return res.status(401).send("Invalid partner ID");
+        }
 
         if (!verifySignature(httpMethod, endpointUrl, payload, timestamp, signature)) {
             return res.status(401).send("Invalid signature");
@@ -32,9 +37,13 @@ export const paylabsCallback = async (req, res, next) => {
 
 export const paylabsVaStaticCallback = async (req, res, next) => {
     try {
-        // Extract and verify signature
-        const { "x-signature": signature, "x-timestamp": timestamp } = req.headers;
+        const { "x-partner-id": partnerId, "x-signature": signature, "x-timestamp": timestamp } = req.headers;
         const { body: payload, method: httpMethod, originalUrl: endpointUrl } = req;
+
+        const allowedPartnerId = process.env.PAYLABS_MERCHANT_ID;
+        if (partnerId !== allowedPartnerId) {
+            return res.status(401).send("Invalid partner ID");
+        }
 
         if (!verifySignature(httpMethod, endpointUrl, payload, timestamp, signature)) {
             return res.status(401).send("Invalid signature");

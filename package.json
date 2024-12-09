@@ -3,6 +3,10 @@
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
+        "seed:all": "node src/seeds/seedAll.js",
+        "seed:admins": "node src/seeds/seedAdmins.js",
+        "seed:availablePayments": "node src/seeds/seedAvailablePayments.js",
+        "seed:client": "node src/seeds/seedClient.js",
         "format": "prettier --write .",
         "lint": "eslint . ",
         "lint:fix": "eslint . --fix ",
