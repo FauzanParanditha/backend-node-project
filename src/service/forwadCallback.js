@@ -102,6 +102,10 @@ export const forwardCallback = async ({ payload }) => {
 
         const clientId = await Client.findOne({ clientId: order.clientId });
         const callbackUrl = clientId.notifyUrl;
+        const parsedUrl = new URL(notifyUrl);
+
+        // Extract the pathname
+        const path = parsedUrl.pathname;
         if (!callbackUrl) {
             throw new ResponseError(400, "Missing callback URL in the order");
         }
@@ -111,7 +115,7 @@ export const forwardCallback = async ({ payload }) => {
             try {
                 const { headers: responseHeaders } = generateHeadersForward(
                     "POST",
-                    "/callback",
+                    path,
                     notificationData,
                     generateRequestId(),
                 );
