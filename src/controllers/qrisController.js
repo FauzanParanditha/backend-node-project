@@ -3,7 +3,7 @@ import * as qrisService from "../service/qrisService.js";
 import logger from "../application/logger.js";
 
 export const createQris = async (req, res, next) => {
-    const { partnerId } = req.partnerId;
+    const partnerId = req.partnerId;
     try {
         // Validate request payload
         const validatedProduct = await orderSchema.validateAsync(req.body, {
