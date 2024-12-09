@@ -142,7 +142,7 @@ export const vaOrderStatus = async ({ id }) => {
     return { response, responseHeaders };
 };
 
-export const createVaStatic = async ({ validatedProduct }) => {
+export const createVaStatic = async ({ validatedProduct, partnerId }) => {
     // Construct order data
     const requestBodyForm = {
         orderId: uuid4(),

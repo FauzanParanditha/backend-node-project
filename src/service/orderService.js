@@ -56,7 +56,7 @@ export const getAllOrders = async ({ query, limit, page, sort_by, sort, countOnl
     };
 };
 
-export const createOrder = async ({ validatedOrder }) => {
+export const createOrder = async ({ validatedOrder, partnerId }) => {
     // Validate products in the order
     const { validProducts, totalAmount } = await validateOrderProducts(
         validatedOrder.items,
@@ -74,7 +74,7 @@ export const createOrder = async ({ validatedOrder }) => {
         paymentStatus: "pending",
         payer: validatedOrder.payer,
         paymentMethod: validatedOrder.paymentMethod,
-        forwardUrl: validatedOrder.forwardUrl,
+        clientId: partnerId,
         ...(validatedOrder.paymentType && {
             paymentType: validatedOrder.paymentType,
         }),

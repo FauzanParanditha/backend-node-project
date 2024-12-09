@@ -34,6 +34,7 @@ export const orders = async (req, res, next) => {
 
 // Create Order
 export const createOrder = async (req, res, next) => {
+    const partnerId = req.partnerId;
     try {
         const validatedOrder = await orderLinkSchema.validateAsync(req.body, {
             abortEarly: false,
@@ -41,6 +42,7 @@ export const createOrder = async (req, res, next) => {
 
         const { paymentLink, result } = await orderService.createOrder({
             validatedOrder,
+            partnerId,
         });
 
         res.status(200).json({

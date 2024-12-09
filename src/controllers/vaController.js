@@ -44,6 +44,7 @@ export const vaOrderStatus = async (req, res, next) => {
 };
 
 export const createStaticVa = async (req, res, next) => {
+    const partnerId = req.partnerId;
     try {
         // Validate request payload
         const validatedProduct = await vaStaticSchema.validateAsync(req.body, {
@@ -52,6 +53,7 @@ export const createStaticVa = async (req, res, next) => {
 
         const { response, result } = await vaService.createVaStatic({
             validatedProduct,
+            partnerId,
         });
 
         // Respond with created order details
