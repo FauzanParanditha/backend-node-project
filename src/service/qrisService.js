@@ -217,8 +217,5 @@ export const cancelQris = async ({ id }) => {
     existOrder.qris.set(response.data);
     await existOrder.save();
 
-    const payload = response.data;
-    await forwardCallback({ payload });
-
     return { response, responseHeaders };
 };

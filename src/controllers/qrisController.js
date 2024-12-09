@@ -1,6 +1,7 @@
 import { orderSchema } from "../validators/orderValidator.js";
 import * as qrisService from "../service/qrisService.js";
 import logger from "../application/logger.js";
+import { forwardCallback } from "../service/forwadCallback.js";
 
 export const createQris = async (req, res, next) => {
     const partnerId = req.partnerId;
@@ -58,6 +59,9 @@ export const cancleQris = async (req, res, next) => {
         }
         // Respond with update order details
         res.set(responseHeaders).status(200).json(response.data);
+
+        // const payload = response.data;
+        // await forwardCallback({ payload });
     } catch (error) {
         // Handle unexpected errors
         logger.error(`Error cancel qris: ${error.message}`);
