@@ -98,7 +98,7 @@ export const validateCallback = (data) => {
         totalTransFee: joi.number().precision(2).optional(),
         vatFee: joi.number().precision(2).optional(),
         expiredTime: joi.string().max(16).when("status", { is: "06", then: joi.required() }),
-        QrCode: joi.string().max(256).when("status", { is: "06", then: joi.required() }),
+        qrCode: joi.string().max(256).when("status", { is: "06", then: joi.required() }),
     });
     return schema.validate(data, { abortEarly: false });
 };
