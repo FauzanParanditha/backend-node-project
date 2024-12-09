@@ -10,7 +10,7 @@
         "format": "prettier --write .",
         "lint": "eslint . ",
         "lint:fix": "eslint . --fix ",
-        "start": "nodemon ./src/index.js",
+        "start": "node ./src/index.js",
         "dev": "nodemon ./src/index.js",
         "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js -i"
     },
