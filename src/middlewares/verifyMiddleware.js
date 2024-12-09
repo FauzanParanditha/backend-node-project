@@ -20,7 +20,7 @@ export const jwtMiddlewareVerify = async (req, res, next) => {
         const { body: payload, method: httpMethod, originalUrl: endpointUrl } = req;
 
         // Validate partner ID
-        const allowedPartnerId = await Client.findOne({ clientId: { $eq: partnerId } });
+        const allowedPartnerId = await Client.findOne({ clientId: { $eq: partnerId } }).select("+clientId");
         if (!allowedPartnerId) {
             return res.status(401).send("Invalid partner ID");
         }
@@ -29,7 +29,7 @@ export const jwtMiddlewareVerify = async (req, res, next) => {
         if (!verifySignatureForward(httpMethod, endpointUrl, payload, timestamp, signature)) {
             return res.status(401).send("Invalid signature");
         }
-        req.partnerId = partnerId;
+        req.partnerId = allowedPartnerId;
         next();
     } catch (error) {
         logger.error(`Error jwtMiddleware: ${error.message}`);

@@ -24,10 +24,10 @@ export const createEMoney = async ({ validatedProduct, partnerId }) => {
         totalAmount,
         phoneNumber: validatedProduct.phoneNumber,
         paymentStatus: "pending",
-        payer: validatedProduct.payer,
+        payer: partnerId.name,
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
-        clientId: partnerId,
+        clientId: partnerId.clientId,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 

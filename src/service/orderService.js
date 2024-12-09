@@ -72,9 +72,9 @@ export const createOrder = async ({ validatedOrder, partnerId }) => {
         totalAmount,
         phoneNumber: validatedOrder.phoneNumber,
         paymentStatus: "pending",
-        payer: validatedOrder.payer,
+        payer: partnerId.name,
         paymentMethod: validatedOrder.paymentMethod,
-        clientId: partnerId,
+        clientId: partnerId.clientId,
         ...(validatedOrder.paymentType && {
             paymentType: validatedOrder.paymentType,
         }),

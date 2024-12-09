@@ -15,7 +15,6 @@ export const orderSchema = joi.object({
         .min(1)
         .required(),
     totalAmount: joi.string().required(),
-    payer: joi.string().max(255).min(3).required(),
     phoneNumber: joi
         .string()
         .pattern(/^[0-9]+$/)
@@ -28,7 +27,6 @@ export const orderSchema = joi.object({
 });
 
 export const vaStaticSchema = joi.object({
-    payer: joi.string().max(255).min(3).required(),
     phoneNumber: joi
         .string()
         .pattern(/^[0-9]+$/)
@@ -55,7 +53,6 @@ export const orderLinkSchema = joi.object({
         .min(1)
         .required(),
     totalAmount: joi.string().required(),
-    payer: joi.string().max(255).min(3).required(),
     phoneNumber: joi
         .string()
         .pattern(/^[0-9]+$/)

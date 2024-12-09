@@ -24,10 +24,10 @@ export const createVa = async ({ validatedProduct, partnerId }) => {
         totalAmount,
         phoneNumber: validatedProduct.phoneNumber,
         paymentStatus: "pending",
-        payer: validatedProduct.payer,
+        payer: partnerId.name,
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
-        clientId: partnerId,
+        clientId: partnerId.clientId,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 
@@ -146,13 +146,13 @@ export const createVaStatic = async ({ validatedProduct, partnerId }) => {
     // Construct order data
     const requestBodyForm = {
         orderId: uuid4(),
-        payer: validatedProduct.payer,
+        payer: partnerId.name,
         totalAmount: 0,
         phoneNumber: validatedProduct.phoneNumber,
         paymentStatus: "pending",
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
-        clientId: partnerId,
+        clientId: partnerId.clientId,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 

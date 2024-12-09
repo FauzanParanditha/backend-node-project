@@ -15,6 +15,7 @@ import { validateCreateVASNAP, validatePaymentVASNAP, validateVaSNAPStatus } fro
 import axios from "axios";
 import Order from "../models/orderModel.js";
 import { ResponseError } from "../error/responseError.js";
+import Client from "../models/clientModel.js";
 
 export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
     // Validate products in the order
@@ -33,10 +34,10 @@ export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
         totalAmount,
         phoneNumber: validatedProduct.phoneNumber,
         paymentStatus: "pending",
-        payer: validatedProduct.payer,
+        payer: partnerId.name,
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
-        clientId: partnerId,
+        clientId: partnerId.clientId,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 
@@ -314,8 +315,8 @@ export const updateVASNAP = async ({ id, validatedUpdateData, req }) => {
     if (!existingOrder.vaSnap) throw new ResponseError(409, "Payment already processed!");
 
     // Check if the user exists
-    const existUser = await User.findById(existingOrder.userId);
-    if (!existUser) throw new ResponseError(404, "User does not exist!");
+    const existUser = await Client.findOne({ clientId: existingOrder.clientId });
+    if (!existUser) throw new ResponseError(404, "Client does not exist!");
 
     // Validate products in the order
     const { validProducts, totalAmount } = await validateOrderProducts(
