@@ -7,7 +7,7 @@ import { validateEMoneyRefund, validateEMoneyRequest, validateEmoneyStatus } fro
 import axios from "axios";
 import Order from "../models/orderModel.js";
 
-export const createEMoney = async ({ validatedProduct }) => {
+export const createEMoney = async ({ validatedProduct, partnerId }) => {
     // Validate products in the order
     const { validProducts, totalAmount } = await validateOrderProducts(
         validatedProduct.items,
@@ -27,7 +27,7 @@ export const createEMoney = async ({ validatedProduct }) => {
         payer: validatedProduct.payer,
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
-        forwardUrl: validatedProduct.forwardUrl,
+        clientId: partnerId,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 

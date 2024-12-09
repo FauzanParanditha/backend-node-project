@@ -1,5 +1,4 @@
 import uuid4 from "uuid4";
-import User from "../models/userModel.js";
 import { validateOrderProducts } from "../utils/helper.js";
 import { ResponseError } from "../error/responseError.js";
 import { generateHeaders, generateMerchantTradeNo, generateRequestId, merchantId, paylabsApiUrl } from "./paylabs.js";
@@ -8,7 +7,7 @@ import axios from "axios";
 import Order from "../models/orderModel.js";
 import VirtualAccount from "../models/vaModel.js";
 
-export const createVa = async ({ validatedProduct }) => {
+export const createVa = async ({ validatedProduct, partnerId }) => {
     // Validate products in the order
     const { validProducts, totalAmount } = await validateOrderProducts(
         validatedProduct.items,
@@ -28,7 +27,7 @@ export const createVa = async ({ validatedProduct }) => {
         payer: validatedProduct.payer,
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
-        forwardUrl: validatedProduct.forwardUrl,
+        clientId: partnerId,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 
@@ -153,7 +152,7 @@ export const createVaStatic = async ({ validatedProduct }) => {
         paymentStatus: "pending",
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
-        forwardUrl: validatedProduct.forwardUrl,
+        clientId: partnerId,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 

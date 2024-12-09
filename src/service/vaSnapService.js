@@ -16,7 +16,7 @@ import axios from "axios";
 import Order from "../models/orderModel.js";
 import { ResponseError } from "../error/responseError.js";
 
-export const createVASNAP = async ({ req, validatedProduct }) => {
+export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
     // Validate products in the order
     const { validProducts, totalAmount } = await validateOrderProducts(
         validatedProduct.items,
@@ -36,7 +36,7 @@ export const createVASNAP = async ({ req, validatedProduct }) => {
         payer: validatedProduct.payer,
         paymentMethod: validatedProduct.paymentMethod,
         paymentType: validatedProduct.paymentType,
-        forwardUrl: validatedProduct.forwardUrl,
+        clientId: partnerId,
         ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
     };
 

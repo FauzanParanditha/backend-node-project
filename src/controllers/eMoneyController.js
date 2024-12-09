@@ -3,6 +3,7 @@ import * as eMoneyService from "../service/eMoneyService.js";
 import logger from "../application/logger.js";
 
 export const createEMoney = async (req, res, next) => {
+    const partnerId = req.partnerId;
     try {
         // Validate request payload
         const validatedProduct = await orderSchema.validateAsync(req.body, {
@@ -11,6 +12,7 @@ export const createEMoney = async (req, res, next) => {
 
         const { response, result } = await eMoneyService.createEMoney({
             validatedProduct,
+            partnerId,
         });
 
         // Respond with created order details

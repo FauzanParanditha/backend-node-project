@@ -5,6 +5,7 @@ import logger from "../application/logger.js";
 import { forwardCallback } from "../service/forwadCallback.js";
 
 export const createVASNAP = async (req, res) => {
+    const partnerId = req.partnerId;
     try {
         // Validate request payload
         const validatedProduct = await orderSchema.validateAsync(req.body, {
@@ -13,6 +14,7 @@ export const createVASNAP = async (req, res) => {
         const { response, result } = await vaSnapService.createVASNAP({
             req,
             validatedProduct,
+            partnerId,
         });
 
         // Respond with created order details
