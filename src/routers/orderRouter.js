@@ -13,7 +13,7 @@ import { jwtMiddlewareVerify } from "../middlewares/verifyMiddleware.js";
 const router = express.Router();
 
 router.get("/orders", jwtMiddlewareAdmin, orders);
-router.post("/order/create", jwtMiddlewareAdmin, createOrder);
+router.post("/order/create", jwtMiddlewareVerify, createOrder);
 router.post("/order/webhook/xendit", xenditCallback);
 router.get("/order/:id", jwtMiddlewareAdmin, order);
 router.put("/order/:id", jwtMiddlewareAdmin, editOrder);
