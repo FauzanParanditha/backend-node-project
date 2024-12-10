@@ -296,7 +296,6 @@ export const VaSnapCallback = async ({ payload }) => {
 };
 
 export const updateVASNAP = async ({ id, validatedUpdateData, req }) => {
-    console.log(validatedUpdateData);
     // Check if the order exists
     const existingOrder = await Order.findById(id);
     if (!existingOrder) throw new ResponseError(404, "Order does not exist!");
@@ -321,7 +320,7 @@ export const updateVASNAP = async ({ id, validatedUpdateData, req }) => {
 
     // Validate products in the order
     const { validProducts, totalAmount } = await validateOrderProducts(
-        validatedUpdateData.products,
+        validatedUpdateData.items,
         validatedUpdateData.paymentType || undefined,
         validatedUpdateData.totalAmount,
     );
@@ -387,7 +386,7 @@ export const updateVASNAP = async ({ id, validatedUpdateData, req }) => {
                 : "failed to create payment",
         );
     // Update validatedUpdateData with validProducts
-    updatedOrderData.products = validProducts;
+    updatedOrderData.items = validProducts;
     updatedOrderData.vaSnap = response.data;
     (updatedOrderData.partnerServiceId = response.data.virtualAccountData.partnerServiceId),
         (updatedOrderData.paymentId = response.data.virtualAccountData.trxId),
