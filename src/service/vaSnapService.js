@@ -122,7 +122,7 @@ export const vaSNAPOrderStatus = async ({ id }) => {
 
     if (existOrder.paymentStatus === "paid") throw new ResponseError(409, "Payment already processed!");
 
-    if (existOrder.paymentStatus === "expired") ResponseError(408, "Payment already processed!");
+    if (existOrder.paymentStatus === "expired") throw new ResponseError(408, "Payment already processed!");
 
     if (!existOrder.vaSnap) throw new ResponseError(400, "VASNAP data not found in the order");
 
