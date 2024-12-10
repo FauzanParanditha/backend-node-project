@@ -55,7 +55,7 @@ export const vaSNAPOrderStatus = async (req, res) => {
             success: false,
             status: error.status,
             message: "An error occurred",
-            error: error.response.data
+            error: error.response
                 ? `error: ${error.response.data.responseMessage} with code ${error.response.data.responseCode}`
                 : error.message,
         });
@@ -134,7 +134,7 @@ export const updateVASNAP = async (req, res) => {
             success: false,
             status: error.status,
             message: "An error occurred",
-            error: error.response.data
+            error: error.response
                 ? `error: ${error.response.data.responseMessage} with code ${error.response.data.responseCode}`
                 : error.message,
         });
