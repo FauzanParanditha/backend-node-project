@@ -322,6 +322,7 @@ export const updateVASNAP = async ({ id, validatedUpdateData, req }) => {
     const { validProducts, totalAmount } = await validateOrderProducts(
         validatedUpdateData.products,
         validatedUpdateData.paymentType || undefined,
+        validatedProduct.totalAmount,
     );
     if (!validProducts.length) throw new ResponseError(404, "No valid products found to create the order");
 
