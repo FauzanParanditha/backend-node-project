@@ -46,6 +46,17 @@ export const generateTimestamp = (offsetMs = 0) => {
     return formattedTimestamp;
 };
 
+export const addMinutesToTimestamp = (timestamp, minutes) => {
+    // Parse the existing timestamp to get the date object
+    const date = new Date(timestamp);
+
+    // Add the specified minutes
+    date.setMinutes(date.getMinutes() + minutes);
+
+    // Return the new timestamp in the same format using generateTimestamp
+    return generateTimestamp(date.getTime() - Date.now());
+};
+
 //PAYLABS
 // const privateKeyPath = path.join(__dirname, "path/to/your/private_key.pem");
 // const privateKey = fs.readFileSync(privateKeyPath, "utf8");

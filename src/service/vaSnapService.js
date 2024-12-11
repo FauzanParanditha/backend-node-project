@@ -2,6 +2,7 @@ import uuid4 from "uuid4";
 import User from "../models/userModel.js";
 import { validateOrderProducts } from "../utils/helper.js";
 import {
+    addMinutesToTimestamp,
     createSignature,
     generateCustomerNumber,
     generateMerchantTradeNo,
@@ -334,6 +335,8 @@ export const updateVASNAP = async ({ id, validatedUpdateData, req }) => {
         paymentStatus: validatedUpdateData.paymentStatus || existingOrder.paymentStatus,
     };
 
+    const newExpired = addMinutesToTimestamp(existingOrder.paymentExpired, 30);
+
     // Prepare request payload for Paylabs
     const timestamp = generateTimestamp();
     const requestId = uuid4();
@@ -349,7 +352,7 @@ export const updateVASNAP = async ({ id, validatedUpdateData, req }) => {
             value: String(updatedOrderData.totalAmount),
             currency: "IDR",
         },
-        expiredDate: generateTimestamp(300 * 60 * 100),
+        expiredDate: newExpired,
         additionalInfo: {
             paymentType: updatedOrderData.paymentType,
         },
