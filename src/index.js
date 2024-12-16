@@ -2,6 +2,7 @@ import logger from "./application/logger.js";
 import { web } from "./application/web.js";
 import { connectDB } from "./application/db.js";
 import mongoose from "mongoose";
+import { retryFailedCallbacks } from "./service/forwadCallback.js";
 
 export const serverIsClosing = false;
 web.use((req, res, next) => {
