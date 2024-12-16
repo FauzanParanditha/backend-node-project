@@ -51,7 +51,8 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
     logger.info(`Active tasks: ${activeTask}`);
 
     try {
-        console.log("IN");
+        logger.info(`Starting forwardCallback attempt ${retryCount + 1}`);
+
         const { error } = validateCallback(payload);
         if (error)
             throw new ResponseError(
@@ -74,17 +75,14 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         const path = parsedUrl.pathname;
 
         while (retryCount < retryIntervals.length) {
-            console.log("IN 1");
-
             if (serverIsClosing) {
                 logger.warn("Server shutting down. Aborting retries.");
                 await logFailedCallback(payload, callbackUrl, retryCount, err.message);
+                decrementActiveTask();
                 return; // Stop retries during shutdown
             }
 
             try {
-                console.log("IN 2");
-
                 const { headers: responseHeaders } = generateHeadersForward(
                     "POST",
                     path,
@@ -97,22 +95,15 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                 });
 
                 await validateResponse(response);
-                logger.info(`Callback successfully forwarded on attempt ${retryCount}`);
+                logger.info(`Callback successfully forwarded on attempt ${retryCount + 1}`);
                 return true;
             } catch (err) {
-                logger.error(`Attempt ${retryCount} failed: ${err.message}`);
+                logger.error(`Attempt ${retryCount + 1} failed: ${err.message}`);
                 retryCount++;
                 if (retryCount < retryIntervals.length) {
                     const delay = retryIntervals[retryCount - 1];
                     logger.info(`Retrying in ${delay} seconds...`);
-                    await new Promise((resolve) => {
-                        const timer = setTimeout(() => {
-                            if (serverIsClosing) {
-                                clearTimeout(timer);
-                            } // Abort if shutting down
-                            resolve();
-                        }, delay * 1000);
-                    });
+                    await new Promise((resolve) => setTimeout(resolve, delay * 1000));
                 } else {
                     logger.error("Exhausted retries.");
                     await logFailedCallback(payload, callbackUrl, retryCount, err.message);
@@ -143,5 +134,3 @@ export const retryFailedCallbacks = async () => {
         }
     }
 };
-
-export const getActiveTasks = () => activeTasks;

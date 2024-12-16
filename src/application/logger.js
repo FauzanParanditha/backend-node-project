@@ -1,7 +1,7 @@
 import winston from "winston";
 
 const logger = winston.createLogger({
-    level: "info",
+    level: "debug",
     format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.printf(({ timestamp, level, message }) => {
@@ -28,3 +28,14 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export default logger;
+
+export async function flushLogsAndExit(exitCode) {
+    logger.info(`Flushing logs and exiting with code ${exitCode}...`);
+    logger.end(); // Ensure logger is closed.
+
+    // Add delay to ensure the logs are flushed properly
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // Ensure process exits after logs are flushed
+    process.exit(exitCode);
+}

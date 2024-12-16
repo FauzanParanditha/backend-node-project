@@ -1,4 +1,4 @@
-import logger from "./application/logger.js";
+import logger, { flushLogsAndExit } from "./application/logger.js";
 import { web } from "./application/web.js";
 import { connectDB } from "./application/db.js";
 import mongoose from "mongoose";
@@ -29,46 +29,63 @@ const server = web.listen(process.env.PORT, async () => {
 
 export function incrementActiveTask() {
     activeTask++;
+    logger.debug(`Active task increment. Current count: ${activeTask}`);
 }
 
 export function decrementActiveTask() {
     activeTask--;
+    logger.debug(`Active task decremented. Current count: ${activeTask}`);
 }
 
 function handleShutdownGracefully(signal) {
-    return () => {
+    return async () => {
         serverIsClosing = true;
         logger.info(`Received ${signal} signal. Starting graceful shutdown... New requests will be denied.`);
 
-        const shutdownInterval = setInterval(() => {
+        logger.debug("Entering shutdown process...");
+        const shutdownInterval = setInterval(async () => {
+            logger.debug(`Active tasks count: ${activeTask}`);
+
             if (activeTask === 0) {
-                clearInterval(shutdownInterval);
-                logger.info("All active tasks completed. Shutting down gracefully.");
+                clearInterval(shutdownInterval); // Stop the interval once all tasks are done
+                logger.info("All active tasks completed. Proceeding with shutdown...");
 
-                // Stop accepting new connections and complete ongoing requests
-                server.close(async () => {
-                    logger.info("HTTP server closed gracefully.");
+                try {
+                    // Wait for the server to close
+                    await new Promise((resolve, reject) =>
+                        server.close((err) => {
+                            if (err) {
+                                logger.error("Error closing HTTP server:", err);
+                                return reject(err);
+                            }
+                            resolve();
+                        }),
+                    );
+                    logger.info("HTTP server closed successfully.");
 
-                    try {
-                        // Close the database connection gracefully
-                        await mongoose.connection.close(false);
-                        logger.info("MongoDB connection closed.");
-                        process.exit(0); // Exit cleanly after everything is closed
-                    } catch (err) {
-                        logger.error("Error closing MongoDB connection", err);
-                        process.exit(1); // Exit with failure if an error occurs
-                    }
-                });
+                    // Close MongoDB connection
+                    await mongoose.connection.close(false);
+                    logger.info("MongoDB connection closed successfully.");
+
+                    // Final log and exit
+                    await flushLogsAndExit(0); // Exit with success
+                } catch (err) {
+                    logger.error("Error during shutdown:", err);
+                    await flushLogsAndExit(1); // Exit with error code
+                }
             } else {
                 logger.info(`Waiting for ${activeTask} active tasks to complete...`);
             }
         }, 1000);
 
-        // Timeout as a backup to force exit if graceful shutdown takes too long
-        setTimeout(() => {
-            logger.error("Forced shutdown due to timeout.");
-            process.exit(1); // Exit with failure if cleanup takes too long
-        }, 10000); // 10 seconds to allow ongoing connections to complete
+        // Force shutdown if not completed in 30 seconds
+        setTimeout(async () => {
+            if (activeTask > 0) {
+                logger.error("Forced shutdown due to timeout.");
+                clearInterval(shutdownInterval); // Clear the interval to stop waiting
+                await flushLogsAndExit(1); // Force exit after timeout
+            }
+        }, 30000); // Timeout after 30 seconds
     };
 }
 
