@@ -42,7 +42,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         if (errCode !== "0") throw new ResponseError(400, `Error code received: ${errCode}`);
     };
 
-    const handleCallback = async () => {
+    const handleCallback = async (payload) => {
         const { error } = validateCallback(payload);
         if (error)
             throw new ResponseError(
@@ -94,7 +94,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         }
     };
 
-    const task = handleCallback();
+    const task = handleCallback({ payload });
     activeTasks.add(task);
     try {
         await task;
