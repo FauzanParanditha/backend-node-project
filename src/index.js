@@ -3,7 +3,7 @@ import { web } from "./application/web.js";
 import { connectDB } from "./application/db.js";
 import mongoose from "mongoose";
 
-let serverIsClosing = false;
+export const serverIsClosing = false;
 web.use((req, res, next) => {
     if (serverIsClosing) {
         res.status(503).json({
@@ -15,10 +15,13 @@ web.use((req, res, next) => {
     }
 });
 
-const server = web.listen(process.env.PORT, () => {
+const server = web.listen(process.env.PORT, async () => {
     connectDB();
     logger.info(`App running on port: ${process.env.PORT}`);
     logger.info(`Running in ${process.env.NODE_ENV} mode`);
+
+    // Retry failed callbacks on startup
+    await retryFailedCallbacks();
 });
 
 function handleShutdownGracefully(signal) {
@@ -28,7 +31,9 @@ function handleShutdownGracefully(signal) {
 
         // Stop accepting new connections and complete ongoing requests
         server.close(async () => {
-            logger.info("HTTP server closed gracefully.");
+            logger.info("HTTP server closed. Waiting for active tasks...");
+            await Promise.allSettled([...activeTasks]);
+            logger.info("All tasks completed.");
 
             try {
                 // Close the database connection gracefully
