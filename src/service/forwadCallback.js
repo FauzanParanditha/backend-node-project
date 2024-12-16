@@ -35,30 +35,34 @@ export const forwardCallback = async ({ payload }) => {
             } = response.headers;
 
             if (!contentType || contentType.toLowerCase() !== "application/json; charset=utf-8") {
-                throw new Error("Missing or invalid Content-Type header");
+                throw new ResponseError(400, "Missing or invalid Content-Type header");
             }
 
             if (!timestamp) {
-                throw new Error("Missing X-TIMESTAMP header");
+                throw new ResponseError(400, "Missing X-TIMESTAMP header");
             }
 
             if (!signature) {
-                throw new Error("Missing X-SIGNATURE header");
+                throw new ResponseError(400, "Missing X-SIGNATURE header");
             }
 
             if (!requestId) {
-                throw new Error("Missing X-REQUEST-ID header");
+                throw new ResponseError(400, "Missing X-REQUEST-ID header");
             }
 
             // Validate the body
-            const { requestId: bodyRequestId, errCode } = response.data;
+            const { clientId, requestId: bodyRequestId, errCode } = response.data;
+
+            if (!clientId) {
+                throw new ResponseError(400, "Missing clientId in response body");
+            }
 
             if (!bodyRequestId) {
-                throw new Error("Missing requestId in response body");
+                throw new ResponseError(400, "Missing requestId in response body");
             }
 
             if (errCode !== "0") {
-                throw new Error(`Invalid errCode in response body: ${errCode}`);
+                throw new ResponseError(400, `Invalid errCode in response body: ${errCode}`);
             }
 
             // Signature verification (optional, if needed)
@@ -67,12 +71,12 @@ export const forwardCallback = async ({ payload }) => {
             const payload = response.data;
 
             if (!verifySignatureForward(httpMethod, endpointUrl, payload, timestamp, signature)) {
-                throw new Error("Invalid signature in response validation");
+                throw new ResponseError(400, "Invalid signature in response validation");
             }
 
             return true; // If everything is valid
         } catch (error) {
-            throw new Error(`Response validation failed: ${error.message}`);
+            throw new ResponseError(500, `Response validation failed: ${error.message}`);
         }
     };
 
