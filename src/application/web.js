@@ -53,16 +53,16 @@ web.use(limiter);
 
 //route
 web.use("/adm/auth", authRouter);
-web.use("/api/auth", authRouterUser);
-web.use("/api/adm", adminRouter);
-web.use("/api", ipWhitelistRouter);
-web.use("/api", availablePaymentRouter);
-web.use("/api", categoryRouter);
-web.use("/api", productRouter);
-web.use("/api", clientRouter);
-web.use("/api", orderRouter);
-web.use("/api", paymentRouter);
-web.use("/api", userRouter);
+web.use("/api/v1/auth", authRouterUser);
+web.use("/api/v1/adm", adminRouter);
+web.use("/api/v1", ipWhitelistRouter);
+web.use("/api/v1", availablePaymentRouter);
+web.use("/api/v1", categoryRouter);
+web.use("/api/v1", productRouter);
+web.use("/api/v1", clientRouter);
+web.use("/api/v1", orderRouter);
+web.use("/api/v1", paymentRouter);
+web.use("/api/v1", userRouter);
 
 web.get("/", (req, res) => {
     const dbStatus = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
@@ -87,7 +87,7 @@ web.post("/callback", (req, res) => {
 
     const responsePayload = (errorCode, errCodeDes) => {
         return {
-            // clientId: "CLNT-12345",
+            clientId: "CLNT-12345",
             requestId: generateRequestId(),
             errCode: errorCode ? errorCode : notificationData.errCode,
             ...(errCodeDes && { errCodeDes: errCodeDes }),

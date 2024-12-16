@@ -30,7 +30,7 @@ export const paylabsCallback = async (req, res, next) => {
 
         await forwardCallback({ payload });
     } catch (error) {
-        logger.error(`Error handling webhook: ${error.message}`);
+        logger.error(`Error handling webhook paylabs: ${error.message}`);
         next(error);
     }
 };
@@ -55,7 +55,7 @@ export const paylabsVaStaticCallback = async (req, res, next) => {
 
         await forwardCallback({ payload });
     } catch (error) {
-        logger.error(`Error handling webhook: ${error.message}`);
+        logger.error(`Error handling webhook va static: ${error.message}`);
         next(error);
     }
 };

@@ -6,9 +6,7 @@ import Order from "../models/orderModel.js";
 import Client from "../models/clientModel.js";
 import { validateCallback } from "../validators/paymentValidator.js";
 import { generateHeadersForward, generateRequestId, verifySignatureForward } from "./paylabs.js";
-import { serverIsClosing } from "../index.js";
-
-const activeTasks = new Set();
+import { activeTask, decrementActiveTask, incrementActiveTask, serverIsClosing } from "../index.js";
 
 export const forwardCallback = async ({ payload, retryCount = 0 }) => {
     const retryIntervals = [5, 15, 30, 60, 300, 900, 1800]; // Retry intervals in seconds
@@ -39,10 +37,21 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
             throw new ResponseError(400, "Missing required headers");
         }
         const { clientId, requestId: bodyRequestId, errCode } = response.data;
+        if (!clientId) throw new ResponseError(400, "Missing clientId in response body");
+
+        existingClientId = await Client.findOne({ clientId });
+        if (!existingClientId) throw new ResponseError(404, "Client Id is not registerd!");
+
+        if (!bodyRequestId) throw new ResponseError(400, "Missing requestId in response body");
+
         if (errCode !== "0") throw new ResponseError(400, `Error code received: ${errCode}`);
     };
 
-    const handleCallback = async (payload) => {
+    incrementActiveTask();
+    logger.info(`Active tasks: ${activeTask}`);
+
+    try {
+        console.log("IN");
         const { error } = validateCallback(payload);
         if (error)
             throw new ResponseError(
@@ -65,24 +74,42 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         const path = parsedUrl.pathname;
 
         while (retryCount < retryIntervals.length) {
+            console.log("IN 1");
+
             if (serverIsClosing) {
-                logger.info("Server shutting down. Aborting retries.");
+                logger.warn("Server shutting down. Aborting retries.");
+                await logFailedCallback(payload, callbackUrl, retryCount, err.message);
                 return; // Stop retries during shutdown
             }
+
             try {
-                const headers = generateHeadersForward("POST", path, notificationData, generateRequestId());
-                const response = await axios.post(callbackUrl, notificationData, { headers });
+                console.log("IN 2");
+
+                const { headers: responseHeaders } = generateHeadersForward(
+                    "POST",
+                    path,
+                    notificationData,
+                    generateRequestId(),
+                );
+
+                const response = await axios.post(callbackUrl, notificationData, {
+                    headers: responseHeaders,
+                });
+
                 await validateResponse(response);
-                logger.info("Callback forwarded successfully.");
+                logger.info(`Callback successfully forwarded on attempt ${retryCount}`);
                 return true;
             } catch (err) {
-                logger.error(`Retry ${retryCount + 1} failed: ${err.message}`);
+                logger.error(`Attempt ${retryCount} failed: ${err.message}`);
                 retryCount++;
                 if (retryCount < retryIntervals.length) {
                     const delay = retryIntervals[retryCount - 1];
+                    logger.info(`Retrying in ${delay} seconds...`);
                     await new Promise((resolve) => {
                         const timer = setTimeout(() => {
-                            if (serverIsClosing) clearTimeout(timer); // Abort if shutting down
+                            if (serverIsClosing) {
+                                clearTimeout(timer);
+                            } // Abort if shutting down
                             resolve();
                         }, delay * 1000);
                     });
@@ -92,14 +119,12 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                 }
             }
         }
-    };
-
-    const task = handleCallback({ payload });
-    activeTasks.add(task);
-    try {
-        await task;
+    } catch (error) {
+        logger.error(`Critical error in forwardCallback: ${error.message}`);
+        throw error; // Bubble up the error if the retries are exhausted
     } finally {
-        activeTasks.delete(task);
+        decrementActiveTask(); // Decrement active task counter
+        logger.info(`Task completed. Active tasks: ${activeTask}`);
     }
 };
 
