@@ -78,7 +78,6 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
             if (serverIsClosing) {
                 logger.warn("Server shutting down. Aborting retries.");
                 await logFailedCallback(payload, callbackUrl, retryCount, "Server shutting down. Aborting retries.");
-                decrementActiveTask();
                 return; // Stop retries during shutdown
             }
 
