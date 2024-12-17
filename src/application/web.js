@@ -87,7 +87,7 @@ web.post("/callback", (req, res) => {
 
     const responsePayload = (errorCode, errCodeDes) => {
         return {
-            clientId: "CLNT-12345",
+            // clientId: "CLNT-12345",
             requestId: generateRequestId(),
             errCode: errorCode ? errorCode : notificationData.errCode,
             ...(errCodeDes && { errCodeDes: errCodeDes }),
