@@ -53,16 +53,16 @@ web.use(limiter);
 
 //route
 web.use("/adm/auth", authRouter);
-web.use("/api/v1/auth", authRouterUser);
+// web.use("/api/v1/auth", authRouterUser);
 web.use("/api/v1/adm", adminRouter);
 web.use("/api/v1", ipWhitelistRouter);
 web.use("/api/v1", availablePaymentRouter);
-web.use("/api/v1", categoryRouter);
-web.use("/api/v1", productRouter);
+// web.use("/api/v1", categoryRouter);
+// web.use("/api/v1", productRouter);
 web.use("/api/v1", clientRouter);
 web.use("/api/v1", orderRouter);
 web.use("/api/v1", paymentRouter);
-web.use("/api/v1", userRouter);
+// web.use("/api/v1", userRouter);
 
 web.get("/", (req, res) => {
     const dbStatus = mongoose.connection.readyState === 1 ? "connected" : "disconnected";

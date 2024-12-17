@@ -16,11 +16,6 @@ const clientSchema = new mongoose.Schema(
             unique: true,
             select: false,
         },
-        serverId: {
-            type: String,
-            unique: true,
-            select: false,
-        },
         notifyUrl: {
             type: String,
             required: true,

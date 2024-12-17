@@ -351,6 +351,7 @@ const orderSchema = new mongoose.Schema(
         },
         clientId: {
             type: String,
+            ref: "Client",
             required: true,
         },
         items: [

@@ -28,7 +28,6 @@ const seedClients = async () => {
                 name: "APPS 1",
                 active: true,
                 clientId: "CLNT-12345",
-                serverId: "SRVR-12345",
                 notifyUrl: "http://localhost:5000/callback",
                 adminId: admin._id,
             },

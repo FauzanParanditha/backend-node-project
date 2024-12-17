@@ -32,12 +32,10 @@ export const getAllOrders = async ({ query, limit, page, sort_by, sort, countOnl
         .limit(limitNum)
         .skip(skip)
         .populate({
-            path: "userId",
-            select: "fullName",
-        })
-        .populate({
-            path: "products.productId",
-            select: "title",
+            path: "clientId",
+            model: "Client",
+            select: "name active notifyUrl",
+            foreignField: "clientId",
         })
         .exec();
 
@@ -96,9 +94,12 @@ export const createOrder = async ({ validatedOrder, partnerId }) => {
 };
 
 export const order = async ({ id }) => {
-    const result = await Order.findOne({ _id: id })
-        .populate({ path: "userId", select: "email" })
-        .populate({ path: "products.productId", select: "title" });
+    const result = await Order.findOne({ _id: id }).populate({
+        path: "clientId",
+        model: "Client",
+        select: "name active notifyUrl",
+        foreignField: "clientId",
+    });
     if (!result) throw new ResponseError(404, "Order does not exist!");
 
     return result;

@@ -47,7 +47,8 @@ export const createClient = async ({ name, notifyUrl }) => {
     const existClient = await Client.findOne({ name: { $eq: name } });
     if (existClient) throw new ResponseError(400, "Client already exists!");
 
-    const newClient = new Client({ name, notifyUrl, adminId });
+    const clientId = await generateUniqueClientId();
+    const newClient = new Client({ name, clientId, notifyUrl, adminId });
     const savedClient = await newClient.save();
     return savedClient;
 };
@@ -89,3 +90,30 @@ export const deleteClient = async ({ id, adminId }) => {
     await Client.deleteOne({ _id: id });
     return true;
 };
+
+export async function generateUniqueClientId() {
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const numbers = "0123456789";
+
+    while (true) {
+        // Generate 5 random alphabets
+        let alphabetPart = "";
+        for (let i = 0; i < 5; i++) {
+            alphabetPart += letters.charAt(Math.floor(Math.random() * letters.length));
+        }
+
+        // Generate 6 random numeric digits
+        let numericPart = "";
+        for (let i = 0; i < 6; i++) {
+            numericPart += numbers.charAt(Math.floor(Math.random() * numbers.length));
+        }
+
+        const clientId = alphabetPart + numericPart;
+
+        // Check uniqueness in the database
+        const existingClient = await Client.findOne({ clientId });
+        if (!existingClient) {
+            return clientId; // Return unique client ID
+        }
+    }
+}
