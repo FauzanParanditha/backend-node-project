@@ -15,10 +15,16 @@ exec("node src/seeds/seedAdmins.js", (err, stdout, stderr) => {
         }
         logger.info(stdout);
     });
-
     exec("node src/seeds/seedClient.js", (err, stdout, stderr) => {
         if (err) {
             logger.error("Error seeding client:", stderr);
+            return;
+        }
+        logger.info(stdout);
+    });
+    exec("node src/seeds/seedIpWhitelist.js", (err, stdout, stderr) => {
+        if (err) {
+            logger.error("Error seeding ip whitelist:", stderr);
             return;
         }
         logger.info(stdout);

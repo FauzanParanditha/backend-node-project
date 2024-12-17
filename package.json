@@ -7,6 +7,7 @@
         "seed:admins": "node src/seeds/seedAdmins.js",
         "seed:availablePayments": "node src/seeds/seedAvailablePayments.js",
         "seed:client": "node src/seeds/seedClient.js",
+        "seed:ip": "node src/seeds/seedIpWhitelist.js",
         "format": "prettier --write .",
         "lint": "eslint . ",
         "lint:fix": "eslint . --fix ",

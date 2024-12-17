@@ -64,6 +64,14 @@ Before running the project, ensure you have the following installed:
     REDIRECT_URL=https://your-domain.com/
     ```
 
+4. Seed database:
+    ```bash
+    npm run seed:all  #for all seed
+    npm run seed:availablePayments
+    npm run seed:client
+    npm run seed:ip
+    ```
+
 ---
 
 ## Usage
@@ -80,19 +88,19 @@ Before running the project, ensure you have the following installed:
 
 ## Key API Endpoints
 
-| Method | Endpoint                            | Description                             |
-| ------ | ----------------------------------- | --------------------------------------- |
-| POST   | `/api/order/create`                 | Create a HTML 5 payment transaction     |
-| POST   | `/api/order/create/qris`            | Create a QRIS payment transaction       |
-| POST   | `/api/order/create/va/snap`         | Create a virtual account SNAP payment   |
-| POST   | `/api/order/create/va`              | Create a virtual account payment        |
-| POST   | `/api/order/create/va/static`       | Create a virtual account static payment |
-| POST   | `/api/order/create/cc`              | Create a credit card payment            |
-| POST   | `/api/order/create/ewallet`         | Create a e-wallet payment               |
-| POST   | `/api/order/webhook/paylabs`        | Handle payment notifications            |
-| POST   | `/api/order/webhook/paylabs/va`     | Handle payment notifications va static  |
-| POST   | `/api/order/webhook/paylabs/vaSnap` | Handle payment notifications va SNAP    |
-| GET    | `/api/orders`                       | Fetch orders from the database          |
+| Method | Endpoint                               | Description                             |
+| ------ | -------------------------------------- | --------------------------------------- |
+| POST   | `/api/v1/order/create`                 | Create a HTML 5 payment transaction     |
+| POST   | `/api/v1/order/create/qris`            | Create a QRIS payment transaction       |
+| POST   | `/api/v1/order/create/va/snap`         | Create a virtual account SNAP payment   |
+| POST   | `/api/v1/order/create/va`              | Create a virtual account payment        |
+| POST   | `/api/v1/order/create/va/static`       | Create a virtual account static payment |
+| POST   | `/api/v1/order/create/cc`              | Create a credit card payment            |
+| POST   | `/api/v1/order/create/ewallet`         | Create a e-wallet payment               |
+| POST   | `/api/v1/order/webhook/paylabs`        | Handle payment notifications            |
+| POST   | `/api/v1/order/webhook/paylabs/va`     | Handle payment notifications va static  |
+| POST   | `/api/v1/order/webhook/paylabs/vaSnap` | Handle payment notifications va SNAP    |
+| GET    | `/api/v1/orders`                       | Fetch orders from the database          |
 
 ---
 
