@@ -76,7 +76,7 @@ function handleShutdownGracefully(signal) {
             } else {
                 logger.info(`Waiting for ${activeTask} active tasks to complete...`);
             }
-        }, 500);
+        }, 1000);
 
         // Force shutdown if not completed in 30 seconds
         setTimeout(async () => {
