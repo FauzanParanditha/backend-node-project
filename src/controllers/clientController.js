@@ -1,5 +1,5 @@
-import * as clientService from "../service/clientService.js";
 import logger from "../application/logger.js";
+import * as clientService from "../service/clientService.js";
 import { clientSchema } from "../validators/clientValidator.js";
 
 export const getAllClient = async (req, res, next) => {
@@ -32,18 +32,15 @@ export const getAllClient = async (req, res, next) => {
 };
 
 export const createClient = async (req, res, next) => {
-    const { name, notifyUrl, userId } = req.body;
+    const { name, notifyUrl, userId, active } = req.body;
     const { adminId } = req.admin;
 
     try {
-        const { error } = clientSchema.validate({ name, notifyUrl, userId, adminId });
+        const { error, value } = clientSchema.validate({ name, notifyUrl, userId, active, adminId });
         if (error) return res.status(401).json({ success: false, message: error.details[0].message });
 
         const client = await clientService.createClient({
-            name,
-            notifyUrl,
-            userId,
-            adminId,
+            value,
         });
         res.status(201).json({ success: true, message: "Client add successfully" });
     } catch (error) {
@@ -85,11 +82,7 @@ export const updateClient = async (req, res, next) => {
 
         const client = await clientService.updateClient({
             id,
-            userId,
-            name,
-            notifyUrl,
-            active,
-            adminId,
+            value,
         });
 
         return res.status(200).json({

@@ -50,16 +50,23 @@ export const getAllClients = async ({ query, limit, page, sort_by, sort, countOn
     };
 };
 
-export const createClient = async ({ name, notifyUrl, userId, adminId }) => {
-    const existClient = await Client.findOne({ name: { $eq: name } });
+export const createClient = async ({ value }) => {
+    const existClient = await Client.findOne({ name: { $eq: value.name } });
     if (existClient) throw new ResponseError(400, "Client already exists!");
 
     const clientId = await generateUniqueClientId();
 
-    const existUser = await User.findOne({ _id: userId });
+    const existUser = await User.findOne({ _id: value.userId });
     if (!existUser) throw new ResponseError(400, "User is not registerd!");
 
-    const newClient = new Client({ name, clientId, notifyUrl, userId, adminId });
+    const newClient = new Client({
+        name: value.name,
+        clientId,
+        notifyUrl: value.notifyUrl,
+        active: value.active,
+        userId: value.userId,
+        adminId: value.adminId,
+    });
     const savedClient = await newClient.save();
     return savedClient;
 };
@@ -73,25 +80,29 @@ export const client = async ({ id }) => {
     return result;
 };
 
-export const updateClient = async ({ id, userId, name, notifyUrl, active, adminId }) => {
+export const updateClient = async ({ id, value }) => {
     const existClient = await Client.findOne({ _id: id });
     if (!existClient) throw new ResponseError(404, "Client does not exist!");
-    if (existClient.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
+
+    const existUser = await User.findOne({ _id: value.userId });
+    if (!existUser) throw new ResponseError(400, "User is not registerd!");
+
+    if (existClient.adminId.toString() != value.adminId) throw new ResponseError(401, "Unauthorized!");
 
     // Sanitize the input
-    const sanitizedName = name.trim();
+    const sanitizedName = value.name.trim();
 
-    if (existClient.name != name) {
+    if (existClient.name != value.name) {
         const existingClient = await Client.findOne({
             name: { $eq: sanitizedName },
         });
-        if (existingClient) throw new ResponseError(400, `Client ${name} already exist!`);
+        if (existingClient) throw new ResponseError(400, `Client ${value.name} already exist!`);
     }
 
-    existClient.name = name;
-    existClient.notifyUrl = notifyUrl;
-    existClient.userId = userId;
-    existClient.active = active;
+    existClient.name = value.name;
+    existClient.notifyUrl = value.notifyUrl;
+    existClient.userId = value.userId;
+    existClient.active = value.active;
     const result = await existClient.save();
     return result;
 };
