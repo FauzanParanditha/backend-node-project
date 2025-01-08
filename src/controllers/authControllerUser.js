@@ -99,6 +99,31 @@ export const changePassword = async (req, res, next) => {
     }
 };
 
+export const changePasswordByAdmin = async (req, res, next) => {
+    const { old_password, new_password, userId } = req.body;
+
+    try {
+        const { error, value } = changePasswordSchema.validate({
+            old_password,
+            new_password,
+        });
+        if (error) {
+            return res.status(400).json({
+                success: false,
+                message: error.details[0].message,
+            });
+        }
+        const message = await authServiceUser.changePasswordByAdminService(userId, old_password, new_password);
+        return res.status(200).json({
+            success: true,
+            message,
+        });
+    } catch (error) {
+        logger.error(`Error change password: ${error.message}`);
+        next(error);
+    }
+};
+
 export const sendForgotPassword = async (req, res, next) => {
     const { email } = req.body;
     try {

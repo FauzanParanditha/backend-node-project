@@ -32,16 +32,18 @@ export const getAllClient = async (req, res, next) => {
 };
 
 export const createClient = async (req, res, next) => {
-    const { name, notifyUrl } = req.body;
+    const { name, notifyUrl, userId } = req.body;
     const { adminId } = req.admin;
 
     try {
-        const { error } = clientSchema.validate({ name, notifyUrl, adminId });
+        const { error } = clientSchema.validate({ name, notifyUrl, userId, adminId });
         if (error) return res.status(401).json({ success: false, message: error.details[0].message });
 
         const client = await clientService.createClient({
             name,
             notifyUrl,
+            userId,
+            adminId,
         });
         res.status(201).json({ success: true, message: "Client add successfully" });
     } catch (error) {
@@ -69,11 +71,11 @@ export const client = async (req, res, next) => {
 
 export const updateClient = async (req, res, next) => {
     const { id } = req.params;
-    const { name, notifyUrl } = req.body;
+    const { name, notifyUrl, userId, active } = req.body;
     const { adminId } = req.admin;
 
     try {
-        const { error, value } = clientSchema.validate({ name, notifyUrl, adminId });
+        const { error, value } = clientSchema.validate({ name, notifyUrl, userId, active, adminId });
         if (error) {
             return res.status(401).json({
                 success: false,
@@ -83,9 +85,11 @@ export const updateClient = async (req, res, next) => {
 
         const client = await clientService.updateClient({
             id,
-            adminId,
+            userId,
             name,
             notifyUrl,
+            active,
+            adminId,
         });
 
         return res.status(200).json({

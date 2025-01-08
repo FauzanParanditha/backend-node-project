@@ -1,31 +1,33 @@
 import cookieParser from "cookie-parser";
-import express from "express";
-import helmet from "helmet";
 import cors from "cors";
 import dotenv from "dotenv";
+import express from "express";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
+import mongoose from "mongoose";
+import path, { dirname } from "path";
+import swaggerUi from "swagger-ui-express";
+import { fileURLToPath } from "url";
+import logger from "../application/logger.js";
+import { ResponseError } from "../error/responseError.js";
+import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
+import apiLogger from "../middlewares/apiLog.js";
+import { errorMiddleware } from "../middlewares/errorMiddleware.js";
+import Admin from "../models/adminModel.js";
+import adminRouter from "../routers/adminRouter.js";
 import authRouter from "../routers/authRouter.js";
 import authRouterUser from "../routers/authRouterUser.js";
-import userRouter from "../routers/userRouter.js";
-import adminRouter from "../routers/adminRouter.js";
+import availablePaymentRouter from "../routers/availablePaymentRoute.js";
 import categoryRouter from "../routers/categoryRouter.js";
-import productRouter from "../routers/productRouter.js";
-import orderRouter from "../routers/orderRouter.js";
-import paymentRouter from "../routers/paymentRouter.js";
 import clientRouter from "../routers/clientRouter.js";
 import ipWhitelistRouter from "../routers/ipWhitelistRouter.js";
-import availablePaymentRouter from "../routers/availablePaymentRoute.js";
-import Admin from "../models/adminModel.js";
-import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
-import { ensureUploadsDirExists } from "../utils/helper.js";
-import apiLogger from "../middlewares/apiLog.js";
-import rateLimit from "express-rate-limit";
-import mongoose from "mongoose";
-import logger from "../application/logger.js";
-import path, { dirname } from "path";
-import { ResponseError } from "../error/responseError.js";
-import { errorMiddleware } from "../middlewares/errorMiddleware.js";
+import orderRouter from "../routers/orderRouter.js";
+import paymentRouter from "../routers/paymentRouter.js";
+import productRouter from "../routers/productRouter.js";
+import userRouter from "../routers/userRouter.js";
 import { generateHeadersForward, generateRequestId, verifySignatureForward } from "../service/paylabs.js";
-import { fileURLToPath } from "url";
+import swaggerSpec from "../swagger.js";
+import { ensureUploadsDirExists } from "../utils/helper.js";
 
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
@@ -34,13 +36,25 @@ const __dirname = dirname(__filename);
 ensureUploadsDirExists();
 export const web = express();
 
-web.use(cors());
+web.use(
+    cors({
+        origin: process.env.CLIENT_URL || "http://localhost:3000",
+        credentials: true,
+    }),
+);
 web.use(helmet());
 web.use(cookieParser());
 web.use(express.json());
 web.use(express.urlencoded({ extended: true }));
 web.use(apiLogger);
-web.use("/public", express.static(path.join(__dirname, "../public")));
+web.use(
+    "/public",
+    express.static(path.join(__dirname, "../public"), {
+        setHeaders: (res, path) => {
+            res.set("Cross-Origin-Resource-Policy", "cross-origin"); // Add CORP header
+        },
+    }),
+);
 
 // Define the rate limit rule
 const limiter = rateLimit({
@@ -50,6 +64,33 @@ const limiter = rateLimit({
     legacyHeaders: false,
 });
 web.use(limiter);
+
+// Swagger UI
+web.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+web.get("/swagger.json", (req, res) => {
+    res.json(swaggerSpec);
+});
+
+// ReDoc
+web.use((req, res, next) => {
+    res.setHeader("Content-Security-Policy", "script-src 'self' https://cdn.redoc.ly; worker-src 'self' blob:");
+    next();
+});
+
+web.get("/redoc", (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>API Documentation</title>
+        </head>
+        <body>
+            <redoc spec-url='/swagger.json'></redoc>
+            <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+        </body>
+        </html>
+    `);
+});
 
 //route
 web.use("/adm/auth", authRouter);

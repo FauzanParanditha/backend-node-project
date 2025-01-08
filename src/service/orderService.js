@@ -1,10 +1,10 @@
 import uuid4 from "uuid4";
 import { expiredXendit } from "../controllers/xenditController.js";
+import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
 import User from "../models/userModel.js";
 import { calculateTotal, escapeRegExp, validateOrderProducts } from "../utils/helper.js";
 import { handlePaymentLink } from "./paylabs.js";
-import { ResponseError } from "../error/responseError.js";
 
 export const getAllOrders = async ({ query, limit, page, sort_by, sort, countOnly }) => {
     const filter = {};
@@ -13,7 +13,7 @@ export const getAllOrders = async ({ query, limit, page, sort_by, sort, countOnl
     if (query && query.trim()) {
         const searchTerm = escapeRegExp(query.trim());
         filter["$or"] = [
-            { userId: { $regex: searchTerm, $options: "i" } },
+            { orderId: { $regex: searchTerm, $options: "i" } },
             { status: { $regex: searchTerm, $options: "i" } },
         ];
     }
@@ -51,6 +51,40 @@ export const getAllOrders = async ({ query, limit, page, sort_by, sort, countOnl
             perPage: limitNum,
             recordsOnPage: orders.length,
         },
+    };
+};
+
+export const getOrders = async ({ query, sort_by, sort, countOnly }) => {
+    const filter = {};
+
+    // Apply search term if provided
+    if (query && query.trim()) {
+        const searchTerm = escapeRegExp(query.trim());
+        filter["$or"] = [
+            { userId: { $regex: searchTerm, $options: "i" } },
+            { status: { $regex: searchTerm, $options: "i" } },
+        ];
+    }
+
+    const sortField = sort_by || "_id";
+    const sortValue = Number(sort) || -1;
+
+    if (countOnly) {
+        return { count: await Order.countDocuments(filter) };
+    }
+
+    const orders = await Order.find(filter)
+        .sort({ [sortField]: sortValue })
+        .populate({
+            path: "clientId",
+            model: "Client",
+            select: "name active notifyUrl",
+            foreignField: "clientId",
+        })
+        .exec();
+
+    return {
+        orders,
     };
 };
 

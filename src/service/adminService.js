@@ -1,5 +1,8 @@
 import { ResponseError } from "../error/responseError.js";
 import Admin from "../models/adminModel.js";
+import Client from "../models/clientModel.js";
+import User from "../models/userModel.js";
+import Order from "../models/orderModel.js";
 import { doHash, escapeRegExp } from "../utils/helper.js";
 
 export const getAllAdmins = async ({ query, limit, page, sort_by, sort, countOnly }) => {
@@ -57,9 +60,39 @@ export const registerAdmin = async ({ email, password, fullName }) => {
     return savedAdmin;
 };
 
+export const admin = async ({ id }) => {
+    const result = await Admin.findOne({ _id: id });
+    if (!result) throw new ResponseError(404, "Admin does not exist!");
+    return result;
+};
+
+export const updateAdmin = async ({ id, fullName }) => {
+    const existAdmin = await Admin.findOne({ _id: id });
+    if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
+
+    // Sanitize the input
+    const sanitizedadmin = fullName.trim();
+
+    const existingAdmin = await Admin.findOne({
+        fullName: { $eq: sanitizedadmin },
+    });
+    if (existingAdmin) throw new ResponseError(400, `Admin ${fullName} already exist!`);
+
+    existAdmin.fullName = fullName;
+    const result = await existAdmin.save();
+    return result;
+};
+
 export const deleteAdminById = async (id) => {
     const existAdmin = await Admin.findById(id);
     if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
     await Admin.deleteOne({ _id: id });
     return { success: true, message: "successfully deleted admin" };
+};
+
+export const dashboard = async () => {
+    const client = await Client.countDocuments();
+    const user = await User.countDocuments();
+    const order = await Order.countDocuments();
+    return { success: true, client, user, order };
 };

@@ -32,6 +32,32 @@ export const orders = async (req, res, next) => {
     }
 };
 
+export const orderNoLimit = async (req, res, next) => {
+    const { query = "", sort_by = "createdAt", sort = 1, countOnly = false } = req.query;
+
+    try {
+        const order = await orderService.getOrders({
+            query,
+            sort_by,
+            sort,
+            countOnly,
+        });
+
+        if (countOnly) {
+            return res.status(200).json({ count: order.count });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "All orders",
+            data: order.orders,
+        });
+    } catch (error) {
+        logger.error(`Error fetching order ${error.message}`);
+        next(error);
+    }
+};
+
 // Create Order
 export const createOrder = async (req, res, next) => {
     const partnerId = req.partnerId;

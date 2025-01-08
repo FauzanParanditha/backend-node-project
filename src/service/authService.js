@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import Admin from "../models/adminModel.js";
 import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
 import { ResponseError } from "../error/responseError.js";
+import { generateForgotPasswordLink, sendForgotPasswordEmail } from "./sendMail.js";
 
 export const loginAdmin = async ({ email, password }) => {
     const sanitizedEmail = email.trim();
@@ -22,7 +23,7 @@ export const loginAdmin = async ({ email, password }) => {
             verified: existAdmin.verified,
         },
         process.env.ACCESS_TOKEN_ADMIN_PRIVATE_KEY,
-        { expiresIn: "2h" },
+        { expiresIn: "1h" },
     );
 
     return { token, adminId: existAdmin._id, email: existAdmin.email };
@@ -105,13 +106,16 @@ export const sendForgotPasswordService = async (email) => {
     if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
     const codeValue = Math.floor(Math.random() * 100000).toString();
-    let info = await transport.sendMail({
-        from: process.env.MAIL_ADDRESS,
-        to: existAdmin.email,
-        subject: "Forgot password code",
-        html: "<h1>" + codeValue + "</h1>",
-    });
-    if (info.accepted[0] !== existAdmin.email) throw new ResponseError(400, "Code sent failed!");
+    const url = generateForgotPasswordLink(existAdmin.email, codeValue);
+    const result = await sendForgotPasswordEmail(url, existAdmin.email, existAdmin.fullName);
+
+    // let info = await transport.sendMail({
+    //     from: process.env.MAIL_ADDRESS,
+    //     to: existAdmin.email,
+    //     subject: "Forgot password code",
+    //     html: "<h1>" + codeValue + "</h1>",
+    // });
+    // if (info.accepted[0] !== existAdmin.email) throw new ResponseError(400, "Code sent failed!");
 
     existAdmin.forgotPasswordCode = hmacProcess(codeValue, process.env.HMAC_VERIFICATION_CODE);
     existAdmin.forgotPasswordCodeValidation = Date.now();

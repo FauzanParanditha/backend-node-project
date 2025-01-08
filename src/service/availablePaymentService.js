@@ -1,9 +1,9 @@
-import { ResponseError } from "../error/responseError.js";
-import AvailablePayment from "../models/availablePaymentModel.js";
 import fs from "fs";
 import path, { dirname } from "path";
-import { escapeRegExp } from "../utils/helper.js";
 import { fileURLToPath } from "url";
+import { ResponseError } from "../error/responseError.js";
+import AvailablePayment from "../models/availablePaymentModel.js";
+import { escapeRegExp } from "../utils/helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -32,6 +32,10 @@ export const getAllAvailablePayment = async ({ query, limit, page, sort_by, sort
         .sort({ [sortField]: sortValue })
         .limit(limitNum)
         .skip(skip)
+        .populate({
+            path: "adminId",
+            select: "email",
+        })
         .exec();
 
     // Calculate pagination details

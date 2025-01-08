@@ -1,6 +1,6 @@
 import express from "express";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
-import { createOrder, editOrder, order, orders } from "../controllers/orderController.js";
+import { createOrder, editOrder, order, orderNoLimit, orders } from "../controllers/orderController.js";
 import { balance, xenditCallback } from "../controllers/xenditController.js";
 import { paylabsCallback, paylabsVaStaticCallback } from "../controllers/paymentController.js";
 import { cancleQris, createQris, qrisOrderStatus } from "../controllers/qrisController.js";
@@ -13,6 +13,8 @@ import { jwtMiddlewareVerify } from "../middlewares/verifyMiddleware.js";
 const router = express.Router();
 
 router.get("/orders", jwtMiddlewareAdmin, orders);
+router.get("/order", jwtMiddlewareAdmin, orderNoLimit);
+
 router.post("/order/create", jwtMiddlewareVerify, createOrder);
 router.post("/order/webhook/xendit", xenditCallback);
 router.get("/order/:id", jwtMiddlewareAdmin, order);

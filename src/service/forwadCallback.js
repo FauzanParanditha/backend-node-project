@@ -1,23 +1,25 @@
 import axios from "axios";
 import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
+import { activeTask, decrementActiveTask, incrementActiveTask, serverIsClosing } from "../index.js";
+import Client from "../models/clientModel.js";
 import FailedCallback from "../models/failedForwardModel.js";
 import Order from "../models/orderModel.js";
-import Client from "../models/clientModel.js";
 import { validateCallback } from "../validators/paymentValidator.js";
-import { generateHeadersForward, generateRequestId, verifySignatureForward } from "./paylabs.js";
-import { activeTask, decrementActiveTask, incrementActiveTask, serverIsClosing } from "../index.js";
+import { generateHeadersForward, generateRequestId } from "./paylabs.js";
 
 export const forwardCallback = async ({ payload, retryCount = 0 }) => {
-    const retryIntervals = [5, 15, 30, 60, 300, 900, 1800]; // Retry intervals in seconds
+    // Configurable retry intervals in seconds
+    const retryIntervals = [5, 15, 30, 60, 300, 900, 1800];
 
-    const logFailedCallback = async (payload, callbackUrl, retryCount, errDesc) => {
+    const logFailedCallback = async (payload, callbackUrl, retryCount, errDesc, clientId) => {
         logger.error(`Logging failed callback: ${JSON.stringify(payload)}`);
         const failedCallback = new FailedCallback({
             payload,
             callbackUrl,
             retryCount,
             errDesc,
+            clientId,
         });
         await failedCallback.save().catch((err) => logger.error(`Failed to log callback: ${err.message}`));
     };
@@ -40,7 +42,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         if (!clientId) throw new ResponseError(400, "Missing clientId in response body");
 
         const existingClientId = await Client.findOne({ clientId });
-        if (!existingClientId) throw new ResponseError(404, "Client Id is not registerd!");
+        if (!existingClientId) throw new ResponseError(404, "Client Id is not registered!");
 
         if (!bodyRequestId) throw new ResponseError(400, "Missing requestId in response body");
 
@@ -54,11 +56,12 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         logger.info(`Starting forwardCallback attempt ${retryCount + 1}`);
 
         const { error } = validateCallback(payload);
-        if (error)
+        if (error) {
             throw new ResponseError(
                 400,
                 error.details.map((err) => err.message),
             );
+        }
 
         const notificationData = payload;
         const paymentId = notificationData.merchantTradeNo?.trim();
@@ -77,7 +80,13 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         while (retryCount < retryIntervals.length) {
             if (serverIsClosing) {
                 logger.warn("Server shutting down. Aborting retries.");
-                await logFailedCallback(payload, callbackUrl, retryCount, "Server shutting down. Aborting retries.");
+                await logFailedCallback(
+                    payload,
+                    callbackUrl,
+                    retryCount,
+                    "Server shutting down. Aborting retries.",
+                    client._id,
+                );
                 return; // Stop retries during shutdown
             }
 
@@ -98,6 +107,22 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                 return true;
             } catch (err) {
                 logger.error(`Attempt ${retryCount + 1} failed: ${err.message}`);
+
+                // Categorize errors for better handling
+                if (err.response) {
+                    // Server responded with a status code outside the 2xx range
+                    logger.error(`Response error: ${err.response.status} - ${err.response.data}`);
+                    throw new ResponseError(500, `Response error: ${err.response.status} - ${err.response.data}`);
+                } else if (err.request) {
+                    // No response was received
+                    logger.error(`No response received: ${err.message}`);
+                    throw new ResponseError(500, `No response received: ${err.message}`);
+                } else {
+                    // Something else caused the error
+                    logger.error(`Error in setting up request: ${err.message}`);
+                    throw new ResponseError(500, `Error in setting up request: ${err.message}`);
+                }
+
                 retryCount++;
                 if (retryCount < retryIntervals.length) {
                     const delay = retryIntervals[retryCount - 1];
@@ -105,7 +130,9 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                     await new Promise((resolve) => setTimeout(resolve, delay * 1000));
                 } else {
                     logger.error("Exhausted retries.");
-                    await logFailedCallback(payload, callbackUrl, retryCount, err.message);
+                    await logFailedCallback(payload, callbackUrl, retryCount, err.message, client._id);
+                    // Optional: Send alert to monitoring system
+                    sendAlert(`Failed to forward callback after ${retryCount} attempts: ${err.message}`);
                 }
             }
         }
@@ -118,18 +145,49 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
     }
 };
 
-export const retryFailedCallbacks = async () => {
-    const failedCallbacks = await FailedCallback.find();
-    logger.info(`Retrying ${failedCallbacks.length} failed callbacks.`);
-    for (const failedCallback of failedCallbacks) {
-        try {
-            await forwardCallback({
-                payload: failedCallback.payload,
-                retryCount: failedCallback.retryCount,
-            });
-            await failedCallback.deleteOne(); // Remove after successful retry
-        } catch (err) {
-            logger.error(`Retry for callback ${failedCallback._id} failed: ${err.message}`);
+// Function to send alerts to a monitoring system
+const sendAlert = (message) => {
+    // Implement your alerting mechanism here (e.g., send to a monitoring service, email, etc.)
+    logger.warn(`Alert: ${message}`);
+};
+
+export const retryCallbackById = async (callbackId) => {
+    try {
+        // Find the failed callback by ID
+        const failedCallback = await FailedCallback.findById(callbackId);
+
+        if (!failedCallback) {
+            logger.warn(`No failed callback found with ID: ${callbackId}`);
+            throw new ResponseError(404, `No failed callback found with ID: ${callbackId}`);
+        }
+
+        logger.info(`Retrying failed callback with ID: ${callbackId}`);
+
+        // Attempt to forward the callback
+        await forwardCallback({
+            payload: failedCallback.payload,
+            retryCount: failedCallback.retryCount,
+        });
+
+        // Remove the callback after successful retry
+        await failedCallback.deleteOne();
+        logger.info(`Successfully retried and deleted callback with ID: ${callbackId}`);
+    } catch (err) {
+        logger.error(`Retry for callback ${callbackId} failed: ${err.message}`);
+
+        // Categorize errors for better handling
+        if (err.response) {
+            // Server responded with a status code outside the 2xx range
+            logger.error(`Response error: ${err.response.status} - ${err.response.data}`);
+            throw new ResponseError(500, `Response error: ${err.response.status} - ${err.response.data}`);
+        } else if (err.request) {
+            // No response was received
+            logger.error(`No response received: ${err.message}`);
+            throw new ResponseError(500, `No response received: ${err.message}`);
+        } else {
+            // Something else caused the error
+            logger.error(`Error in setting up request: ${err.message}`);
+            throw new ResponseError(500, `Error in setting up request: ${err.message}`);
         }
     }
 };

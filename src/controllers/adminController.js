@@ -1,6 +1,6 @@
 import * as adminService from "../service/adminService.js";
 import logger from "../application/logger.js";
-import { registerSchema } from "../validators/authValidator.js";
+import { registerSchema, updateAdminSchema } from "../validators/authValidator.js";
 
 export const getAllAdmin = async (req, res, next) => {
     const { query = "", limit = 10, page = 1, sort_by = "_id", sort = -1, countOnly = false } = req.query;
@@ -50,6 +50,51 @@ export const register = async (req, res, next) => {
     }
 };
 
+export const admin = async (req, res, next) => {
+    const { id } = req.params;
+
+    try {
+        const admin = await adminService.admin({ id });
+
+        return res.status(200).json({
+            success: true,
+            message: "admin",
+            data: admin,
+        });
+    } catch (error) {
+        logger.error(`Error fetching admin: ${error.message}`);
+        next(error);
+    }
+};
+
+export const updateAdmin = async (req, res, next) => {
+    const { id } = req.params;
+    const { fullName } = req.body;
+
+    try {
+        const { error, value } = updateAdminSchema.validate({ fullName });
+        if (error) {
+            return res.status(401).json({
+                success: false,
+                message: error.details[0].message,
+            });
+        }
+
+        const admin = await adminService.updateAdmin({
+            id,
+            fullName,
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Successfully update admin",
+        });
+    } catch (error) {
+        logger.error(`Error update admin address: ${error.message}`);
+        next(error);
+    }
+};
+
 export const deleteAdmin = async (req, res, next) => {
     const { id } = req.params;
 
@@ -61,6 +106,21 @@ export const deleteAdmin = async (req, res, next) => {
         });
     } catch (error) {
         logger.error(`Error deleting admin: ${error.message}`);
+        next(error);
+    }
+};
+
+export const dashboard = async (req, res, next) => {
+    try {
+        const dashboard = await adminService.dashboard();
+
+        return res.status(200).json({
+            success: true,
+            message: "admin",
+            data: dashboard,
+        });
+    } catch (error) {
+        logger.error(`Error fetching dashboard: ${error.message}`);
         next(error);
     }
 };

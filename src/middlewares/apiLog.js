@@ -10,7 +10,7 @@ const apiLogger = async (req, res, next) => {
         body: req.body,
         ipAddress: req.ip || req.connection.remoteAddress,
         statusCode: null,
-        response: null,
+        // response: null,
     };
 
     const originalSend = res.send.bind(res);
@@ -18,11 +18,11 @@ const apiLogger = async (req, res, next) => {
     res.send = function (body) {
         logData.statusCode = res.statusCode;
 
-        try {
-            logData.response = JSON.parse(body);
-        } catch (error) {
-            logData.response = body;
-        }
+        // try {
+        //     logData.response = JSON.parse(body);
+        // } catch (error) {
+        //     logData.response = body;
+        // }
 
         const { error } = validateLog(logData);
         if (!error) {

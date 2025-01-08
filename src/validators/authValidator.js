@@ -13,6 +13,14 @@ export const registerSchema = joi.object({
     password: joi.string().required().pattern(new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,}$")),
 });
 
+export const updateAdminSchema = joi.object({
+    fullName: joi.string().max(100).required(),
+});
+
+export const updateUserSchema = joi.object({
+    fullName: joi.string().max(100).required(),
+});
+
 export const loginSchema = joi.object({
     email: joi
         .string()

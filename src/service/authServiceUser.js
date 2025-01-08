@@ -98,6 +98,22 @@ export const changePasswordService = async (userId, verified, old_password, new_
     return "Successfuly change password!";
 };
 
+export const changePasswordByAdminService = async (userId, old_password, new_password) => {
+    // if (!verified) throw new ResponseError(400, "User not verified!");
+
+    const existUser = await User.findOne({ _id: userId }).select("+password");
+    if (!existUser) throw new ResponseError(404, "User does not exist!");
+
+    const result = await compareDoHash(old_password, existUser.password);
+    if (!result) throw new ResponseError(400, "Invalid credentials!");
+
+    const hashedPassword = await doHash(new_password, 12);
+    existUser.password = hashedPassword;
+    await existUser.save();
+
+    return "Successfuly change password!";
+};
+
 export const sendForgotPasswordService = async (email) => {
     const sanitizedEmail = email.trim();
 

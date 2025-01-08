@@ -55,6 +55,29 @@ export const registerUser = async ({ email, password, fullName }) => {
     return savedUser;
 };
 
+export const user = async ({ id }) => {
+    const result = await User.findOne({ _id: id });
+    if (!result) throw new ResponseError(404, "User does not exist!");
+    return result;
+};
+
+export const updateUser = async ({ id, fullName }) => {
+    const existUser = await User.findOne({ _id: id });
+    if (!existUser) throw new ResponseError(404, "User does not exist!");
+
+    // Sanitize the input
+    const sanitizedUser = fullName.trim();
+
+    const existingUser = await User.findOne({
+        fullName: { $eq: sanitizedUser },
+    });
+    if (existingUser) throw new ResponseError(400, `User ${fullName} already exist!`);
+
+    existUser.fullName = fullName;
+    const result = await existUser.save();
+    return result;
+};
+
 export const deleteUserById = async (id) => {
     const existUser = await User.findById(id);
     if (!existUser) throw new ResponseError(404, "User does not exist!");

@@ -6,6 +6,7 @@ const failedCallback = new mongoose.Schema(
         callbackUrl: { type: String },
         retryCount: { type: Number, default: 0 },
         errDesc: { type: String },
+        clientId: { type: mongoose.Schema.Types.ObjectId, ref: "Client", required: true },
     },
     {
         timestamps: true,

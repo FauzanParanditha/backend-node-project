@@ -1,8 +1,7 @@
+import mongoose from "mongoose";
+import { connectDB } from "./application/db.js";
 import logger, { flushLogsAndExit } from "./application/logger.js";
 import { web } from "./application/web.js";
-import { connectDB } from "./application/db.js";
-import mongoose from "mongoose";
-import { retryFailedCallbacks } from "./service/forwadCallback.js";
 
 export let serverIsClosing = false;
 export let activeTask = 0;

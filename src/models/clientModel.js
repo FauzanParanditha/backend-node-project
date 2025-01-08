@@ -13,11 +13,16 @@ const clientSchema = new mongoose.Schema(
         },
         clientId: {
             type: String,
-            unique: true,
+            // unique: true,
             select: false,
         },
         notifyUrl: {
             type: String,
+            required: true,
+        },
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
             required: true,
         },
         adminId: {

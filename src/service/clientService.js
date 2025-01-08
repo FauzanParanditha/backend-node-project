@@ -1,4 +1,6 @@
+import { ResponseError } from "../error/responseError.js";
 import Client from "../models/clientModel.js";
+import User from "../models/userModel.js";
 import { escapeRegExp } from "../utils/helper.js";
 
 export const getAllClients = async ({ query, limit, page, sort_by, sort, countOnly }) => {
@@ -8,8 +10,8 @@ export const getAllClients = async ({ query, limit, page, sort_by, sort, countOn
     if (query && query.trim()) {
         const searchTerm = escapeRegExp(query.trim());
         filter["$or"] = [
-            { email: { $regex: searchTerm, $options: "i" } },
-            { fullName: { $regex: searchTerm, $options: "i" } },
+            { name: { $regex: searchTerm, $options: "i" } },
+            { clientId: { $regex: searchTerm, $options: "i" } },
         ];
     }
 
@@ -23,9 +25,14 @@ export const getAllClients = async ({ query, limit, page, sort_by, sort, countOn
     }
 
     const clients = await Client.find(filter)
+        .select("+clientId")
         .sort({ [sortField]: sortValue })
         .limit(limitNum)
         .skip(skip)
+        .populate({
+            path: "userId",
+            select: "email",
+        })
         .exec();
 
     const total = await Client.countDocuments(filter);
@@ -43,26 +50,30 @@ export const getAllClients = async ({ query, limit, page, sort_by, sort, countOn
     };
 };
 
-export const createClient = async ({ name, notifyUrl }) => {
+export const createClient = async ({ name, notifyUrl, userId, adminId }) => {
     const existClient = await Client.findOne({ name: { $eq: name } });
     if (existClient) throw new ResponseError(400, "Client already exists!");
 
     const clientId = await generateUniqueClientId();
-    const newClient = new Client({ name, clientId, notifyUrl, adminId });
+
+    const existUser = await User.findOne({ _id: userId });
+    if (!existUser) throw new ResponseError(400, "User is not registerd!");
+
+    const newClient = new Client({ name, clientId, notifyUrl, userId, adminId });
     const savedClient = await newClient.save();
     return savedClient;
 };
 
 export const client = async ({ id }) => {
     const result = await Client.findOne({ _id: id }).populate({
-        path: "adminId",
+        path: "userId",
         select: "email",
     });
-    if (!result) throw new ResponseError(404, "IpAddress does not exist!");
+    if (!result) throw new ResponseError(404, "Client does not exist!");
     return result;
 };
 
-export const updateClient = async ({ id, adminId, name, notifyUrl }) => {
+export const updateClient = async ({ id, userId, name, notifyUrl, active, adminId }) => {
     const existClient = await Client.findOne({ _id: id });
     if (!existClient) throw new ResponseError(404, "Client does not exist!");
     if (existClient.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
@@ -70,13 +81,17 @@ export const updateClient = async ({ id, adminId, name, notifyUrl }) => {
     // Sanitize the input
     const sanitizedName = name.trim();
 
-    const existingClient = await Client.findOne({
-        name: { $eq: sanitizedName },
-    });
-    if (existingClient) throw new ResponseError(400, `Client ${name} already exist!`);
+    if (existClient.name != name) {
+        const existingClient = await Client.findOne({
+            name: { $eq: sanitizedName },
+        });
+        if (existingClient) throw new ResponseError(400, `Client ${name} already exist!`);
+    }
 
     existClient.name = name;
     existClient.notifyUrl = notifyUrl;
+    existClient.userId = userId;
+    existClient.active = active;
     const result = await existClient.save();
     return result;
 };
@@ -85,7 +100,7 @@ export const deleteClient = async ({ id, adminId }) => {
     const existClient = await Client.findOne({ _id: id });
     if (!existClient) throw new ResponseError(404, "Client does not exist!");
 
-    if (existClient.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
+    // if (existClient.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
 
     await Client.deleteOne({ _id: id });
     return true;
@@ -94,26 +109,24 @@ export const deleteClient = async ({ id, adminId }) => {
 export async function generateUniqueClientId() {
     const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const numbers = "0123456789";
+    const maxRetries = 10;
 
-    while (true) {
-        // Generate 5 random alphabets
-        let alphabetPart = "";
-        for (let i = 0; i < 5; i++) {
-            alphabetPart += letters.charAt(Math.floor(Math.random() * letters.length));
-        }
+    for (let i = 0; i < maxRetries; i++) {
+        let alphabetPart = Array.from({ length: 5 }, () =>
+            letters.charAt(Math.floor(Math.random() * letters.length)),
+        ).join("");
 
-        // Generate 6 random numeric digits
-        let numericPart = "";
-        for (let i = 0; i < 6; i++) {
-            numericPart += numbers.charAt(Math.floor(Math.random() * numbers.length));
-        }
+        let numericPart = Array.from({ length: 6 }, () =>
+            numbers.charAt(Math.floor(Math.random() * numbers.length)),
+        ).join("");
 
         const clientId = alphabetPart + numericPart;
 
-        // Check uniqueness in the database
         const existingClient = await Client.findOne({ clientId });
         if (!existingClient) {
-            return clientId; // Return unique client ID
+            return clientId;
         }
     }
+
+    throw new Error("Failed to generate a unique client ID after maximum retries.");
 }

@@ -1,6 +1,6 @@
 import * as userService from "../service/userService.js";
 import logger from "../application/logger.js";
-import { registerSchema } from "../validators/authValidator.js";
+import { registerSchema, updateUserSchema } from "../validators/authValidator.js";
 
 export const getAllUser = async (req, res, next) => {
     const { query = "", limit = 10, page = 1, sort_by = "_id", sort = -1, countOnly = false } = req.query;
@@ -46,6 +46,51 @@ export const register = async (req, res, next) => {
         res.status(201).json({ success: true, message: "Registered successfully" });
     } catch (error) {
         logger.error(`Error register: ${error.message}`);
+        next(error);
+    }
+};
+
+export const user = async (req, res, next) => {
+    const { id } = req.params;
+
+    try {
+        const user = await userService.user({ id });
+
+        return res.status(200).json({
+            success: true,
+            message: "user",
+            data: user,
+        });
+    } catch (error) {
+        logger.error(`Error fetching user: ${error.message}`);
+        next(error);
+    }
+};
+
+export const updateUser = async (req, res, next) => {
+    const { id } = req.params;
+    const { fullName } = req.body;
+
+    try {
+        const { error, value } = updateUserSchema.validate({ fullName });
+        if (error) {
+            return res.status(401).json({
+                success: false,
+                message: error.details[0].message,
+            });
+        }
+
+        const user = await userService.updateUser({
+            id,
+            fullName,
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Successfully update user",
+        });
+    } catch (error) {
+        logger.error(`Error update user address: ${error.message}`);
         next(error);
     }
 };
