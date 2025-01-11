@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
-import IPWhitelist from "../models/ipWhitelistModel.js";
 import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
+import IPWhitelist from "../models/ipWhitelistModel.js";
 
 export const jwtMiddlewareAdmin = async (req, res, next) => {
     let token;
