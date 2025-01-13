@@ -1,11 +1,13 @@
 import crypto from "crypto";
-import uuid4 from "uuid4";
+import dotenv from "dotenv";
 import fs from "fs";
+import uuid4 from "uuid4";
 import logger from "../application/logger.js";
-import { createPaymentLink } from "../service/paymentService.js";
 import { createXenditPaymentLink } from "../controllers/xenditController.js";
 import { ResponseError } from "../error/responseError.js";
+import { createPaymentLink } from "../service/paymentService.js";
 
+dotenv.config();
 export const paylabsApiUrl = process.env.PAYLABS_API_URL;
 export const merchantId = process.env.PAYLABS_MERCHANT_ID;
 export const generateRequestId = () => uuid4();

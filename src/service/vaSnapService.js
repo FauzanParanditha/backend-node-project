@@ -1,6 +1,11 @@
+import axios from "axios";
 import uuid4 from "uuid4";
-import User from "../models/userModel.js";
+import logger from "../application/logger.js";
+import { ResponseError } from "../error/responseError.js";
+import Client from "../models/clientModel.js";
+import Order from "../models/orderModel.js";
 import { validateOrderProducts } from "../utils/helper.js";
+import { validateCreateVASNAP, validatePaymentVASNAP, validateVaSNAPStatus } from "../validators/paymentValidator.js";
 import {
     addMinutesToTimestamp,
     createSignature,
@@ -8,396 +13,425 @@ import {
     generateMerchantTradeNo,
     generateRequestId,
     generateTimestamp,
-    generateUUID12,
     merchantId,
     paylabsApiUrl,
 } from "./paylabs.js";
-import { validateCreateVASNAP, validatePaymentVASNAP, validateVaSNAPStatus } from "../validators/paymentValidator.js";
-import axios from "axios";
-import Order from "../models/orderModel.js";
-import { ResponseError } from "../error/responseError.js";
-import Client from "../models/clientModel.js";
 
 export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
-    // Validate products in the order
-    const { validProducts, totalAmount } = await validateOrderProducts(
-        validatedProduct.items,
-        validatedProduct.paymentType,
-        validatedProduct.totalAmount,
-    );
-    if (!validProducts.length) throw new ResponseError(404, "No valid products found to create the order");
-
-    // Construct order data
-    const requestBodyForm = {
-        orderId: uuid4(),
-        userId: validatedProduct.userId,
-        items: validProducts,
-        totalAmount,
-        phoneNumber: validatedProduct.phoneNumber,
-        paymentStatus: "pending",
-        payer: partnerId.name,
-        paymentMethod: validatedProduct.paymentMethod,
-        paymentType: validatedProduct.paymentType,
-        clientId: partnerId.clientId,
-        ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
-    };
-
-    // Generate IDs and other necessary fields
-    const timestamp = generateTimestamp();
-    const requestId = generateUUID12();
-    const merchantTradeNo = generateMerchantTradeNo();
-    const customerNo = generateCustomerNumber();
-
-    // Prepare Paylabs request payload
-    const requestBody = {
-        partnerServiceId: `  ${merchantId}`,
-        customerNo,
-        virtualAccountNo: `${merchantId}${customerNo}`,
-        virtualAccountName: requestBodyForm.payer,
-        // virtualAccountEmail: existUser.email,
-        virtualAccountPhone: requestBodyForm.phoneNumber,
-        trxId: merchantTradeNo,
-        totalAmount: {
-            value: String(requestBodyForm.totalAmount),
-            currency: "IDR",
-        },
-        expiredDate: generateTimestamp(300 * 60 * 100),
-        additionalInfo: {
-            paymentType: requestBodyForm.paymentType,
-        },
-    };
-
-    // Validate requestBody
-    const { error } = validateCreateVASNAP(requestBody);
-    if (error)
-        throw new ResponseError(
-            400,
-            error.details.map((err) => err.message),
+    try {
+        // Validate products in the order
+        const { validProducts, totalAmount } = await validateOrderProducts(
+            validatedProduct.items,
+            validatedProduct.paymentType,
+            validatedProduct.totalAmount,
         );
+        if (!validProducts.length) {
+            logger.error("No valid products found to create the order");
+            throw new ResponseError(404, "No valid products found to create the order");
+        }
 
-    // Generate signature and headers
-    const signature = createSignature("POST", "/transfer-va/create-va", requestBody, timestamp);
-    const headers = {
-        "Content-Type": "application/json;charset=utf-8",
-        "X-TIMESTAMP": timestamp,
-        "X-PARTNER-ID": merchantId,
-        "X-EXTERNAL-ID": requestId,
-        "X-SIGNATURE": signature,
-        "X-IP-ADDRESS": req.ip.includes("::ffff:") ? req.ip.split("::ffff:")[1] : req.ip,
-    };
-    // console.log(requestBody);
-    // console.log(headers);
+        // Construct order data
+        const requestBodyForm = {
+            orderId: uuid4(),
+            userId: validatedProduct.userId,
+            items: validProducts,
+            totalAmount,
+            phoneNumber: validatedProduct.phoneNumber,
+            paymentStatus: "pending",
+            payer: partnerId.name,
+            paymentMethod: validatedProduct.paymentMethod,
+            paymentType: validatedProduct.paymentType,
+            clientId: partnerId.clientId,
+            ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
+        };
 
-    // Send request to Paylabs
-    const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/create-va`, requestBody, { headers });
-    // console.log(response.data);
+        // Generate IDs and other necessary fields
+        const timestamp = generateTimestamp();
+        const requestId = generateRequestId();
+        const merchantTradeNo = generateMerchantTradeNo();
+        const customerNo = generateCustomerNumber();
 
-    // Check for successful response
-    if (!response.data || response.data.responseCode.charAt(0) !== "2")
-        throw new ResponseError(
-            400,
-            response.data
-                ? `error: ${response.data.responseMessage} with code ${response.data.responseCode}`
-                : "failed to create payment",
-        );
+        // Prepare Paylabs request payload
+        const requestBody = {
+            partnerServiceId: merchantId,
+            customerNo,
+            virtualAccountNo: `${merchantId}${customerNo}`,
+            virtualAccountName: requestBodyForm.payer,
+            virtualAccountPhone: requestBodyForm.phoneNumber,
+            trxId: merchantTradeNo,
+            totalAmount: {
+                value: String(requestBodyForm.totalAmount),
+                currency: "IDR",
+            },
+            expiredDate: generateTimestamp(300 * 60 * 1000), // 300 minutes
+            additionalInfo: {
+                paymentType: requestBodyForm.paymentType,
+            },
+        };
 
-    // Save order details in the database
-    const result = await Order.create({
-        ...requestBodyForm,
-        totalAmount: response.data.virtualAccountData.totalAmount.value,
-        partnerServiceId: response.data.virtualAccountData.partnerServiceId,
-        paymentId: response.data.virtualAccountData.trxId,
-        paymentExpired: response.data.virtualAccountData.expiredDate,
-        customerNo: response.data.virtualAccountData.customerNo,
-        virtualAccountNo: response.data.virtualAccountData.virtualAccountNo,
-        vaSnap: response.data,
-    });
+        // Validate requestBody
+        const { error } = validateCreateVASNAP(requestBody);
+        if (error) {
+            logger.error(
+                "VASNAP request validation failed: ",
+                error.details.map((err) => err.message),
+            );
+            throw new ResponseError(
+                400,
+                error.details.map((err) => err.message),
+            );
+        }
 
-    return { response, result };
+        // Generate signature and headers
+        const signature = createSignature("POST", "/transfer-va/create-va", requestBody, timestamp);
+        const headers = {
+            "Content-Type": "application/json;charset=utf-8",
+            "X-TIMESTAMP": timestamp,
+            "X-PARTNER-ID": merchantId,
+            "X-EXTERNAL-ID": requestId,
+            "X-SIGNATURE": signature,
+            "X-IP-ADDRESS": req.ip.includes("::ffff:") ? req.ip.split("::ffff:")[1] : req.ip,
+        };
+
+        // Send request to Paylabs
+        const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/create-va`, requestBody, { headers });
+
+        // Check for successful response
+        if (!response.data || response.data.responseCode.charAt(0) !== "2") {
+            logger.error("Paylabs error: ", response.data ? response.data.responseMessage : "failed to create payment");
+            throw new ResponseError(
+                400,
+                response.data
+                    ? `error: ${response.data.responseMessage} with code ${response.data.responseCode}`
+                    : "failed to create payment",
+            );
+        }
+
+        // Save order details in the database
+        const result = await Order.create({
+            ...requestBodyForm,
+            totalAmount: response.data.virtualAccountData.totalAmount.value,
+            partnerServiceId: response.data.virtualAccountData.partnerServiceId,
+            paymentId: response.data.virtualAccountData.trxId,
+            paymentExpired: response.data.virtualAccountData.expiredDate,
+            customerNo: response.data.virtualAccountData.customerNo,
+            virtualAccountNo: response.data.virtualAccountData.virtualAccountNo,
+            vaSnap: response.data,
+        });
+
+        logger.info("VASNAP created successfully: ", result);
+        return { response, result };
+    } catch (error) {
+        logger.error("Error in createVASNAP: ", error);
+        throw error; // Re-throw the error for further handling
+    }
 };
 
 export const vaSNAPOrderStatus = async ({ id }) => {
-    // Check if the order exists
-    const existOrder = await Order.findById(id);
-    if (!existOrder) throw new ResponseError(404, "Order does not exist!");
+    try {
+        // Check if the order exists
+        const existOrder = await Order.findById(id);
+        if (!existOrder) {
+            logger.error("Order does not exist: ", id);
+            throw new ResponseError(404, "Order does not exist!");
+        }
 
-    if (existOrder.paymentStatus === "paid") throw new ResponseError(409, "Payment already processed!");
+        if (existOrder.paymentStatus === "paid") {
+            logger.error("Payment already processed for order: ", id);
+            throw new ResponseError(409, "Payment already processed!");
+        }
 
-    if (existOrder.paymentStatus === "expired") throw new ResponseError(408, "Payment already processed!");
+        if (existOrder.paymentStatus === "expired") {
+            logger.error("Payment already expired for order: ", id);
+            throw new ResponseError(408, "Payment already processed!");
+        }
 
-    if (!existOrder.vaSnap) throw new ResponseError(400, "VASNAP data not found in the order");
+        if (!existOrder.vaSnap) {
+            logger.error("VASNAP data not found in the order: ", id);
+            throw new ResponseError(400, "VASNAP data not found in the order");
+        }
 
-    // Prepare request payload for Paylabs
-    const timestamp = generateTimestamp();
-    const requestId = generateRequestId();
+        // Prepare request payload for Paylabs
+        const timestamp = generateTimestamp();
+        const requestId = generateRequestId();
 
-    const requestBody = {
-        partnerServiceId: existOrder.partnerServiceId,
-        customerNo: existOrder.customerNo,
-        virtualAccountNo: existOrder.virtualAccountNo,
-        inquiryRequestId: requestId,
-        paymentRequestId: requestId,
-        additionalInfo: existOrder.vaSnap.virtualAccountData.additionalInfo,
-    };
+        const requestBody = {
+            partnerServiceId: existOrder.partnerServiceId,
+            customerNo: existOrder.customerNo,
+            virtualAccountNo: existOrder.virtualAccountNo,
+            inquiryRequestId: requestId,
+            paymentRequestId: requestId,
+            additionalInfo: existOrder.vaSnap.virtualAccountData.additionalInfo,
+        };
 
-    // Validate requestBody
-    const { error } = validateVaSNAPStatus(requestBody);
-    if (error)
-        throw new ResponseError(
-            400,
-            error.details.map((err) => err.message),
-        );
+        // Validate requestBody
+        const { error } = validateVaSNAPStatus(requestBody);
+        if (error) {
+            logger.error(
+                "VASNAP status validation failed: ",
+                error.details.map((err) => err.message),
+            );
+            throw new ResponseError(
+                400,
+                error.details.map((err) => err.message),
+            );
+        }
 
-    // Generate signature and headers
-    const signature = createSignature("POST", "/transfer-va/status", requestBody, timestamp);
-    const headers = {
-        "Content-Type": "application/json;charset=utf-8",
-        "X-TIMESTAMP": timestamp,
-        "X-SIGNATURE": signature,
-        "X-PARTNER-ID": merchantId,
-        "X-REQUEST-ID": requestId,
-    };
+        // Generate signature and headers
+        const signature = createSignature("POST", "/transfer-va/status", requestBody, timestamp);
+        const headers = {
+            "Content-Type": "application/json;charset=utf-8",
+            "X-TIMESTAMP": timestamp,
+            "X-SIGNATURE": signature,
+            "X-PARTNER-ID": merchantId,
+            "X-REQUEST-ID": requestId,
+        };
 
-    // console.log(requestBody);
-    // console.log(headers);
+        // Send request to Paylabs
+        const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/status`, requestBody, { headers });
 
-    // Send request to Paylabs
-    const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/status`, requestBody, { headers });
-    // console.log(response.data);
+        // Check for successful response
+        if (!response.data || response.data.responseCode.charAt(0) !== "2") {
+            logger.error(
+                "Paylabs error: ",
+                response.data ? response.data.responseMessage : "failed to query payment status",
+            );
+            throw new ResponseError(
+                400,
+                response.data
+                    ? `error: ${response.data.responseMessage} with code ${response.data.responseCode}`
+                    : "failed to query payment status",
+            );
+        }
 
-    // Check for successful response
-    if (!response.data || response.data.responseCode.charAt(0) !== "2")
-        throw new ResponseError(
-            400,
-            response.data
-                ? `error: ${response.data.responseMessage} with code ${response.data.responseCode}`
-                : "failed to create payment",
-        );
+        // Prepare response payload and headers
+        const responseHeaders = {
+            "Content-Type": "application/json;charset=utf-8",
+            "X-TIMESTAMP": generateTimestamp(),
+        };
 
-    // Prepare response payload and headers
-    const timestampResponse = generateTimestamp();
-
-    const responseHeaders = {
-        "Content-Type": "application/json;charset=utf-8",
-        "X-TIMESTAMP": timestampResponse,
-    };
-    return { response, responseHeaders };
+        return { response, responseHeaders };
+    } catch (error) {
+        logger.error("Error in vaSNAPOrderStatus: ", error);
+        throw error; // Re-throw the error for further handling
+    }
 };
 
 export const VaSnapCallback = async ({ payload }) => {
-    const { error } = validatePaymentVASNAP(payload);
-    if (error)
-        throw new ResponseError(
-            400,
-            error.details.map((err) => err.message),
-        );
+    try {
+        const { error } = validatePaymentVASNAP(payload);
+        if (error) {
+            logger.error(
+                "VASNAP callback validation failed: ",
+                error.details.map((err) => err.message),
+            );
+            throw new ResponseError(
+                400,
+                error.details.map((err) => err.message),
+            );
+        }
 
-    // Retrieve notification data and order
-    const notificationData = payload;
+        // Retrieve notification data and order
+        const notificationData = payload;
 
-    // Validate transaction ID
-    const trxId = notificationData.trxId;
-    if (typeof trxId !== "string" || trxId.trim() === "") {
-        throw new ResponseError(400, "Invalid transaction ID");
-    }
+        // Validate transaction ID
+        const trxId = notificationData.trxId;
+        if (typeof trxId !== "string" || trxId.trim() === "") {
+            throw new ResponseError(400, "Invalid transaction ID");
+        }
 
-    // Sanitize and query database
-    const sanitizedTrxId = trxId.trim();
-    const existOrder = await Order.findOne({
-        paymentId: { $eq: sanitizedTrxId },
-    });
-    if (!existOrder) throw new ResponseError(404, `Order not found for orderID: ${notificationData.trxId}`);
-    if (existOrder.paymentStatus === "paid") throw new ResponseError(409, "Payment already processed!");
+        // Sanitize and query database
+        const sanitizedTrxId = trxId.trim();
+        const existOrder = await Order.findOne({ paymentId: sanitizedTrxId });
+        if (!existOrder) {
+            logger.error("Order not found for orderID: ", notificationData.trxId);
+            throw new ResponseError(404, `Order not found for orderID: ${notificationData.trxId}`);
+        }
 
-    const currentDateTime = new Date();
-    const expiredDateTime = new Date(existOrder.vaSnap.virtualAccountData.expiredDate);
+        if (existOrder.paymentStatus === "paid") {
+            logger.error("Payment already processed for order: ", notificationData.trxId);
+            throw new ResponseError(409, "Payment already processed!");
+        }
 
-    // Update order details in the database
-    existOrder.paymentStatus = "paid";
-    existOrder.totalAmount = notificationData.paidAmount.value;
-    existOrder.paymentPaylabsVaSnap = { ...notificationData };
-    existOrder.vaSnap = undefined;
-    await existOrder.save();
+        const currentDateTime = new Date();
+        const expiredDateTime = new Date(existOrder.vaSnap.virtualAccountData.expiredDate);
 
-    // Prepare response payload and headers
-    const timestampResponse = generateTimestamp();
-    const generateResponsePayload = (existOrder, statusCode, statusMessage) => {
-        return {
+        // Update order details in the database
+        existOrder.paymentStatus = "paid";
+        existOrder.totalAmount = notificationData.paidAmount.value;
+        existOrder.paymentPaylabsVaSnap = { ...notificationData };
+        existOrder.vaSnap = undefined; // Clear VA snap data
+        await existOrder.save();
+
+        // Prepare response payload and headers
+        const responseHeaders = {
+            "Content-Type": "application/json;charset=utf-8",
+            "X-TIMESTAMP": generateTimestamp(),
+        };
+
+        const generateResponsePayload = (existOrder, statusCode, statusMessage) => ({
             responseCode: statusCode || "2002500",
             responseMessage: statusMessage || "Success",
             virtualAccountData: {
-                // paymentFlagReason: {
-                //   indonesia: statusMessage === "Success" ? "Sukses" : "Gagal",
-                //   english: statusMessage || "Success",
-                // },
-                partnerServiceId: existOrder?.partnerServiceId,
-                customerNo: existOrder?.paymentPaylabsVaSnap?.customerNo,
-                virtualAccountNo: existOrder?.paymentPaylabsVaSnap?.virtualAccountNo,
-                virtualAccountName: existOrder?.paymentPaylabsVaSnap?.virtualAccountName,
-                // virtualAccountEmail:
-                //   existOrder?.paymentPaylabsVaSnap?.virtualAccountEmail,
-                // virtualAccountPhone:
-                //   existOrder?.paymentPaylabsVaSnap?.virtualAccountPhone,
-                // trxId: existOrder?.paymentPaylabsVaSnap?.trxId,
+                partnerServiceId: existOrder.partnerServiceId,
+                customerNo: existOrder.paymentPaylabsVaSnap.customerNo,
+                virtualAccountNo: existOrder.paymentPaylabsVaSnap.virtualAccountNo,
+                virtualAccountName: existOrder.paymentPaylabsVaSnap.virtualAccountName,
                 paymentRequestId: generateRequestId(),
-                // paidAmount: existOrder?.paymentPaylabsVaSnap?.paidAmount,
-                // paidBills: existOrder?.paymentPaylabsVaSnap?.paidBills,
-                // totalAmount: existOrder?.paymentPaylabsVaSnap?.totalAmount,
-                // trxDateTime: existOrder?.paymentPaylabsVaSnap?.trxDateTime,
-                // referenceNo: existOrder?.paymentPaylabsVaSnap?.referenceNo,
-                // journalNum: existOrder?.paymentPaylabsVaSnap?.journalNum,
-                // paymentType: existOrder?.paymentPaylabsVaSnap?.paymentType,
-                // flagAdvise: existOrder?.paymentPaylabsVaSnap?.flagAdvise,
-                // paymentFlagStatus: statusCode === "2002500" ? "00" : "01",
-                // billDetails: {
-                //   billerReferenceId: generateRequestId(),
-                //   billCode: existOrder?.paymentPaylabsVaSnap?.billDetails?.billCode,
-                //   billNo: existOrder?.paymentPaylabsVaSnap?.billDetails?.billNo,
-                //   billName: existOrder?.paymentPaylabsVaSnap?.billDetails?.billName,
-                //   billShortName:
-                //     existOrder?.paymentPaylabsVaSnap?.billDetails?.billShortName,
-                //   billDescription:
-                //     existOrder?.paymentPaylabsVaSnap?.billDetails?.billDescription,
-                //   billSubCompany:
-                //     existOrder?.paymentPaylabsVaSnap?.billDetails?.billSubCompany,
-                //   billAmount: existOrder?.paymentPaylabsVaSnap?.billDetails?.billAmount,
-                //   additionalInfo:
-                //     existOrder?.paymentPaylabsVaSnap?.billDetails?.additionalInfo,
-                //   status: statusCode === "2002500" ? "00" : "01",
-                //   reason: {
-                //     english: statusMessage || "Success",
-                //     indonesia: statusMessage === "Success" ? "Sukses" : "Gagal",
-                //   },
-                // },
-                // freeTexts: existOrder?.paymentPaylabsVaSnap?.freeTexts,
-                // additionalInfo: existOrder?.paymentPaylabsVaSnap?.additionalInfo,
             },
-        };
-    };
+        });
 
-    // Generate response headers
-    const responseHeaders = {
-        "Content-Type": "application/json;charset=utf-8",
-        "X-TIMESTAMP": timestampResponse,
-    };
+        if (currentDateTime > expiredDateTime) {
+            existOrder.paymentStatus = "expired";
+            await existOrder.save();
+            const payloadResponseError = generateResponsePayload(existOrder, "4030000", "Expired");
+            return {
+                responseHeaders,
+                currentDateTime,
+                expiredDateTime,
+                payloadResponseError,
+            };
+        }
 
-    if (currentDateTime > expiredDateTime) {
-        existOrder.paymentStatus = "expired";
-        await existOrder.save();
-        const payloadResponseError = generateResponsePayload(existOrder, "4030000", "Expired");
-        return {
-            responseHeaders,
-            currentDateTime,
-            expiredDateTime,
-            payloadResponseError,
-        };
+        const payloadResponse = generateResponsePayload(existOrder, "2002500", "Success");
+        return { responseHeaders, payloadResponse };
+    } catch (error) {
+        logger.error("Error in VaSnapCallback: ", error);
+        throw error; // Re-throw the error for further handling
     }
-    const payloadResponse = generateResponsePayload(existOrder, "2002500", "Success");
-    return { responseHeaders, payloadResponse };
 };
 
 export const updateVASNAP = async ({ id, validatedUpdateData, req }) => {
-    // Check if the order exists
-    const existingOrder = await Order.findById(id);
-    if (!existingOrder) throw new ResponseError(404, "Order does not exist!");
+    try {
+        // Check if the order exists
+        const existingOrder = await Order.findById(id);
+        if (!existingOrder) {
+            logger.error("Order does not exist: ", id);
+            throw new ResponseError(404, "Order does not exist!");
+        }
 
-    if (existingOrder.paymentStatus === "paid") throw new ResponseError(409, "Payment already processed!");
+        if (existingOrder.paymentStatus === "paid") {
+            logger.error("Payment already processed for order: ", id);
+            throw new ResponseError(409, "Payment already processed!");
+        }
 
-    //check expired
-    const currentDateTime = new Date();
-    const expiredDateTime = new Date(existingOrder.paymentExpired);
+        // Check if the order has expired
+        const currentDateTime = new Date();
+        const expiredDateTime = new Date(existingOrder.paymentExpired);
 
-    if (currentDateTime > expiredDateTime) {
-        existingOrder.paymentStatus = "expired";
-        await existingOrder.save();
-        return { currentDateTime, expiredDateTime };
-    }
+        if (currentDateTime > expiredDateTime) {
+            existingOrder.paymentStatus = "expired";
+            await existingOrder.save();
+            return { currentDateTime, expiredDateTime };
+        }
 
-    if (!existingOrder.vaSnap) throw new ResponseError(409, "Payment already processed!");
+        if (!existingOrder.vaSnap) {
+            logger.error("VASNAP data not found in the order: ", id);
+            throw new ResponseError(409, "Payment already processed!");
+        }
 
-    // Check if the user exists
-    const existUser = await Client.findOne({ clientId: existingOrder.clientId });
-    if (!existUser) throw new ResponseError(404, "Client does not exist!");
+        // Check if the user exists
+        const existUser = await Client.findOne({ clientId: existingOrder.clientId });
+        if (!existUser) {
+            logger.error("Client does not exist for order: ", id);
+            throw new ResponseError(404, "Client does not exist!");
+        }
 
-    // Validate products in the order
-    const { validProducts, totalAmount } = await validateOrderProducts(
-        validatedUpdateData.items,
-        validatedUpdateData.paymentType || undefined,
-        validatedUpdateData.totalAmount,
-    );
-    if (!validProducts.length) throw new ResponseError(404, "No valid products found to create the order");
-
-    // Update order details
-    const updatedOrderData = {
-        ...existingOrder._doc,
-        ...validatedUpdateData,
-        totalAmount,
-        paymentStatus: validatedUpdateData.paymentStatus || existingOrder.paymentStatus,
-    };
-
-    const newExpired = addMinutesToTimestamp(existingOrder.paymentExpired, 30);
-
-    // Prepare request payload for Paylabs
-    const timestamp = generateTimestamp();
-    const requestId = uuid4();
-    const requestBody = {
-        partnerServiceId: existingOrder.vaSnap.virtualAccountData.partnerServiceId,
-        customerNo: existingOrder.vaSnap.virtualAccountData.customerNo,
-        virtualAccountNo: existingOrder.vaSnap.virtualAccountData.virtualAccountNo,
-        virtualAccountName: existingOrder.vaSnap.virtualAccountData.virtualAccountName,
-        virtualAccountEmail: existingOrder.vaSnap.virtualAccountData.virtualAccountEmail,
-        virtualAccountPhone: updatedOrderData.phoneNumber,
-        trxId: generateMerchantTradeNo(),
-        totalAmount: {
-            value: String(updatedOrderData.totalAmount),
-            currency: "IDR",
-        },
-        expiredDate: newExpired,
-        additionalInfo: {
-            paymentType: updatedOrderData.paymentType,
-        },
-    };
-
-    // Validate requestBody
-    const { error } = validateCreateVASNAP(requestBody);
-    if (error)
-        throw new ResponseError(
-            400,
-            error.details.map((err) => err.message),
+        // Validate products in the order
+        const { validProducts, totalAmount } = await validateOrderProducts(
+            validatedUpdateData.items,
+            validatedUpdateData.paymentType || undefined,
+            validatedUpdateData.totalAmount,
         );
+        if (!validProducts.length) {
+            logger.error("No valid products found to update the order");
+            throw new ResponseError(404, "No valid products found to create the order");
+        }
 
-    // Generate signature and headers
-    const signature = createSignature("POST", "/transfer-va/update-va", requestBody, timestamp);
-    const headers = {
-        "Content-Type": "application/json;charset=utf-8",
-        "X-TIMESTAMP": timestamp,
-        "X-PARTNER-ID": merchantId,
-        "X-EXTERNAL-ID": requestId,
-        "X-SIGNATURE": signature,
-        "X-IP-ADDRESS": req.ip.includes("::ffff:") ? req.ip.split("::ffff:")[1] : req.ip,
-    };
+        // Update order details
+        const updatedOrderData = {
+            ...existingOrder._doc,
+            ...validatedUpdateData,
+            totalAmount,
+            paymentStatus: validatedUpdateData.paymentStatus || existingOrder.paymentStatus,
+        };
 
-    // Send request to Paylabs
-    const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/update-va`, requestBody, { headers });
+        const newExpired = addMinutesToTimestamp(existingOrder.paymentExpired, 30);
 
-    // Check for successful response
-    if (!response.data || response.data.responseCode.charAt(0) !== "2")
-        throw new ResponseError(
-            400,
-            response.data
-                ? `error: ${response.data.responseMessage} with code ${response.data.responseCode}`
-                : "failed to create payment",
-        );
-    // Update validatedUpdateData with validProducts
-    updatedOrderData.items = validProducts;
-    updatedOrderData.vaSnap = response.data;
-    (updatedOrderData.partnerServiceId = response.data.virtualAccountData.partnerServiceId),
-        (updatedOrderData.paymentId = response.data.virtualAccountData.trxId),
-        (updatedOrderData.paymentExpired = response.data.virtualAccountData.expiredDate),
-        (updatedOrderData.customerNo = response.data.virtualAccountData.customerNo),
-        (updatedOrderData.virtualAccountNo = response.data.virtualAccountData.virtualAccountNo),
+        // Prepare request payload for Paylabs
+        const timestamp = generateTimestamp();
+        const requestId = uuid4();
+        const requestBody = {
+            partnerServiceId: existingOrder.vaSnap.virtualAccountData.partnerServiceId,
+            customerNo: existingOrder.vaSnap.virtualAccountData.customerNo,
+            virtualAccountNo: existingOrder.vaSnap.virtualAccountData.virtualAccountNo,
+            virtualAccountName: existingOrder.vaSnap.virtualAccountData.virtualAccountName,
+            virtualAccountEmail: existUser.email,
+            virtualAccountPhone: updatedOrderData.phoneNumber,
+            trxId: generateMerchantTradeNo(),
+            totalAmount: {
+                value: String(updatedOrderData.totalAmount),
+                currency: "IDR",
+            },
+            expiredDate: newExpired,
+            additionalInfo: {
+                paymentType: updatedOrderData.paymentType,
+            },
+        };
+
+        // Validate requestBody
+        const { error } = validateCreateVASNAP(requestBody);
+        if (error) {
+            logger.error(
+                "VASNAP update request validation failed: ",
+                error.details.map((err) => err.message),
+            );
+            throw new ResponseError(
+                400,
+                error.details.map((err) => err.message),
+            );
+        }
+
+        // Generate signature and headers
+        const signature = createSignature("POST", "/transfer-va/update-va", requestBody, timestamp);
+        const headers = {
+            "Content-Type": "application/json;charset=utf-8",
+            "X-TIMESTAMP": timestamp,
+            "X-PARTNER-ID": merchantId,
+            "X-EXTERNAL-ID": requestId,
+            "X-SIGNATURE": signature,
+            "X-IP-ADDRESS": req.ip.includes("::ffff:") ? req.ip.split("::ffff:")[1] : req.ip,
+        };
+
+        // Send request to Paylabs
+        const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/update-va`, requestBody, { headers });
+
+        // Check for successful response
+        if (!response.data || response.data.responseCode.charAt(0) !== "2") {
+            logger.error("Paylabs error: ", response.data ? response.data.responseMessage : "failed to update payment");
+            throw new ResponseError(
+                400,
+                response.data
+                    ? `error: ${response.data.responseMessage} with code ${response.data.responseCode}`
+                    : "failed to update payment",
+            );
+        }
+
+        // Update validatedUpdateData with validProducts
+        updatedOrderData.items = validProducts;
+        updatedOrderData.vaSnap = response.data;
+        updatedOrderData.partnerServiceId = response.data.virtualAccountData.partnerServiceId;
+        updatedOrderData.paymentId = response.data.virtualAccountData.trxId;
+        updatedOrderData.paymentExpired = response.data.virtualAccountData.expiredDate;
+        updatedOrderData.customerNo = response.data.virtualAccountData.customerNo;
+        updatedOrderData.virtualAccountNo = response.data.virtualAccountData.virtualAccountNo;
+
         // Update order in the database
         await Order.findByIdAndUpdate(id, updatedOrderData, { new: true });
 
-    return { response };
+        return { response };
+    } catch (error) {
+        logger.error("Error in updateVASNAP: ", error);
+        throw error; // Re-throw the error for further handling
+    }
 };

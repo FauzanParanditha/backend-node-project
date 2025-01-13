@@ -1,4 +1,5 @@
 import uuid4 from "uuid4";
+import logger from "../application/logger.js";
 import { expiredXendit } from "../controllers/xenditController.js";
 import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
@@ -89,42 +90,53 @@ export const getOrders = async ({ query, sort_by, sort, countOnly }) => {
 };
 
 export const createOrder = async ({ validatedOrder, partnerId }) => {
-    // Validate products in the order
-    const { validProducts, totalAmount } = await validateOrderProducts(
-        validatedOrder.items,
-        validatedOrder.paymentType || undefined,
-        validatedOrder.totalAmount,
-    );
-    if (!validProducts.length) throw new ResponseError(404, "No valid products found to create the order");
+    try {
+        // Validate products in the order
+        const { validProducts, totalAmount } = await validateOrderProducts(
+            validatedOrder.items,
+            validatedOrder.paymentType || undefined,
+            validatedOrder.totalAmount,
+        );
 
-    const orderData = {
-        orderId: uuid4(),
-        userId: validatedOrder.userId,
-        items: validProducts,
-        totalAmount,
-        phoneNumber: validatedOrder.phoneNumber,
-        paymentStatus: "pending",
-        payer: partnerId.name,
-        paymentMethod: validatedOrder.paymentMethod,
-        clientId: partnerId.clientId,
-        ...(validatedOrder.paymentType && {
-            paymentType: validatedOrder.paymentType,
-        }),
-        ...(validatedOrder.storeId && { storeId: validatedOrder.storeId }),
-    };
+        if (!validProducts.length) {
+            logger.error("No valid products found to create the order");
+            throw new ResponseError(404, "No valid products found to create the order");
+        }
 
-    const paymentLink = await handlePaymentLink(orderData);
+        // Construct order data
+        const orderData = {
+            orderId: uuid4(),
+            userId: validatedOrder.userId,
+            items: validProducts,
+            totalAmount,
+            phoneNumber: validatedOrder.phoneNumber,
+            paymentStatus: "pending",
+            payer: partnerId.name,
+            paymentMethod: validatedOrder.paymentMethod,
+            clientId: partnerId.clientId,
+            ...(validatedOrder.paymentType && { paymentType: validatedOrder.paymentType }),
+            ...(validatedOrder.storeId && { storeId: validatedOrder.storeId }),
+        };
 
-    const result = await Order.create({
-        ...orderData,
-        ...paymentLink,
-        paymentType: "HTML5",
-    });
+        // Handle payment link generation
+        const paymentLink = await handlePaymentLink(orderData);
 
-    return {
-        paymentLink,
-        result,
-    };
+        // Save order details in the database
+        const result = await Order.create({
+            ...orderData,
+            ...paymentLink,
+            paymentType: "HTML5",
+        });
+
+        logger.info("Order created successfully: ", result);
+        return {
+            paymentLink,
+            result,
+        };
+    } catch (error) {
+        logger.error("Error in createOrder: ", error);
+        throw error; // Re-throw the error for further handling
+    }
 };
 
 export const order = async ({ id }) => {

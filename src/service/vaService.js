@@ -1,214 +1,257 @@
-import uuid4 from "uuid4";
-import { validateOrderProducts } from "../utils/helper.js";
-import { ResponseError } from "../error/responseError.js";
-import { generateHeaders, generateMerchantTradeNo, generateRequestId, merchantId, paylabsApiUrl } from "./paylabs.js";
-import { validateGenerateVA, validateStaticVA, validateVaStatus } from "../validators/paymentValidator.js";
 import axios from "axios";
+import uuid4 from "uuid4";
+import logger from "../application/logger.js";
+import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
 import VirtualAccount from "../models/vaModel.js";
+import { validateOrderProducts } from "../utils/helper.js";
+import { validateGenerateVA, validateStaticVA, validateVaStatus } from "../validators/paymentValidator.js";
+import { generateHeaders, generateMerchantTradeNo, generateRequestId, merchantId, paylabsApiUrl } from "./paylabs.js";
 
 export const createVa = async ({ validatedProduct, partnerId }) => {
-    // Validate products in the order
-    const { validProducts, totalAmount } = await validateOrderProducts(
-        validatedProduct.items,
-        validatedProduct.paymentType,
-        validatedProduct.totalAmount,
-    );
-    if (!validProducts.length) throw new ResponseError(404, "No valid products found to create the order");
-
-    // Construct order data
-    const requestBodyForm = {
-        orderId: uuid4(),
-        userId: validatedProduct.userId,
-        items: validProducts,
-        totalAmount,
-        phoneNumber: validatedProduct.phoneNumber,
-        paymentStatus: "pending",
-        payer: partnerId.name,
-        paymentMethod: validatedProduct.paymentMethod,
-        paymentType: validatedProduct.paymentType,
-        clientId: partnerId.clientId,
-        ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
-    };
-
-    // Generate IDs and other necessary fields
-    const requestId = generateRequestId();
-    const merchantTradeNo = generateMerchantTradeNo();
-
-    // Prepare Paylabs request payload
-    const requestBody = {
-        requestId,
-        merchantId,
-        ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
-        paymentType: requestBodyForm.paymentType,
-        amount: requestBodyForm.totalAmount,
-        merchantTradeNo,
-        notifyUrl: process.env.NOTIFY_URL,
-        payer: requestBodyForm.payer,
-        productName: requestBodyForm.items.map((p) => p.name).join(", "),
-        productInfo: requestBodyForm.items.map((product) => ({
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            type: product.type,
-            quantity: product.quantity,
-        })),
-        feeType: "OUR",
-    };
-
-    // Validate requestBody
-    const { error } = validateGenerateVA(requestBody);
-    if (error)
-        throw new ResponseError(
-            400,
-            error.details.map((err) => err.message),
+    try {
+        // Validate products in the order
+        const { validProducts, totalAmount } = await validateOrderProducts(
+            validatedProduct.items,
+            validatedProduct.paymentType,
+            validatedProduct.totalAmount,
         );
+        if (!validProducts.length) {
+            logger.error("No valid products found to create the order");
+            throw new ResponseError(404, "No valid products found to create the order");
+        }
 
-    // Generate headers for Paylabs request
-    const { headers } = generateHeaders("POST", "/payment/v2.1/va/create", requestBody, requestId);
+        // Construct order data
+        const requestBodyForm = {
+            orderId: uuid4(),
+            userId: validatedProduct.userId,
+            items: validProducts,
+            totalAmount,
+            phoneNumber: validatedProduct.phoneNumber,
+            paymentStatus: "pending",
+            payer: partnerId.name,
+            paymentMethod: validatedProduct.paymentMethod,
+            paymentType: validatedProduct.paymentType,
+            clientId: partnerId.clientId,
+            ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
+        };
 
-    // console.log(requestBody);
-    // console.log(headers);
+        // Generate IDs and other necessary fields
+        const requestId = generateRequestId();
+        const merchantTradeNo = generateMerchantTradeNo();
 
-    // Send request to Paylabs
-    const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/va/create`, requestBody, { headers });
-    // console.log("Response:", response.data);
+        // Prepare Paylabs request payload
+        const requestBody = {
+            requestId,
+            merchantId,
+            ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
+            paymentType: requestBodyForm.paymentType,
+            amount: requestBodyForm.totalAmount,
+            merchantTradeNo,
+            notifyUrl: process.env.NOTIFY_URL,
+            payer: requestBodyForm.payer,
+            productName: requestBodyForm.items.map((p) => p.name).join(", "),
+            productInfo: requestBodyForm.items.map((product) => ({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                type: product.type,
+                quantity: product.quantity,
+            })),
+            feeType: "OUR",
+        };
 
-    // Check for successful response
-    if (!response.data || response.data.errCode != 0)
-        throw new ResponseError(400, response.data ? `error: ${response.data.errCodeDes}` : "failed to create payment");
+        // Validate requestBody
+        const { error } = validateGenerateVA(requestBody);
+        if (error) {
+            logger.error(
+                "VA request validation failed: ",
+                error.details.map((err) => err.message),
+            );
+            throw new ResponseError(
+                400,
+                error.details.map((err) => err.message),
+            );
+        }
 
-    // Save order details in the database
-    const result = await Order.create({
-        ...requestBodyForm,
-        totalAmount: response.data.amount,
-        virtualAccountNo: response.data.vaCode,
-        paymentId: response.data.merchantTradeNo,
-        paymentExpired: response.data.expiredTime,
-        storeId: response.data.storeId,
-        va: response.data,
-    });
+        // Generate headers for Paylabs request
+        const { headers } = generateHeaders("POST", "/payment/v2.1/va/create", requestBody, requestId);
 
-    return { response, result };
+        // Send request to Paylabs
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/va/create`, requestBody, { headers });
+
+        // Check for successful response
+        if (!response.data || response.data.errCode !== 0) {
+            logger.error("Paylabs error: ", response.data ? response.data.errCodeDes : "failed to create payment");
+            throw new ResponseError(
+                400,
+                response.data ? `error: ${response.data.errCodeDes}` : "failed to create payment",
+            );
+        }
+
+        // Save order details in the database
+        const result = await Order.create({
+            ...requestBodyForm,
+            totalAmount: response.data.amount,
+            virtualAccountNo: response.data.vaCode,
+            paymentId: response.data.merchantTradeNo,
+            paymentExpired: response.data.expiredTime,
+            storeId: response.data.storeId,
+            va: response.data,
+        });
+
+        logger.info("VA created successfully: ", result);
+        return { response, result };
+    } catch (error) {
+        logger.error("Error in createVa: ", error);
+        throw error; // Re-throw the error for further handling
+    }
 };
 
 export const vaOrderStatus = async ({ id }) => {
-    // Check if the order exists
-    const existOrder = await Order.findById(id);
-    if (!existOrder) throw new ResponseError(404, "Order does not exist!");
+    try {
+        // Check if the order exists
+        const existOrder = await Order.findById(id);
+        if (!existOrder) {
+            logger.error("Order does not exist: ", id);
+            throw new ResponseError(404, "Order does not exist!");
+        }
 
-    if (existOrder.paymentStatus === "paid") throw new ResponseError(409, "Payment already processed!");
+        if (existOrder.paymentStatus === "paid") {
+            logger.error("Payment already processed for order: ", id);
+            throw new ResponseError(409, "Payment already processed!");
+        }
 
-    if (existOrder.paymentStatus === "expired") ResponseError(408, "Payment already processed!");
+        if (existOrder.paymentStatus === "expired") {
+            logger.error("Payment already expired for order: ", id);
+            throw new ResponseError(408, "Payment already processed!");
+        }
 
-    if (!existOrder.va) throw new ResponseError(400, "VA data not found in the order");
+        if (!existOrder.va) {
+            logger.error("VA data not found in the order: ", id);
+            throw new ResponseError(400, "VA data not found in the order");
+        }
 
-    // Prepare request payload for Paylabs
-    const requestId = generateRequestId();
+        // Prepare request payload for Paylabs
+        const requestId = generateRequestId();
+        const requestBody = {
+            requestId,
+            merchantId,
+            ...(existOrder.storeId && { storeId: existOrder.storeId }),
+            merchantTradeNo: existOrder.paymentId,
+            paymentType: existOrder.paymentType,
+        };
 
-    const requestBody = {
-        requestId,
-        merchantId,
-        ...(existOrder.storeId && { storeId: existOrder.storeId }),
-        merchantTradeNo: existOrder.paymentId,
-        paymentType: existOrder.paymentType,
-    };
+        // Validate requestBody
+        const { error } = validateVaStatus(requestBody);
+        if (error) {
+            logger.error(
+                "VA status validation failed: ",
+                error.details.map((err) => err.message),
+            );
+            throw new ResponseError(
+                400,
+                error.details.map((err) => err.message),
+            );
+        }
 
-    // Validate requestBody
-    const { error } = validateVaStatus(requestBody);
-    if (error)
-        throw new ResponseError(
-            400,
-            error.details.map((err) => err.message),
-        );
+        // Generate headers for Paylabs request
+        const { headers } = generateHeaders("POST", "/payment/v2.1/va/query", requestBody, requestId);
 
-    // Generate headers for Paylabs request
-    const { headers } = generateHeaders("POST", "/payment/v2.1/va/query", requestBody, requestId);
+        // Send request to Paylabs
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/va/query`, requestBody, { headers });
 
-    // console.log(requestBody);
-    // console.log(headers);
+        // Check for successful response
+        if (!response.data || response.data.errCode !== 0) {
+            logger.error(
+                "Paylabs error: ",
+                response.data ? response.data.errCodeDes : "failed to query payment status",
+            );
+            throw new ResponseError(
+                400,
+                response.data ? `error: ${response.data.errCodeDes}` : "failed to query payment status",
+            );
+        }
 
-    // Send request to Paylabs
-    const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/va/query`, requestBody, { headers });
-    // console.log(response.data);
+        // Generate headers for Paylabs request
+        const { responseHeaders } = generateHeaders("POST", "/api/order/status/va/:id", response.data, requestId);
 
-    // Check for successful response
-    if (!response.data || response.data.errCode != 0)
-        throw new ResponseError(400, response.data ? `error: ${response.data.errCodeDes}` : "failed to create payment");
-
-    // Generate headers for Paylabs request
-    const { responseHeaders } = generateHeaders("POST", "/api/order/status/va/:id", response.data, generateRequestId());
-
-    return { response, responseHeaders };
+        return { response, responseHeaders };
+    } catch (error) {
+        logger.error("Error in vaOrderStatus: ", error);
+        throw error; // Re-throw the error for further handling
+    }
 };
 
 export const createVaStatic = async ({ validatedProduct, partnerId }) => {
-    // Construct order data
-    const requestBodyForm = {
-        orderId: uuid4(),
-        payer: partnerId.name,
-        totalAmount: 0,
-        phoneNumber: validatedProduct.phoneNumber,
-        paymentStatus: "pending",
-        paymentMethod: validatedProduct.paymentMethod,
-        paymentType: validatedProduct.paymentType,
-        clientId: partnerId.clientId,
-        ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
-    };
+    try {
+        // Construct order data
+        const requestBodyForm = {
+            orderId: uuid4(),
+            payer: partnerId.name,
+            totalAmount: 0,
+            phoneNumber: validatedProduct.phoneNumber,
+            paymentStatus: "pending",
+            paymentMethod: validatedProduct.paymentMethod,
+            paymentType: validatedProduct.paymentType,
+            clientId: partnerId.clientId,
+            ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
+        };
 
-    // Generate IDs and other necessary fields
-    const requestId = generateRequestId();
+        // Generate IDs and other necessary fields
+        const requestId = generateRequestId();
 
-    // Prepare Paylabs request payload
-    const requestBody = {
-        requestId,
-        merchantId,
-        ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
-        paymentType: requestBodyForm.paymentType,
-        payer: requestBodyForm.payer,
-        notifyUrl: `${process.env.NOTIFY_URL}/va`,
-    };
+        // Prepare Paylabs request payload
+        const requestBody = {
+            requestId,
+            merchantId,
+            ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
+            paymentType: requestBodyForm.paymentType,
+            payer: requestBodyForm.payer,
+            notifyUrl: `${process.env.NOTIFY_URL}/va`,
+        };
 
-    // Validate requestBody
-    const { error } = validateStaticVA(requestBody);
-    if (error)
-        throw new ResponseError(
-            400,
-            error.details.map((err) => err.message),
-        );
+        // Validate requestBody
+        const { error } = validateStaticVA(requestBody);
+        if (error) {
+            logger.error(
+                "Static VA request validation failed: ",
+                error.details.map((err) => err.message),
+            );
+            throw new ResponseError(
+                400,
+                error.details.map((err) => err.message),
+            );
+        }
 
-    // Generate headers for Paylabs request
-    const { headers } = generateHeaders("POST", "/payment/v2.1/staticva/create", requestBody, requestId);
+        // Generate headers for Paylabs request
+        const { headers } = generateHeaders("POST", "/payment/v2.1/staticva/create", requestBody, requestId);
 
-    // console.log(requestBody);
-    // console.log(headers);
+        // Send request to Paylabs
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/staticva/create`, requestBody, { headers });
 
-    // Send request to Paylabs
-    const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/staticva/create`, requestBody, { headers });
-    // console.log("Response:", response.data);
+        // Check for successful response
+        if (!response.data || response.data.errCode !== 0) {
+            logger.error("Paylabs error: ", response.data ? response.data.errCodeDes : "failed to create static VA");
+            throw new ResponseError(
+                400,
+                response.data ? `error: ${response.data.errCodeDes}` : "failed to create static VA",
+            );
+        }
 
-    // Check for successful response
-    if (!response.data || response.data.errCode != 0) {
-        throw new ResponseError(400, response.data ? `error: ${response.data.errCodeDes}` : "failed to create payment");
+        // Save VA details in the database
+        const result = await VirtualAccount.create({
+            payer: requestBodyForm.payer,
+            phoneNumber: requestBodyForm.phoneNumber,
+            vaCode: response.data.vaCode,
+            vaStatic: response.data,
+            clientId: requestBodyForm.clientId,
+        });
+
+        logger.info("Static VA created successfully: ", result);
+        return { response, result };
+    } catch (error) {
+        logger.error("Error in createVaStatic: ", error);
+        throw error; // Re-throw the error for further handling
     }
-
-    // Save va details in the database
-    const result = await VirtualAccount.create({
-        payer: requestBodyForm.payer,
-        phoneNumber: requestBodyForm.phoneNumber,
-        vaCode: response.data.vaCode,
-        vaStatic: response.data,
-        clientId: requestBodyForm.clientId,
-    });
-
-    // Save order details in the database
-    // const savedOrder = await Order.create({
-    //   ...requestBodyForm,
-    //   virtualAccountNo: response.data.vaCode,
-    //   paymentId: response.data.merchantTradeNo,
-    //   storeId: response.data.storeId,
-    //   va: response.data,
-    // });
-
-    return { response, result };
 };
