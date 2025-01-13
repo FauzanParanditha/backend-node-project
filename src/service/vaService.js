@@ -100,7 +100,7 @@ export const createVa = async ({ validatedProduct, partnerId }) => {
             va: response.data,
         });
 
-        logger.info("VA created successfully: ", result);
+        logger.info("VA created successfully: ", result._id);
         return { response, result };
     } catch (error) {
         logger.error("Error in createVa: ", error);
@@ -248,7 +248,7 @@ export const createVaStatic = async ({ validatedProduct, partnerId }) => {
             clientId: requestBodyForm.clientId,
         });
 
-        logger.info("Static VA created successfully: ", result);
+        logger.info("Static VA created successfully: ", result.id);
         return { response, result };
     } catch (error) {
         logger.error("Error in createVaStatic: ", error);
