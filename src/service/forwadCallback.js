@@ -9,7 +9,6 @@ import { validateCallback } from "../validators/paymentValidator.js";
 import { generateHeadersForward, generateRequestId } from "./paylabs.js";
 
 export const forwardCallback = async ({ payload, retryCount = 0 }) => {
-    // Configurable retry intervals in seconds
     const retryIntervals = [5, 15, 30, 60, 300, 900, 1800];
 
     const logFailedCallback = async (payload, callbackUrl, retryCount, errDesc, clientId) => {
@@ -38,6 +37,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         if (!timestamp || !signature || !requestId) {
             throw new ResponseError(400, "Missing required headers");
         }
+
         const { clientId, requestId: bodyRequestId, errCode } = response.data;
         if (!clientId) throw new ResponseError(400, "Missing clientId in response body");
 
@@ -100,6 +100,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
 
                 const response = await axios.post(callbackUrl, notificationData, {
                     headers: responseHeaders,
+                    timeout: 10000, // Timeout in milliseconds
                 });
 
                 await validateResponse(response);
@@ -107,21 +108,6 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                 return true;
             } catch (err) {
                 logger.error(`Attempt ${retryCount + 1} failed: ${err.message}`);
-
-                // Categorize errors for better handling
-                if (err.response) {
-                    // Server responded with a status code outside the 2xx range
-                    logger.error(`Response error: ${err.response.status} - ${err.response.data}`);
-                    throw new ResponseError(500, `Response error: ${err.response.status} - ${err.response.data}`);
-                } else if (err.request) {
-                    // No response was received
-                    logger.error(`No response received: ${err.message}`);
-                    throw new ResponseError(500, `No response received: ${err.message}`);
-                } else {
-                    // Something else caused the error
-                    logger.error(`Error in setting up request: ${err.message}`);
-                    throw new ResponseError(500, `Error in setting up request: ${err.message}`);
-                }
 
                 retryCount++;
                 if (retryCount < retryIntervals.length) {
@@ -131,29 +117,26 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                 } else {
                     logger.error("Exhausted retries.");
                     await logFailedCallback(payload, callbackUrl, retryCount, err.message, client._id);
-                    // Optional: Send alert to monitoring system
                     sendAlert(`Failed to forward callback after ${retryCount} attempts: ${err.message}`);
                 }
             }
         }
     } catch (error) {
         logger.error(`Critical error in forwardCallback: ${error.message}`);
-        throw error; // Bubble up the error if the retries are exhausted
+        throw error;
     } finally {
-        decrementActiveTask(); // Decrement active task counter
+        decrementActiveTask();
         logger.info(`Task completed. Active tasks: ${activeTask}`);
     }
 };
 
-// Function to send alerts to a monitoring system
 const sendAlert = (message) => {
-    // Implement your alerting mechanism here (e.g., send to a monitoring service, email, etc.)
     logger.warn(`Alert: ${message}`);
+    // Integrate with a third-party monitoring system here
 };
 
 export const retryCallbackById = async (callbackId) => {
     try {
-        // Find the failed callback by ID
         const failedCallback = await FailedCallback.findById(callbackId);
 
         if (!failedCallback) {
@@ -163,31 +146,14 @@ export const retryCallbackById = async (callbackId) => {
 
         logger.info(`Retrying failed callback with ID: ${callbackId}`);
 
-        // Attempt to forward the callback
         await forwardCallback({
             payload: failedCallback.payload,
             retryCount: failedCallback.retryCount,
         });
 
-        // Remove the callback after successful retry
         await failedCallback.deleteOne();
         logger.info(`Successfully retried and deleted callback with ID: ${callbackId}`);
     } catch (err) {
         logger.error(`Retry for callback ${callbackId} failed: ${err.message}`);
-
-        // Categorize errors for better handling
-        if (err.response) {
-            // Server responded with a status code outside the 2xx range
-            logger.error(`Response error: ${err.response.status} - ${err.response.data}`);
-            throw new ResponseError(500, `Response error: ${err.response.status} - ${err.response.data}`);
-        } else if (err.request) {
-            // No response was received
-            logger.error(`No response received: ${err.message}`);
-            throw new ResponseError(500, `No response received: ${err.message}`);
-        } else {
-            // Something else caused the error
-            logger.error(`Error in setting up request: ${err.message}`);
-            throw new ResponseError(500, `Error in setting up request: ${err.message}`);
-        }
     }
 };
