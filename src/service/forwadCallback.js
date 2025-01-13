@@ -70,7 +70,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         const order = await Order.findOne({ paymentId });
         if (!order) throw new ResponseError(404, `Order not found for ID: ${paymentId}`);
 
-        const client = await Client.findOne({ clientId: order.clientId }).select("+ClientId");
+        const client = await Client.findOne({ clientId: order.clientId }).select("+clientId");
         if (!client || !client.notifyUrl) throw new ResponseError(400, "Missing callback URL");
 
         const callbackUrl = client.notifyUrl;
