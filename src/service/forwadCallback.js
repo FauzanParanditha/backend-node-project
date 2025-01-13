@@ -41,7 +41,9 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         const { clientId, requestId: bodyRequestId, errCode } = response.data;
         if (!clientId) throw new ResponseError(400, "Missing clientId in response body");
 
+        console.log(clientId);
         const existingClientId = await Client.findOne({ clientId });
+        console.log(existingClientId);
         if (!existingClientId) throw new ResponseError(404, "Client Id is not registered!");
 
         if (!bodyRequestId) throw new ResponseError(400, "Missing requestId in response body");
@@ -85,7 +87,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                     callbackUrl,
                     retryCount,
                     "Server shutting down. Aborting retries.",
-                    client._id,
+                    client.clientId,
                 );
                 return; // Stop retries during shutdown
             }
@@ -116,7 +118,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                     await new Promise((resolve) => setTimeout(resolve, delay * 1000));
                 } else {
                     logger.error("Exhausted retries.");
-                    await logFailedCallback(payload, callbackUrl, retryCount, err.message, client._id);
+                    await logFailedCallback(payload, callbackUrl, retryCount, err.message, client.clientId);
                     sendAlert(`Failed to forward callback after ${retryCount} attempts: ${err.message}`);
                 }
             }
