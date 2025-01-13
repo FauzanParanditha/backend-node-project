@@ -86,7 +86,7 @@ export const createEMoney = async ({ validatedProduct, partnerId }) => {
         const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/ewallet/create`, requestBody, { headers });
 
         // Check for successful response
-        if (!response.data || response.data.errCode !== 0) {
+        if (!response.data || response.data.errCode !== "0") {
             logger.error("Paylabs error: ", response.data ? response.data.errCodeDes : "failed to create payment");
             throw new ResponseError(
                 400,
@@ -167,7 +167,7 @@ export const eMoneyOrderStatus = async ({ id }) => {
         const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/ewallet/query`, requestBody, { headers });
 
         // Check for successful response
-        if (!response.data || response.data.errCode !== 0) {
+        if (!response.data || response.data.errCode !== "0") {
             logger.error(
                 "Paylabs error: ",
                 response.data ? response.data.errCodeDes : "failed to query payment status",
@@ -255,7 +255,7 @@ export const refundEmoney = async ({ id, validatedRequest }) => {
         const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/ewallet/refund`, requestBody, { headers });
 
         // Check for successful response
-        if (!response.data || response.data.errCode !== 0) {
+        if (!response.data || response.data.errCode !== "0") {
             logger.error("Paylabs error: ", response.data ? response.data.errCodeDes : "failed to process refund");
             throw new ResponseError(
                 400,
