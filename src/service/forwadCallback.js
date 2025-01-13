@@ -41,8 +41,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         const { clientId, requestId: bodyRequestId, errCode } = response.data;
         if (!clientId) throw new ResponseError(400, "Missing clientId in response body");
 
-        const existingClientId = await Client.findOne({ clientId: clientId });
-        console.log(existingClientId);
+        const existingClientId = await Client.findOne({ clientId });
         if (!existingClientId) throw new ResponseError(404, "Client Id is not registered!");
 
         if (!bodyRequestId) throw new ResponseError(400, "Missing requestId in response body");
@@ -71,7 +70,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         const order = await Order.findOne({ paymentId });
         if (!order) throw new ResponseError(404, `Order not found for ID: ${paymentId}`);
 
-        const client = await Client.findOne({ clientId: order.clientId });
+        const client = await Client.findOne({ clientId: order.clientId }).select("+ClientId");
         if (!client || !client.notifyUrl) throw new ResponseError(400, "Missing callback URL");
 
         const callbackUrl = client.notifyUrl;
@@ -81,7 +80,6 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         while (retryCount < retryIntervals.length) {
             if (serverIsClosing) {
                 logger.warn("Server shutting down. Aborting retries.");
-                console.log(client.clientId);
                 await logFailedCallback(
                     payload,
                     callbackUrl,
