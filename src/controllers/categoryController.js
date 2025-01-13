@@ -1,5 +1,5 @@
-import * as categoryService from "../service/categoryService.js";
 import logger from "../application/logger.js";
+import * as categoryService from "../service/categoryService.js";
 import { categorySchema } from "../validators/categoryValidator.js";
 
 export const categories = async (req, res, next) => {
@@ -47,7 +47,7 @@ export const create = async (req, res, next) => {
             });
         }
 
-        const category = await categoryService.createCategory({ name, adminId });
+        const category = await categoryService.createCategory({ value });
         res.status(201).json({ success: true, message: "Category create successfully" });
     } catch (error) {
         logger.error(`Error create category: ${error.message}`);
@@ -88,8 +88,7 @@ export const updateCategory = async (req, res, next) => {
 
         const category = await categoryService.updateCategory({
             id,
-            adminId,
-            name,
+            value,
         });
 
         return res.status(200).json({

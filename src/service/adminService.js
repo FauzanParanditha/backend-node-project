@@ -1,8 +1,8 @@
 import { ResponseError } from "../error/responseError.js";
 import Admin from "../models/adminModel.js";
 import Client from "../models/clientModel.js";
-import User from "../models/userModel.js";
 import Order from "../models/orderModel.js";
+import User from "../models/userModel.js";
 import { doHash, escapeRegExp } from "../utils/helper.js";
 
 export const getAllAdmins = async ({ query, limit, page, sort_by, sort, countOnly }) => {
@@ -66,19 +66,19 @@ export const admin = async ({ id }) => {
     return result;
 };
 
-export const updateAdmin = async ({ id, fullName }) => {
+export const updateAdmin = async ({ id, value }) => {
     const existAdmin = await Admin.findOne({ _id: id });
     if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
     // Sanitize the input
-    const sanitizedadmin = fullName.trim();
+    const sanitizedadmin = value.fullName.trim();
 
     const existingAdmin = await Admin.findOne({
         fullName: { $eq: sanitizedadmin },
     });
-    if (existingAdmin) throw new ResponseError(400, `Admin ${fullName} already exist!`);
+    if (existingAdmin) throw new ResponseError(400, `Admin ${value.fullName} already exist!`);
 
-    existAdmin.fullName = fullName;
+    existAdmin.fullName = value.fullName;
     const result = await existAdmin.save();
     return result;
 };

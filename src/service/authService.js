@@ -1,8 +1,8 @@
-import transport from "../middlewares/sendMail.js";
 import jwt from "jsonwebtoken";
+import { ResponseError } from "../error/responseError.js";
+import transport from "../middlewares/sendMail.js";
 import Admin from "../models/adminModel.js";
 import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
-import { ResponseError } from "../error/responseError.js";
 import { generateForgotPasswordLink, sendForgotPasswordEmail } from "./sendMail.js";
 
 export const loginAdmin = async ({ email, password }) => {
@@ -54,9 +54,9 @@ export const sendVerificationCodeService = async (email) => {
     return "Code sent successfully!";
 };
 
-export const verifyVerificationCodeService = async (email, provided_code) => {
-    const codeValue = provided_code.toString();
-    const sanitizedEmail = email.trim();
+export const verifyVerificationCodeService = async ({ value }) => {
+    const codeValue = value.provided_code.toString();
+    const sanitizedEmail = value.email.trim();
 
     const existAdmin = await Admin.findOne({
         email: { $eq: sanitizedEmail },
@@ -83,16 +83,16 @@ export const verifyVerificationCodeService = async (email, provided_code) => {
     return "successfully verified!";
 };
 
-export const changePasswordService = async (adminId, verified, old_password, new_password) => {
-    if (!verified) throw new ResponseError(400, "Admin not verified!");
+export const changePasswordService = async ({ value }) => {
+    if (!value.verified) throw new ResponseError(400, "Admin not verified!");
 
-    const existAdmin = await Admin.findOne({ _id: adminId }).select("+password");
+    const existAdmin = await Admin.findOne({ _id: value.adminId }).select("+password");
     if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
-    const result = await compareDoHash(old_password, existAdmin.password);
+    const result = await compareDoHash(value.old_password, existAdmin.password);
     if (!result) throw new ResponseError(400, "Invalid credentials!");
 
-    const hashedPassword = await doHash(new_password, 12);
+    const hashedPassword = await doHash(value.new_password, 12);
     existAdmin.password = hashedPassword;
     await existAdmin.save();
 
@@ -124,9 +124,9 @@ export const sendForgotPasswordService = async (email) => {
     return "Code send successfully!";
 };
 
-export const verifyForgotPasswordCodeService = async (email, provided_code, new_password) => {
-    const codeValue = provided_code.toString();
-    const sanitizedEmail = email.trim();
+export const verifyForgotPasswordCodeService = async ({ value }) => {
+    const codeValue = value.provided_code.toString();
+    const sanitizedEmail = value.email.trim();
 
     const existAdmin = await Admin.findOne({
         email: { $eq: sanitizedEmail },
@@ -143,7 +143,7 @@ export const verifyForgotPasswordCodeService = async (email, provided_code, new_
 
     if (hashedCodeValue !== existAdmin.forgotPasswordCode) throw new ResponseError(400, "Unexpected occured!");
 
-    const hashedPassword = await doHash(new_password, 12);
+    const hashedPassword = await doHash(value.new_password, 12);
     existAdmin.password = hashedPassword;
     existAdmin.forgotPasswordCode = undefined;
     await existAdmin.save();

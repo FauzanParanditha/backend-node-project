@@ -46,6 +46,9 @@ export const acceptCodeSchema = joi.object({
 });
 
 export const changePasswordSchema = joi.object({
+    adminId: joi.string().optional(),
+    userId: joi.string().optional(),
+    verified: joi.boolean().optional(),
     new_password: joi.string().required().pattern(new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,}$")),
     old_password: joi.string().required().pattern(new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,}$")),
 });

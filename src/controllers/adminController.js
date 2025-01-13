@@ -1,5 +1,5 @@
-import * as adminService from "../service/adminService.js";
 import logger from "../application/logger.js";
+import * as adminService from "../service/adminService.js";
 import { registerSchema, updateAdminSchema } from "../validators/authValidator.js";
 
 export const getAllAdmin = async (req, res, next) => {
@@ -82,7 +82,7 @@ export const updateAdmin = async (req, res, next) => {
 
         const admin = await adminService.updateAdmin({
             id,
-            fullName,
+            value,
         });
 
         return res.status(200).json({

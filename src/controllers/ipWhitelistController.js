@@ -1,5 +1,5 @@
-import * as ipWhitelistService from "../service/ipWhitelistService.js";
 import logger from "../application/logger.js";
+import * as ipWhitelistService from "../service/ipWhitelistService.js";
 import { ipWhitelistSchema } from "../validators/ipWhitelistValidator.js";
 
 export const ipWhitelists = async (req, res, next) => {
@@ -44,8 +44,7 @@ export const create = async (req, res, next) => {
         }
 
         const ipWhitelist = await ipWhitelistService.createIpWhitelist({
-            adminId,
-            ipAddress,
+            value,
         });
 
         res.status(201).json({
@@ -91,8 +90,7 @@ export const updateIpWhitelist = async (req, res, next) => {
 
         const ipWhitelist = await ipWhitelistService.updateIpWhitelist({
             id,
-            adminId,
-            ipAddress,
+            value,
         });
 
         return res.status(200).json({

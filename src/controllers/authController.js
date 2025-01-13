@@ -1,3 +1,4 @@
+import logger from "../application/logger.js";
 import * as authService from "../service/authService.js";
 import {
     acceptCodeSchema,
@@ -5,7 +6,6 @@ import {
     changePasswordSchema,
     loginSchema,
 } from "../validators/authValidator.js";
-import logger from "../application/logger.js";
 
 export const login = async (req, res, next) => {
     const { email, password } = req.body;
@@ -62,7 +62,7 @@ export const verifyVerificationCode = async (req, res, next) => {
                 message: error.details[0].message,
             });
         }
-        const message = await authService.verifyVerificationCodeService(email, provided_code);
+        const message = await authService.verifyVerificationCodeService({ value });
         return res.status(200).json({
             success: true,
             message,
@@ -81,6 +81,8 @@ export const changePassword = async (req, res, next) => {
         const { error, value } = changePasswordSchema.validate({
             old_password,
             new_password,
+            adminId,
+            verified,
         });
         if (error) {
             return res.status(400).json({
@@ -88,7 +90,7 @@ export const changePassword = async (req, res, next) => {
                 message: error.details[0].message,
             });
         }
-        const message = await authService.changePasswordService(adminId, verified, old_password, new_password);
+        const message = await authService.changePasswordService({ value });
         return res.status(200).json({
             success: true,
             message,
@@ -128,7 +130,7 @@ export const verifyForgotPasswordCode = async (req, res, next) => {
             });
         }
 
-        const message = await authService.verifyForgotPasswordCodeService(email, provided_code, new_password);
+        const message = await authService.verifyForgotPasswordCodeService({ value });
 
         return res.status(200).json({
             success: true,

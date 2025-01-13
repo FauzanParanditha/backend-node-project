@@ -45,16 +45,16 @@ export const getAllIpWhitelists = async ({ query, limit, page, sort_by, sort, co
     };
 };
 
-export const createIpWhitelist = async ({ adminId, ipAddress }) => {
+export const createIpWhitelist = async ({ value }) => {
     // Sanitize the input
-    const sanitizedipAddress = ipAddress.trim();
+    const sanitizedipAddress = value.ipAddress.trim();
 
     const existIpWhitelist = await IPWhitelist.findOne({
         ipAddress: { $eq: sanitizedipAddress },
     });
-    if (existIpWhitelist) throw new ResponseError(400, `IpAddress ${ipAddress} already exist!`);
+    if (existIpWhitelist) throw new ResponseError(400, `IpAddress ${value.ipAddress} already exist!`);
 
-    const newIP = new IPWhitelist({ adminId, ipAddress });
+    const newIP = new IPWhitelist({ adminId: value.adminId, ipAddress: value.ipAddress });
     const result = await newIP.save();
 
     return result;
@@ -69,20 +69,20 @@ export const ipWhitelist = async ({ id }) => {
     return result;
 };
 
-export const updateIpWhitelist = async ({ id, adminId, ipAddress }) => {
+export const updateIpWhitelist = async ({ id, value }) => {
     const existIpWhitelist = await IPWhitelist.findOne({ _id: id });
     if (!existIpWhitelist) throw new ResponseError(404, "IpAddress does not exist!");
-    if (existIpWhitelist.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
+    if (existIpWhitelist.adminId.toString() != value.adminId) throw new ResponseError(401, "Unauthorized!");
 
     // Sanitize the input
-    const sanitizedipAddress = ipAddress.trim();
+    const sanitizedipAddress = value.ipAddress.trim();
 
     const existingIpWhitelist = await IPWhitelist.findOne({
         ipAddress: { $eq: sanitizedipAddress },
     });
-    if (existingIpWhitelist) throw new ResponseError(400, `IpAddress ${ipAddress} already exist!`);
+    if (existingIpWhitelist) throw new ResponseError(400, `IpAddress ${value.ipAddress} already exist!`);
 
-    existIpWhitelist.ipAddress = ipAddress;
+    existIpWhitelist.ipAddress = value.ipAddress;
     const result = await existIpWhitelist.save();
     return result;
 };

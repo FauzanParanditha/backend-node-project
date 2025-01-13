@@ -1,3 +1,4 @@
+import logger from "../application/logger.js";
 import * as authServiceUser from "../service/authServiceUser.js";
 import {
     acceptCodeSchema,
@@ -5,7 +6,6 @@ import {
     changePasswordSchema,
     loginSchema,
 } from "../validators/authValidator.js";
-import logger from "../application/logger.js";
 
 export const login = async (req, res, next) => {
     const { email, password } = req.body;
@@ -62,7 +62,7 @@ export const verifyVerificationCode = async (req, res, next) => {
                 message: error.details[0].message,
             });
         }
-        const message = await authServiceUser.verifyVerificationCodeService(email, provided_code);
+        const message = await authServiceUser.verifyVerificationCodeService({ value });
         return res.status(200).json({
             success: true,
             message,
@@ -81,6 +81,8 @@ export const changePassword = async (req, res, next) => {
         const { error, value } = changePasswordSchema.validate({
             old_password,
             new_password,
+            userId,
+            verified,
         });
         if (error) {
             return res.status(400).json({
@@ -88,7 +90,7 @@ export const changePassword = async (req, res, next) => {
                 message: error.details[0].message,
             });
         }
-        const message = await authServiceUser.changePasswordService(userId, verified, old_password, new_password);
+        const message = await authServiceUser.changePasswordService({ value });
         return res.status(200).json({
             success: true,
             message,
@@ -106,6 +108,7 @@ export const changePasswordByAdmin = async (req, res, next) => {
         const { error, value } = changePasswordSchema.validate({
             old_password,
             new_password,
+            userId,
         });
         if (error) {
             return res.status(400).json({
@@ -113,7 +116,7 @@ export const changePasswordByAdmin = async (req, res, next) => {
                 message: error.details[0].message,
             });
         }
-        const message = await authServiceUser.changePasswordByAdminService(userId, old_password, new_password);
+        const message = await authServiceUser.changePasswordByAdminService({ value });
         return res.status(200).json({
             success: true,
             message,
@@ -153,7 +156,7 @@ export const verifyForgotPasswordCode = async (req, res, next) => {
             });
         }
 
-        const message = await authServiceUser.verifyForgotPasswordCodeService(email, provided_code, new_password);
+        const message = await authServiceUser.verifyForgotPasswordCodeService({ value });
 
         return res.status(200).json({
             success: true,

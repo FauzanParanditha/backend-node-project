@@ -61,19 +61,19 @@ export const user = async ({ id }) => {
     return result;
 };
 
-export const updateUser = async ({ id, fullName }) => {
+export const updateUser = async ({ id, value }) => {
     const existUser = await User.findOne({ _id: id });
     if (!existUser) throw new ResponseError(404, "User does not exist!");
 
     // Sanitize the input
-    const sanitizedUser = fullName.trim();
+    const sanitizedUser = value.fullName.trim();
 
     const existingUser = await User.findOne({
         fullName: { $eq: sanitizedUser },
     });
-    if (existingUser) throw new ResponseError(400, `User ${fullName} already exist!`);
+    if (existingUser) throw new ResponseError(400, `User ${value.fullName} already exist!`);
 
-    existUser.fullName = fullName;
+    existUser.fullName = value.fullName;
     const result = await existUser.save();
     return result;
 };

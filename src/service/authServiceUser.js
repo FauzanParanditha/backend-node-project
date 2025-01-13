@@ -1,8 +1,8 @@
-import transport from "../middlewares/sendMail.js";
 import jwt from "jsonwebtoken";
+import { ResponseError } from "../error/responseError.js";
+import transport from "../middlewares/sendMail.js";
 import User from "../models/userModel.js";
 import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
-import { ResponseError } from "../error/responseError.js";
 
 export const loginUser = async ({ email, password }) => {
     const sanitizedEmail = email.trim();
@@ -53,9 +53,9 @@ export const sendVerificationCodeService = async (email) => {
     return "Code sent successfully!";
 };
 
-export const verifyVerificationCodeService = async (email, provided_code) => {
-    const codeValue = provided_code.toString();
-    const sanitizedEmail = email.trim();
+export const verifyVerificationCodeService = async ({ value }) => {
+    const codeValue = value.provided_code.toString();
+    const sanitizedEmail = value.email.trim();
 
     const existUser = await User.findOne({
         email: { $eq: sanitizedEmail },
@@ -82,32 +82,32 @@ export const verifyVerificationCodeService = async (email, provided_code) => {
     return "successfully verified!";
 };
 
-export const changePasswordService = async (userId, verified, old_password, new_password) => {
-    if (!verified) throw new ResponseError(400, "User not verified!");
+export const changePasswordService = async ({ value }) => {
+    if (!value.verified) throw new ResponseError(400, "User not verified!");
 
-    const existUser = await User.findOne({ _id: userId }).select("+password");
+    const existUser = await User.findOne({ _id: value.userId }).select("+password");
     if (!existUser) throw new ResponseError(404, "User does not exist!");
 
-    const result = await compareDoHash(old_password, existUser.password);
+    const result = await compareDoHash(value.old_password, existUser.password);
     if (!result) throw new ResponseError(400, "Invalid credentials!");
 
-    const hashedPassword = await doHash(new_password, 12);
+    const hashedPassword = await doHash(value.new_password, 12);
     existUser.password = hashedPassword;
     await existUser.save();
 
     return "Successfuly change password!";
 };
 
-export const changePasswordByAdminService = async (userId, old_password, new_password) => {
+export const changePasswordByAdminService = async ({ value }) => {
     // if (!verified) throw new ResponseError(400, "User not verified!");
 
-    const existUser = await User.findOne({ _id: userId }).select("+password");
+    const existUser = await User.findOne({ _id: value.userId }).select("+password");
     if (!existUser) throw new ResponseError(404, "User does not exist!");
 
-    const result = await compareDoHash(old_password, existUser.password);
+    const result = await compareDoHash(value.old_password, existUser.password);
     if (!result) throw new ResponseError(400, "Invalid credentials!");
 
-    const hashedPassword = await doHash(new_password, 12);
+    const hashedPassword = await doHash(value.new_password, 12);
     existUser.password = hashedPassword;
     await existUser.save();
 
@@ -136,9 +136,9 @@ export const sendForgotPasswordService = async (email) => {
     return "Code send successfully!";
 };
 
-export const verifyForgotPasswordCodeService = async (email, provided_code, new_password) => {
-    const codeValue = provided_code.toString();
-    const sanitizedEmail = email.trim();
+export const verifyForgotPasswordCodeService = async ({ value }) => {
+    const codeValue = value.provided_code.toString();
+    const sanitizedEmail = value.email.trim();
 
     const existUser = await User.findOne({
         email: { $eq: sanitizedEmail },
@@ -155,7 +155,7 @@ export const verifyForgotPasswordCodeService = async (email, provided_code, new_
 
     if (hashedCodeValue !== existUser.forgotPasswordCode) throw new ResponseError(400, "Unexpected occured!");
 
-    const hashedPassword = await doHash(new_password, 12);
+    const hashedPassword = await doHash(value.new_password, 12);
     existUser.password = hashedPassword;
     existUser.forgotPasswordCode = undefined;
     await existUser.save();

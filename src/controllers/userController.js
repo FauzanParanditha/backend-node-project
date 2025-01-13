@@ -1,5 +1,5 @@
-import * as userService from "../service/userService.js";
 import logger from "../application/logger.js";
+import * as userService from "../service/userService.js";
 import { registerSchema, updateUserSchema } from "../validators/authValidator.js";
 
 export const getAllUser = async (req, res, next) => {
@@ -82,7 +82,7 @@ export const updateUser = async (req, res, next) => {
 
         const user = await userService.updateUser({
             id,
-            fullName,
+            value,
         });
 
         return res.status(200).json({
