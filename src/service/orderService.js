@@ -128,7 +128,7 @@ export const createOrder = async ({ validatedOrder, partnerId }) => {
             paymentType: "HTML5",
         });
 
-        logger.info("Order created successfully: ", result._id);
+        logger.info("Order created successfully");
         return {
             paymentLink,
             result,

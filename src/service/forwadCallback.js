@@ -41,8 +41,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         const { clientId, requestId: bodyRequestId, errCode } = response.data;
         if (!clientId) throw new ResponseError(400, "Missing clientId in response body");
 
-        console.log(clientId);
-        const existingClientId = await Client.findOne({ clientId });
+        const existingClientId = await Client.findOne({ clientId: clientId });
         console.log(existingClientId);
         if (!existingClientId) throw new ResponseError(404, "Client Id is not registered!");
 

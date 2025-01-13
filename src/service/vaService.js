@@ -100,7 +100,7 @@ export const createVa = async ({ validatedProduct, partnerId }) => {
             va: response.data,
         });
 
-        logger.info("VA created successfully: ", result._id);
+        logger.info("VA created successfully");
         return { response, result };
     } catch (error) {
         logger.error("Error in createVa: ", error);

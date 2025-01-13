@@ -106,7 +106,7 @@ export const createQris = async ({ validatedProduct, partnerId }) => {
             qris: response.data,
         });
 
-        logger.info("QRIS payment created successfully: ", result._id);
+        logger.info("QRIS payment created successfully");
         return { response, result };
     } catch (error) {
         logger.error("Error in createQris: ", error);

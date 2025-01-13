@@ -119,7 +119,7 @@ export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
             vaSnap: response.data,
         });
 
-        logger.info("VASNAP created successfully: ", result._id);
+        logger.info("VASNAP created successfully");
         return { response, result };
     } catch (error) {
         logger.error("Error in createVASNAP: ", error);

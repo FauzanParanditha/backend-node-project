@@ -102,7 +102,7 @@ export const createCC = async ({ validatedProduct, partnerId }) => {
             cc: response.data,
         });
 
-        logger.info("Order created successfully: ", result._id);
+        logger.info("Order created successfully");
         return { response, result };
     } catch (error) {
         logger.error("Error in createCC: ", error);

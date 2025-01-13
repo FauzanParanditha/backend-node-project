@@ -105,7 +105,7 @@ export const createEMoney = async ({ validatedProduct, partnerId }) => {
             eMoney: response.data,
         });
 
-        logger.info("E-Money order created successfully: ", result._id);
+        logger.info("E-Money order created successfully");
         return { response, result };
     } catch (error) {
         logger.error("Error in createEMoney: ", error);
