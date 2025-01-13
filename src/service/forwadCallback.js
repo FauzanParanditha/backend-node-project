@@ -85,7 +85,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                     callbackUrl,
                     retryCount,
                     "Server shutting down. Aborting retries.",
-                    client.clientId,
+                    client._id,
                 );
                 return; // Stop retries during shutdown
             }
@@ -116,7 +116,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                     await new Promise((resolve) => setTimeout(resolve, delay * 1000));
                 } else {
                     logger.error("Exhausted retries.");
-                    await logFailedCallback(payload, callbackUrl, retryCount, err.message, client.clientId);
+                    await logFailedCallback(payload, callbackUrl, retryCount, err.message, client._id);
                     sendAlert(`Failed to forward callback after ${retryCount} attempts: ${err.message}`);
                 }
             }
