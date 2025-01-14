@@ -83,6 +83,10 @@ web.get("/redoc", (req, res) => {
         <html>
         <head>
             <title>API Documentation</title>
+            <link rel="icon" type="image/x-icon" href="../public/images/favicon.ico">
+            <meta charset="utf-8"/>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
         </head>
         <body>
             <redoc spec-url='/swagger.json'></redoc>
