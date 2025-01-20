@@ -520,7 +520,7 @@ export const deleteVASNAP = async ({ id, validatedUpdateData, req }) => {
 
         // Update order details in the database
         existingOrder.paymentStatus = "cancel";
-        existingOrder.vaSnapDelete.set(response.data);
+        existingOrder.vaSnapDelete = response.data;
         await existingOrder.save();
 
         // Generate headers for Paylabs request
