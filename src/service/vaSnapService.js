@@ -68,7 +68,6 @@ export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
                 paymentType: requestBodyForm.paymentType,
             },
         };
-        console.log(requestBody);
 
         // Validate requestBody
         const { error } = validateCreateVASNAP(requestBody);
