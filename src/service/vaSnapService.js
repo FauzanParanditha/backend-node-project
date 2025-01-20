@@ -509,18 +509,18 @@ export const deleteVASNAP = async ({ id, validatedUpdateData, req }) => {
 
         // Check for successful response
         if (!response.data || response.data.responseCode.charAt(0) !== "2") {
-            logger.error("Paylabs error: ", response.data ? response.data.responseMessage : "failed to update payment");
+            logger.error("Paylabs error: ", response.data ? response.data.responseMessage : "failed to delete payment");
             throw new ResponseError(
                 400,
                 response.data
                     ? `error: ${response.data.responseMessage} with code ${response.data.responseCode}`
-                    : "failed to update payment",
+                    : "failed to delete payment",
             );
         }
 
         // Update order details in the database
         existingOrder.paymentStatus = "cancel";
-        existingOrder.vaSnap.set(response.data);
+        existingOrder.vaSnapDelete.set(response.data);
         await existingOrder.save();
 
         // Generate headers for Paylabs request

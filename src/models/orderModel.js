@@ -214,6 +214,21 @@ const generateVaSnapSchema = new mongoose.Schema(
     { _id: false },
 );
 
+const generateDeleteVaSnapSchema = new mongoose.Schema(
+    {
+        responseCode: { type: String, required: true },
+        responseMessage: { type: String, required: true },
+        virtualAccountData: {
+            partnerServiceId: { type: String, required: true },
+            customerNo: { type: String, required: true },
+            virtualAccountNo: { type: String, required: true },
+            trxId: { type: String },
+            additionalInfo: {},
+        },
+    },
+    { _id: false },
+);
+
 const paymentPaylabsVaSnap = new mongoose.Schema(
     {
         partnerServiceId: { type: String, maxlength: 8, required: true },
@@ -436,6 +451,7 @@ const orderSchema = new mongoose.Schema(
         paymentPaylabsVaSnap: paymentPaylabsVaSnap,
         qris: qrisSchema,
         vaSnap: generateVaSnapSchema,
+        vaSnapDelete: generateDeleteVaSnapSchema,
         va: generateVaSchema,
         cc: ccSchema,
         eMoney: eMoneySchema,
