@@ -146,6 +146,7 @@ export const deleteVASNAP = async (req, res) => {
     try {
         const { currentDateTime, expiredDateTime, response, responseHeaders } = await vaSnapService.deleteVASNAP({
             id,
+            req,
         });
 
         if (currentDateTime > expiredDateTime) {
