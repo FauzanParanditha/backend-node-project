@@ -523,7 +523,13 @@ export const deleteVASNAP = async ({ id, validatedUpdateData, req }) => {
         existingOrder.vaSnap.set(response.data);
         await existingOrder.save();
 
-        return { response };
+        // Generate headers for Paylabs request
+        const responseHeaders = {
+            "Content-Type": "application/json;charset=utf-8",
+            "X-TIMESTAMP": timestamp,
+        };
+
+        return { response, responseHeaders };
     } catch (error) {
         logger.error("Error in deleteVASNAP: ", error);
         throw error; // Re-throw the error for further handling
