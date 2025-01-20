@@ -431,7 +431,7 @@ router.post("/order/webhook/paylabs/vaSnap", VaSnapCallback);
  */
 router.post("/order/update/va/snap/:id", jwtMiddlewareVerify, updateVASNAP);
 
-router.get("/order/delete/va/snap/:id", jwtMiddlewareVerify, deleteVASNAP);
+router.delete("/order/delete/va/snap/:id", jwtMiddlewareVerify, deleteVASNAP);
 
 /**
  * @swagger
