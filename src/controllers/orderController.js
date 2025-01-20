@@ -1,6 +1,6 @@
+import logger from "../application/logger.js";
 import * as orderService from "../service/orderService.js";
 import { orderLinkSchema } from "../validators/orderValidator.js";
-import logger from "../application/logger.js";
 
 // Orders Listing with Pagination and Sorting
 export const orders = async (req, res, next) => {
@@ -77,6 +77,29 @@ export const createOrder = async (req, res, next) => {
             paymentId: paymentLink.paymentId,
             storeId: paymentLink.storeId,
             orderId: result._id,
+        });
+    } catch (error) {
+        logger.error(`Error create order ${error.message}`);
+        next(error);
+    }
+};
+
+// Create Order Link
+export const createOrderLink = async (req, res, next) => {
+    const partnerId = req.partnerId;
+    try {
+        const validatedOrder = await orderLinkSchema.validateAsync(req.body, {
+            abortEarly: false,
+        });
+
+        const { paymentLink } = await orderService.createOrderLink({
+            validatedOrder,
+            partnerId,
+        });
+
+        res.status(200).json({
+            success: true,
+            paymentLink: paymentLink,
         });
     } catch (error) {
         logger.error(`Error create order ${error.message}`);

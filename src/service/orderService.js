@@ -4,6 +4,7 @@ import { expiredXendit } from "../controllers/xenditController.js";
 import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
 import User from "../models/userModel.js";
+import { encryptData } from "../utils/encryption.js";
 import { calculateTotal, escapeRegExp, validateOrderProducts } from "../utils/helper.js";
 import { handlePaymentLink } from "./paylabs.js";
 
@@ -106,7 +107,6 @@ export const createOrder = async ({ validatedOrder, partnerId }) => {
         // Construct order data
         const orderData = {
             orderId: uuid4(),
-            userId: validatedOrder.userId,
             items: validProducts,
             totalAmount,
             phoneNumber: validatedOrder.phoneNumber,
@@ -132,6 +132,48 @@ export const createOrder = async ({ validatedOrder, partnerId }) => {
         return {
             paymentLink,
             result,
+        };
+    } catch (error) {
+        logger.error("Error in createOrder: ", error);
+        throw error; // Re-throw the error for further handling
+    }
+};
+
+export const createOrderLink = async ({ validatedOrder, partnerId }) => {
+    try {
+        // Validate products in the order
+        const { validProducts, totalAmount } = await validateOrderProducts(
+            validatedOrder.items,
+            validatedOrder.paymentType || undefined,
+            validatedOrder.totalAmount,
+        );
+
+        if (!validProducts.length) {
+            logger.error("No valid products found to create the order");
+            throw new ResponseError(404, "No valid products found to create the order");
+        }
+
+        // Construct order data
+        const orderData = {
+            items: validProducts,
+            totalAmount,
+            phoneNumber: validatedOrder.phoneNumber,
+            payer: partnerId.name,
+            paymentMethod: validatedOrder.paymentMethod,
+            clientId: partnerId.clientId,
+            ...(validatedOrder.paymentType && { paymentType: validatedOrder.paymentType }),
+            ...(validatedOrder.storeId && { storeId: validatedOrder.storeId }),
+        };
+
+        // Encrypt orderData if necessary
+        const encryptedOrderData = encryptData(orderData);
+
+        // Generate a link to the frontend payment page with the encrypted data
+        const paymentLink = `http://localhost:3000/payment?data=${encodeURIComponent(encryptedOrderData)}`;
+
+        logger.info("Order created successfully");
+        return {
+            paymentLink,
         };
     } catch (error) {
         logger.error("Error in createOrder: ", error);
