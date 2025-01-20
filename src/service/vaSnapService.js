@@ -53,7 +53,7 @@ export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
 
         // Prepare Paylabs request payload
         const requestBody = {
-            partnerServiceId: merchantId,
+            partnerServiceId: `  ${merchantId}`,
             customerNo,
             virtualAccountNo: `${merchantId}${customerNo}`,
             virtualAccountName: requestBodyForm.payer,
@@ -68,6 +68,7 @@ export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
                 paymentType: requestBodyForm.paymentType,
             },
         };
+        console.log(requestBody);
 
         // Validate requestBody
         const { error } = validateCreateVASNAP(requestBody);
