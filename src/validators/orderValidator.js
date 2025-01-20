@@ -71,3 +71,11 @@ export const paymentSNAPSchema = joi.object({
 export const refundSchema = joi.object({
     reason: joi.string().required(),
 });
+
+export const deleteSNAPSchema = joi.object({
+    partnerServiceId: joi.string().required().max(8),
+    customerNo: joi.string().required().max(20),
+    virtualAccountNo: joi.string().required().max(28),
+    trxId: joi.string().optional().max(64),
+    additionalInfo: joi.object().optional(),
+});

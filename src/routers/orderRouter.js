@@ -1,11 +1,24 @@
 import express from "express";
 import { ccOrderStatus, createCreditCard } from "../controllers/ccController.js";
 import { createEMoney, createEMoneyRefund, eMoneyOrderStatus } from "../controllers/eMoneyController.js";
-import { createOrder, editOrder, order, orderNoLimit, orders } from "../controllers/orderController.js";
+import {
+    createOrder,
+    createOrderLink,
+    editOrder,
+    order,
+    orderNoLimit,
+    orders,
+} from "../controllers/orderController.js";
 import { paylabsCallback, paylabsVaStaticCallback } from "../controllers/paymentController.js";
 import { cancleQris, createQris, qrisOrderStatus } from "../controllers/qrisController.js";
 import { createStaticVa, createVA, vaOrderStatus } from "../controllers/vaController.js";
-import { createVASNAP, updateVASNAP, VaSnapCallback, vaSNAPOrderStatus } from "../controllers/vaSnapController.js";
+import {
+    createVASNAP,
+    deleteVASNAP,
+    updateVASNAP,
+    VaSnapCallback,
+    vaSNAPOrderStatus,
+} from "../controllers/vaSnapController.js";
 import { balance, xenditCallback } from "../controllers/xenditController.js";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
 import { jwtMiddlewareVerify } from "../middlewares/verifyMiddleware.js";
@@ -120,6 +133,8 @@ router.get("/order", jwtMiddlewareAdmin, orderNoLimit);
  *         description: Unauthorized
  */
 router.post("/order/create", jwtMiddlewareVerify, createOrder);
+
+router.post("/order/create/link", jwtMiddlewareVerify, createOrderLink);
 
 router.post("/order/webhook/xendit", xenditCallback);
 
@@ -415,6 +430,8 @@ router.post("/order/webhook/paylabs/vaSnap", VaSnapCallback);
  *         description: Unauthorized
  */
 router.post("/order/update/va/snap/:id", jwtMiddlewareVerify, updateVASNAP);
+
+router.get("/order/delete/va/snap/:id", jwtMiddlewareVerify, deleteVASNAP);
 
 /**
  * @swagger

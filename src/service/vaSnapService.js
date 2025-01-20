@@ -5,7 +5,12 @@ import { ResponseError } from "../error/responseError.js";
 import Client from "../models/clientModel.js";
 import Order from "../models/orderModel.js";
 import { validateOrderProducts } from "../utils/helper.js";
-import { validateCreateVASNAP, validatePaymentVASNAP, validateVaSNAPStatus } from "../validators/paymentValidator.js";
+import {
+    validateCreateVASNAP,
+    validatedeleteVASNAP,
+    validatePaymentVASNAP,
+    validateVaSNAPStatus,
+} from "../validators/paymentValidator.js";
 import {
     addMinutesToTimestamp,
     createSignature,
@@ -432,6 +437,95 @@ export const updateVASNAP = async ({ id, validatedUpdateData, req }) => {
         return { response };
     } catch (error) {
         logger.error("Error in updateVASNAP: ", error);
+        throw error; // Re-throw the error for further handling
+    }
+};
+
+export const deleteVASNAP = async ({ id, validatedUpdateData, req }) => {
+    try {
+        // Check if the order exists
+        const existingOrder = await Order.findById(id);
+        if (!existingOrder) {
+            logger.error("Order does not exist: ", id);
+            throw new ResponseError(404, "Order does not exist!");
+        }
+
+        if (existingOrder.paymentStatus === "paid") {
+            logger.error("Payment already processed for order: ", id);
+            throw new ResponseError(409, "Payment already processed!");
+        }
+
+        // Check if the order has expired
+        const currentDateTime = new Date();
+        const expiredDateTime = new Date(existingOrder.paymentExpired);
+
+        if (currentDateTime > expiredDateTime) {
+            existingOrder.paymentStatus = "expired";
+            await existingOrder.save();
+            return { currentDateTime, expiredDateTime };
+        }
+
+        if (!existingOrder.vaSnap) {
+            logger.error("VASNAP data not found in the order: ", id);
+            throw new ResponseError(409, "Payment already processed!");
+        }
+
+        // Prepare request payload for Paylabs
+        const timestamp = generateTimestamp();
+        const requestId = uuid4();
+        const requestBody = {
+            partnerServiceId: existingOrder.vaSnap.virtualAccountData.partnerServiceId,
+            customerNo: existingOrder.vaSnap.virtualAccountData.customerNo,
+            virtualAccountNo: existingOrder.vaSnap.virtualAccountData.virtualAccountNo,
+            trxId: generateMerchantTradeNo(),
+        };
+
+        // Validate requestBody
+        const { error } = validatedeleteVASNAP(requestBody);
+        if (error) {
+            logger.error(
+                "VASNAP delete request validation failed: ",
+                error.details.map((err) => err.message),
+            );
+            throw new ResponseError(
+                400,
+                error.details.map((err) => err.message),
+            );
+        }
+
+        // Generate signature and headers
+        const signature = createSignature("POST", "/transfer-va/delete-va", requestBody, timestamp);
+        const headers = {
+            "Content-Type": "application/json;charset=utf-8",
+            "X-TIMESTAMP": timestamp,
+            "X-PARTNER-ID": merchantId,
+            "X-EXTERNAL-ID": requestId,
+            "X-SIGNATURE": signature,
+            "X-IP-ADDRESS": req.ip.includes("::ffff:") ? req.ip.split("::ffff:")[1] : req.ip,
+        };
+
+        // Send request to Paylabs
+        const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/delete-va`, requestBody, { headers });
+
+        // Check for successful response
+        if (!response.data || response.data.responseCode.charAt(0) !== "2") {
+            logger.error("Paylabs error: ", response.data ? response.data.responseMessage : "failed to update payment");
+            throw new ResponseError(
+                400,
+                response.data
+                    ? `error: ${response.data.responseMessage} with code ${response.data.responseCode}`
+                    : "failed to update payment",
+            );
+        }
+
+        // Update order details in the database
+        existingOrder.paymentStatus = "cancel";
+        existingOrder.vaSnap.set(response.data);
+        await existingOrder.save();
+
+        return { response };
+    } catch (error) {
+        logger.error("Error in deleteVASNAP: ", error);
         throw error; // Re-throw the error for further handling
     }
 };

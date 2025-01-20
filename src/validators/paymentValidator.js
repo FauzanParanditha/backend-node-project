@@ -277,6 +277,18 @@ export const validateCreateVASNAP = (data) => {
     return schema.validate(data);
 };
 
+export const validatedeleteVASNAP = (data) => {
+    const schema = joi.object({
+        partnerServiceId: joi.string().max(8).required(),
+        customerNo: joi.string().max(20).required(),
+        virtualAccountNo: joi.string().max(28).required(),
+        trxId: joi.string().max(64).required(),
+        additionalInfo: joi.object().optional(),
+    });
+
+    return schema.validate(data);
+};
+
 export const validateVaSNAPStatus = (data) => {
     const schema = joi.object({
         partnerServiceId: joi.string().max(8).required(),

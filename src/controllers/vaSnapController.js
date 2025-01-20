@@ -1,8 +1,8 @@
-import { orderSchema } from "../validators/orderValidator.js";
-import { verifySignature } from "../service/paylabs.js";
-import * as vaSnapService from "../service/vaSnapService.js";
 import logger from "../application/logger.js";
 import { forwardCallback } from "../service/forwadCallback.js";
+import { verifySignature } from "../service/paylabs.js";
+import * as vaSnapService from "../service/vaSnapService.js";
+import { deleteSNAPSchema, orderSchema } from "../validators/orderValidator.js";
 
 export const createVASNAP = async (req, res) => {
     const partnerId = req.partnerId;
@@ -105,6 +105,51 @@ export const updateVASNAP = async (req, res) => {
         });
 
         const { currentDateTime, expiredDateTime, response } = await vaSnapService.updateVASNAP({
+            id,
+            validatedUpdateData,
+            req,
+        });
+
+        if (currentDateTime > expiredDateTime) {
+            return res.status(408).json({
+                success: true,
+                message: "payment expired",
+            });
+        }
+        // Send a response with the updated order details
+        res.status(200).json({
+            success: true,
+            partnerServiceId: response.data.virtualAccountData.partnerServiceId,
+            customerNo: response.data.virtualAccountData.customerNo,
+            virtualAccountNo: response.data.virtualAccountData.virtualAccountNo,
+            totalAmount: response.data.virtualAccountData.totalAmount.value,
+            expiredDate: response.data.virtualAccountData.expiredDate,
+            paymentId: response.data.virtualAccountData.trxId,
+            orderId: id,
+        });
+    } catch (error) {
+        // Handle unexpected errors
+        logger.error(`Error update va snap: ${error.message}`);
+        return res.status(500).json({
+            success: false,
+            status: error.status,
+            message: "An error occurred",
+            error: error.response
+                ? `error: ${error.response.data.responseMessage} with code ${error.response.data.responseCode}`
+                : error.message,
+        });
+    }
+};
+
+export const deleteVASNAP = async (req, res) => {
+    const { id } = req.params;
+    try {
+        // Validate the update payload
+        const validatedUpdateData = await deleteSNAPSchema.validateAsync(req.body, {
+            abortEarly: false,
+        });
+
+        const { currentDateTime, expiredDateTime, response } = await vaSnapService.deleteVASNAP({
             id,
             validatedUpdateData,
             req,
