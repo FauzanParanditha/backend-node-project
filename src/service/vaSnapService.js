@@ -141,10 +141,10 @@ export const vaSNAPOrderStatus = async ({ id }) => {
             throw new ResponseError(404, "Order does not exist!");
         }
 
-        if (existOrder.paymentStatus === "paid") {
-            logger.error("Payment already processed for order: ", id);
-            throw new ResponseError(409, "Payment already processed!");
-        }
+        // if (existOrder.paymentStatus === "paid") {
+        //     logger.error("Payment already processed for order: ", id);
+        //     throw new ResponseError(409, "Payment already processed!");
+        // }
 
         if (existOrder.paymentStatus === "expired") {
             logger.error("Payment already expired for order: ", id);
@@ -253,10 +253,10 @@ export const VaSnapCallback = async ({ payload }) => {
             throw new ResponseError(404, `Order not found for orderID: ${notificationData.trxId}`);
         }
 
-        if (existOrder.paymentStatus === "paid") {
-            logger.error("Payment already processed for order: ", notificationData.trxId);
-            throw new ResponseError(409, "Payment already processed!");
-        }
+        // if (existOrder.paymentStatus === "paid") {
+        //     logger.error("Payment already processed for order: ", notificationData.trxId);
+        //     throw new ResponseError(409, "Payment already processed!");
+        // }
 
         const currentDateTime = new Date();
         const expiredDateTime = new Date(existOrder.vaSnap.virtualAccountData.expiredDate);

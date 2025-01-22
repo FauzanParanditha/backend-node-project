@@ -119,10 +119,10 @@ export const ccOrderStatus = async ({ id }) => {
             throw new ResponseError(404, "Order does not exist!");
         }
 
-        if (existOrder.paymentStatus === "paid") {
-            logger.error("Payment already processed for order: ", id);
-            throw new ResponseError(409, "Payment already processed!");
-        }
+        // if (existOrder.paymentStatus === "paid") {
+        //     logger.error("Payment already processed for order: ", id);
+        //     throw new ResponseError(409, "Payment already processed!");
+        // }
 
         if (existOrder.paymentStatus === "expired") {
             logger.error("Payment expired for order: ", id);
