@@ -127,10 +127,10 @@ export const vaOrderStatus = async ({ id }) => {
             throw new ResponseError(408, "Payment already processed!");
         }
 
-        if (!existOrder.va) {
-            logger.error("VA data not found in the order: ", id);
-            throw new ResponseError(400, "VA data not found in the order");
-        }
+        // if (!existOrder.va) {
+        //     logger.error("VA data not found in the order: ", id);
+        //     throw new ResponseError(400, "VA data not found in the order");
+        // }
 
         // Prepare request payload for Paylabs
         const requestId = generateRequestId();

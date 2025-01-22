@@ -151,10 +151,10 @@ export const vaSNAPOrderStatus = async ({ id }) => {
             throw new ResponseError(408, "Payment already processed!");
         }
 
-        if (!existOrder.vaSnap) {
-            logger.error("VASNAP data not found in the order: ", id);
-            throw new ResponseError(400, "VASNAP data not found in the order");
-        }
+        // if (!existOrder.vaSnap) {
+        //     logger.error("VASNAP data not found in the order: ", id);
+        //     throw new ResponseError(400, "VASNAP data not found in the order");
+        // }
 
         // Prepare request payload for Paylabs
         const timestamp = generateTimestamp();

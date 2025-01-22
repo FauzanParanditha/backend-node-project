@@ -133,10 +133,10 @@ export const qrisOrderStatus = async ({ id }) => {
             throw new ResponseError(408, "Payment already processed!");
         }
 
-        if (!existOrder.qris) {
-            logger.error("QRIS data not found in the order: ", id);
-            throw new ResponseError(400, "QRIS data not found in the order");
-        }
+        // if (!existOrder.qris) {
+        //     logger.error("QRIS data not found in the order: ", id);
+        //     throw new ResponseError(400, "QRIS data not found in the order");
+        // }
 
         // Prepare request payload for Paylabs
         const requestId = generateRequestId();

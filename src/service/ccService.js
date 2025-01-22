@@ -129,10 +129,10 @@ export const ccOrderStatus = async ({ id }) => {
             throw new ResponseError(408, "Payment already processed!");
         }
 
-        if (!existOrder.cc) {
-            logger.error("CC data not found in the order: ", id);
-            throw new ResponseError(400, "CC data not found in the order");
-        }
+        // if (!existOrder.cc) {
+        //     logger.error("CC data not found in the order: ", id);
+        //     throw new ResponseError(400, "CC data not found in the order");
+        // }
 
         // Prepare request payload for Paylabs
         const requestId = generateRequestId();

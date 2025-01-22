@@ -132,10 +132,10 @@ export const eMoneyOrderStatus = async ({ id }) => {
             throw new ResponseError(408, "Payment already processed!");
         }
 
-        if (!existOrder.eMoney) {
-            logger.error("E-Money data not found in the order: ", id);
-            throw new ResponseError(400, "E-Money data not found in the order");
-        }
+        // if (!existOrder.eMoney) {
+        //     logger.error("E-Money data not found in the order: ", id);
+        //     throw new ResponseError(400, "E-Money data not found in the order");
+        // }
 
         // Prepare request payload for Paylabs
         const requestId = generateRequestId();
