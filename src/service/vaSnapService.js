@@ -166,7 +166,7 @@ export const vaSNAPOrderStatus = async ({ id }) => {
             virtualAccountNo: existOrder.virtualAccountNo,
             inquiryRequestId: requestId,
             paymentRequestId: requestId,
-            additionalInfo: existOrder.vaSnap.virtualAccountData.additionalInfo,
+            // additionalInfo: existOrder.vaSnap.virtualAccountData.additionalInfo,
         };
 
         // Validate requestBody
