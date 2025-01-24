@@ -1,6 +1,6 @@
+import { ResponseError } from "../../src/error/responseError.js";
 import Admin from "../../src/models/adminModel.js";
 import { registerAdmin } from "../../src/service/adminService.js";
-import { ResponseError } from "../../src/error/responseError.js";
 import { closeMongo, setupMongo } from "../setup-test.js";
 
 describe("registerAdmin", () => {
@@ -29,7 +29,7 @@ describe("registerAdmin", () => {
     });
 
     it("should register a new admin successfully", async () => {
-        const result = await registerAdmin({
+        await registerAdmin({
             email: "new@test.id",
             password: "Test@1234",
             fullName: "New Admin",

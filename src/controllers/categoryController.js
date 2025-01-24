@@ -47,7 +47,7 @@ export const create = async (req, res, next) => {
             });
         }
 
-        const category = await categoryService.createCategory({ value });
+        await categoryService.createCategory({ value });
         res.status(201).json({ success: true, message: "Category create successfully" });
     } catch (error) {
         logger.error(`Error create category: ${error.message}`);
@@ -86,7 +86,7 @@ export const updateCategory = async (req, res, next) => {
             });
         }
 
-        const category = await categoryService.updateCategory({
+        await categoryService.updateCategory({
             id,
             value,
         });
@@ -106,7 +106,7 @@ export const deleteCategory = async (req, res, next) => {
     const { adminId } = req.admin;
 
     try {
-        const category = await categoryService.deleteCategory({ id, adminId });
+        await categoryService.deleteCategory({ id, adminId });
         return res.status(200).json({
             success: true,
             message: "Successfully delete category",

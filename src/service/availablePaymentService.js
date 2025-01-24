@@ -109,6 +109,7 @@ export const updateAvailablePayment = async ({ id, adminId, value, req }) => {
             // Update the image path
             updateData.image = req.file.path;
         } catch (error) {
+            console.error("Failed to delete old image!, ", error);
             throw new ResponseError(400, "Failed to delete old image!");
         }
     }
@@ -135,6 +136,7 @@ export const deleteAvailablepayment = async ({ id, adminId }) => {
         const imagePath = path.join(__dirname, "../..", availablePayment.image);
         await fs.promises.unlink(imagePath);
     } catch (error) {
+        console.error("Failed to delete old image!, ", error);
         throw new ResponseError(400, "Failed to delete old image!");
     }
 

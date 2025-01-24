@@ -107,7 +107,7 @@ export const sendForgotPasswordService = async (email) => {
 
     const codeValue = Math.floor(Math.random() * 100000).toString();
     const url = generateForgotPasswordLink(existAdmin.email, codeValue);
-    const result = await sendForgotPasswordEmail(url, existAdmin.email, existAdmin.fullName);
+    await sendForgotPasswordEmail(url, existAdmin.email, existAdmin.fullName);
 
     // let info = await transport.sendMail({
     //     from: process.env.MAIL_ADDRESS,

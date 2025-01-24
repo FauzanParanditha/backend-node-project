@@ -16,7 +16,7 @@ export const login = async (req, res, next) => {
             return res.status(400).json({ success: false, message: error.details[0].message });
         }
 
-        const { token, adminId, email: adminEmail } = await authService.loginAdmin({ email, password });
+        const { token } = await authService.loginAdmin({ email, password });
         res.cookie("Authorization", "Bearer " + token, {
             expires: new Date(Date.now() + 2 * 3600000),
             httpOnly: process.env.NODE_ENV === "production",
@@ -30,7 +30,7 @@ export const login = async (req, res, next) => {
     }
 };
 
-export const logout = async (req, res, next) => {
+export const logout = async (req, res) => {
     res.clearCookie("Authorization").status(200).json({
         success: true,
         message: "logout is successfully",

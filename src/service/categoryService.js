@@ -76,7 +76,7 @@ export const updateCategory = async ({ id, value }) => {
     if (!existCategory) throw new ResponseError(404, "Category does not exist!");
     if (existCategory.adminId.toString() != value.adminId) throw new ResponseError(401, "Unauthorized!");
 
-    const sanitizedName = valuename.trim();
+    const sanitizedName = value.name.trim();
 
     const existingCategory = await Category.findOne({
         name: { $eq: sanitizedName },

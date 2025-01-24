@@ -1,10 +1,10 @@
+import fs from "fs";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
 import { ResponseError } from "../error/responseError.js";
 import Category from "../models/categoryModel.js";
 import Product from "../models/productModel.js";
-import fs from "fs";
-import path, { dirname } from "path";
 import { escapeRegExp } from "../utils/helper.js";
-import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -132,6 +132,7 @@ export const updateProduct = async ({ id, adminId, value, req }) => {
             // Update the image path
             updateData.image = req.file.path;
         } catch (error) {
+            console.error("Failed to delete old image!, ", error);
             throw new ResponseError(400, "Failed to delete old image!");
         }
     }
@@ -158,6 +159,7 @@ export const deleteProduct = async ({ id, adminId }) => {
         const imagePath = path.join(__dirname, "../..", product.image);
         await fs.promises.unlink(imagePath);
     } catch (error) {
+        console.error("Failed to delete old image!, ", error);
         throw new ResponseError(400, "Failed to delete old image!");
     }
 

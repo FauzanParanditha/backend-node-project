@@ -43,7 +43,7 @@ export const create = async (req, res, next) => {
             });
         }
 
-        const ipWhitelist = await ipWhitelistService.createIpWhitelist({
+        await ipWhitelistService.createIpWhitelist({
             value,
         });
 
@@ -88,7 +88,7 @@ export const updateIpWhitelist = async (req, res, next) => {
             });
         }
 
-        const ipWhitelist = await ipWhitelistService.updateIpWhitelist({
+        await ipWhitelistService.updateIpWhitelist({
             id,
             value,
         });
@@ -108,7 +108,7 @@ export const deleteIpWhitelist = async (req, res, next) => {
     const { adminId } = req.admin;
 
     try {
-        const ipWhitelist = await ipWhitelistService.deleteIpWhitelist({
+        await ipWhitelistService.deleteIpWhitelist({
             id,
             adminId,
         });

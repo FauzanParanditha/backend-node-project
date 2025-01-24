@@ -13,7 +13,8 @@
         "lint:fix": "eslint . --fix ",
         "start": "node ./src/index.js",
         "dev": "nodemon ./src/index.js",
-        "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js -i"
+        "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js -i",
+        "start:websocket": "node src/application/websocket_server.js"
     },
     "type": "module",
     "keywords": [],
@@ -43,6 +44,7 @@
         "swagger-ui-express": "^5.0.1",
         "uuid4": "^2.0.3",
         "winston": "^3.17.0",
+        "ws": "^8.18.0",
         "xendit-node": "^6.0.0"
     },
     "devDependencies": {

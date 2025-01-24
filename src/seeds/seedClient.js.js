@@ -1,9 +1,9 @@
+import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { connectDB } from "../application/db.js";
 import logger from "../application/logger.js";
-import dotenv from "dotenv";
-import Client from "../models/clientModel.js";
 import Admin from "../models/adminModel.js";
+import Client from "../models/clientModel.js";
 
 dotenv.config();
 

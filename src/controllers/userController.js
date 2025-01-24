@@ -38,7 +38,7 @@ export const register = async (req, res, next) => {
         const { error } = registerSchema.validate({ email, password, fullName });
         if (error) return res.status(401).json({ success: false, message: error.details[0].message });
 
-        const user = await userService.registerUser({
+        await userService.registerUser({
             email,
             password,
             fullName,
@@ -80,7 +80,7 @@ export const updateUser = async (req, res, next) => {
             });
         }
 
-        const user = await userService.updateUser({
+        await userService.updateUser({
             id,
             value,
         });

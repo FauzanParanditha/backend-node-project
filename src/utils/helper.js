@@ -1,10 +1,9 @@
-import multer from "multer";
-import path, { dirname } from "path";
 import pkg from "bcryptjs";
 import { createHmac } from "crypto";
-import { fileURLToPath } from "url";
 import fs from "fs";
-import Product from "../models/productModel.js";
+import multer from "multer";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
 import { ResponseError } from "../error/responseError.js";
 const { hash, compare } = pkg;
 

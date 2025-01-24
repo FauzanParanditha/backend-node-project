@@ -1,14 +1,14 @@
-import { Xendit, Invoice as InvoiceClient, Balance as BalanceClient } from "xendit-node";
-import User from "../models/userModel.js";
 import mongoose from "mongoose";
-import Order from "../models/orderModel.js";
+import { Balance as BalanceClient, Invoice as InvoiceClient } from "xendit-node";
 import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
+import Order from "../models/orderModel.js";
+import User from "../models/userModel.js";
 
 const xenditInvoiceClient = new InvoiceClient({
     secretKey: process.env.XENDIT_SECRET_KEY,
 });
-export const createXenditPaymentLink = async (order) => {
+export const createXenditPaymentLink = async (order, next) => {
     try {
         const buyerObjectId = new mongoose.Types.ObjectId(order.userId);
         const existUser = await User.findOne({ _id: buyerObjectId });
@@ -123,7 +123,6 @@ export const xenditCallback = async (req, res, next) => {
             default:
                 logger.error(`Unhandled event status received: ${event.status}`, event);
                 throw new ResponseError(400, "Unhandled notification status");
-                break;
         }
 
         res.status(200).json({ success: true, message: "successfully" });
@@ -133,7 +132,7 @@ export const xenditCallback = async (req, res, next) => {
     }
 };
 
-export const expiredXendit = async (id) => {
+export const expiredXendit = async (id, next) => {
     try {
         const response = await xenditInvoiceClient.expireInvoice({ invoiceId: id });
         return response;

@@ -44,7 +44,7 @@ export const createAvailablePayment = async (req, res, next) => {
             });
         }
 
-        const availablePayment = await availablePaymentService.createAvailablePayment({ req, adminId });
+        await availablePaymentService.createAvailablePayment({ req, adminId });
 
         return res.status(201).json({
             success: true,
@@ -89,7 +89,7 @@ export const updateAvailablePayment = async (req, res, next) => {
             });
         }
 
-        const availablePayment = await availablePaymentService.updateAvailablePayment({
+        await availablePaymentService.updateAvailablePayment({
             id,
             adminId,
             value,
@@ -111,7 +111,7 @@ export const deleteAvailablepayment = async (req, res, next) => {
     const { adminId } = req.admin;
 
     try {
-        const availablePayment = await availablePaymentService.deleteAvailablepayment({ id, adminId });
+        await availablePaymentService.deleteAvailablepayment({ id, adminId });
 
         return res.status(200).json({
             success: true,

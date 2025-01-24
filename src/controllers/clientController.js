@@ -39,7 +39,7 @@ export const createClient = async (req, res, next) => {
         const { error, value } = clientSchema.validate({ name, notifyUrl, userId, active, adminId });
         if (error) return res.status(401).json({ success: false, message: error.details[0].message });
 
-        const client = await clientService.createClient({
+        await clientService.createClient({
             value,
         });
         res.status(201).json({ success: true, message: "Client add successfully" });
@@ -80,7 +80,7 @@ export const updateClient = async (req, res, next) => {
             });
         }
 
-        const client = await clientService.updateClient({
+        await clientService.updateClient({
             id,
             value,
         });
@@ -100,7 +100,7 @@ export const deleteClient = async (req, res, next) => {
     const { adminId } = req.admin;
 
     try {
-        const client = await clientService.deleteClient({
+        await clientService.deleteClient({
             id,
             adminId,
         });

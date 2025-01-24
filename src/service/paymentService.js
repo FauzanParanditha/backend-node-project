@@ -1,6 +1,7 @@
 import axios from "axios";
 import uuid4 from "uuid4";
 import logger from "../application/logger.js";
+import { broadcastPaymentUpdate } from "../application/websocket_server.js";
 import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
 import VirtualAccount from "../models/vaModel.js";
@@ -117,11 +118,17 @@ export const callbackPaylabs = async ({ payload }) => {
                 }
 
                 await order.save();
+
+                // Broadcast the payment update to all connected clients
+                broadcastPaymentUpdate({ paymentId: sanitizedPaymentId, status: "paid" });
                 break;
 
             case "09": // Payment failed
                 order.paymentStatus = "failed";
                 await order.save();
+
+                // Broadcast the payment update to all connected clients
+                broadcastPaymentUpdate({ paymentId: sanitizedPaymentId, status: "failed" });
                 break;
 
             default:

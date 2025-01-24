@@ -1,6 +1,6 @@
-import { productValidationSchema } from "../validators/productValidator.js";
-import * as productService from "../service/productService.js";
 import logger from "../application/logger.js";
+import * as productService from "../service/productService.js";
+import { productValidationSchema } from "../validators/productValidator.js";
 
 export const products = async (req, res, next) => {
     const { query = "", limit = 10, page = 1, sort_by = "_id", sort = -1, countOnly = false } = req.query;
@@ -49,7 +49,7 @@ export const createProduct = async (req, res, next) => {
             });
         }
 
-        const product = await productService.createProduct({ req, adminId });
+        await productService.createProduct({ req, adminId });
 
         return res.status(201).json({
             success: true,
@@ -97,7 +97,7 @@ export const updateProduct = async (req, res, next) => {
             });
         }
 
-        const product = await productService.updateProduct({
+        await productService.updateProduct({
             id,
             adminId,
             value,
@@ -119,7 +119,7 @@ export const deleteProduct = async (req, res, next) => {
     const { adminId } = req.admin;
 
     try {
-        const product = await productService.deleteProduct({ id, adminId });
+        await productService.deleteProduct({ id, adminId });
 
         return res.status(200).json({
             success: true,

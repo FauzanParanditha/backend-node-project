@@ -38,7 +38,7 @@ export const register = async (req, res, next) => {
         const { error } = registerSchema.validate({ email, password, fullName });
         if (error) return res.status(400).json({ success: false, message: error.details[0].message });
 
-        const admin = await adminService.registerAdmin({
+        await adminService.registerAdmin({
             email,
             password,
             fullName,
@@ -80,7 +80,7 @@ export const updateAdmin = async (req, res, next) => {
             });
         }
 
-        const admin = await adminService.updateAdmin({
+        await adminService.updateAdmin({
             id,
             value,
         });

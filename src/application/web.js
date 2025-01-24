@@ -50,7 +50,7 @@ web.use(apiLogger);
 web.use(
     "/public",
     express.static(path.join(__dirname, "../public"), {
-        setHeaders: (res, path) => {
+        setHeaders: (res) => {
             res.set("Cross-Origin-Resource-Policy", "cross-origin"); // Add CORP header
         },
     }),
@@ -153,7 +153,7 @@ web.post("/callback", (req, res) => {
 
 web.get("/me", jwtMiddlewareAdmin, async (req, res, next) => {
     try {
-        const { adminId, verified } = req.admin;
+        const { adminId } = req.admin;
         if (!adminId) throw new ResponseError(400, "Admin ID not provided");
 
         const existAdmin = await Admin.findById(adminId);

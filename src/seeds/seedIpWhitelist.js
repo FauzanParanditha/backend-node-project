@@ -1,9 +1,8 @@
+import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { connectDB } from "../application/db.js";
 import logger from "../application/logger.js";
 import Admin from "../models/adminModel.js";
-import dotenv from "dotenv";
-import { doHash } from "../utils/helper.js";
 import IPWhitelist from "../models/ipWhitelistModel.js";
 
 dotenv.config();

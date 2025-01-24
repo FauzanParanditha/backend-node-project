@@ -1,15 +1,15 @@
 import request from "supertest";
-import { closeMongo, login, setupMongo } from "../setup-test.js";
 import { web } from "../../src/application/web.js";
 import ApiLog from "../../src/models/apiLogModel.js";
+import { closeMongo, login, setupMongo } from "../setup-test.js";
 
 describe("GET /api/adm/apilogs", () => {
-    let authToken, me;
+    let authToken;
     beforeAll(async () => {
         await setupMongo();
         const loginResult = await login();
         authToken = loginResult.authToken;
-        me = loginResult.me._id;
+        // me = loginResult.me._id;
     });
     afterAll(async () => {
         await closeMongo();
@@ -54,7 +54,7 @@ describe("GET /api/adm/apilogs", () => {
 
     it("should handle pagination parameters", async () => {
         await ApiLog.insertMany(
-            Array.from({ length: 50 }, (_, i) => ({
+            Array.from({ length: 50 }, (_) => ({
                 method: "POST",
                 endpoint: "/api/adm/apilogs",
                 headers: {

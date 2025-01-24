@@ -1,9 +1,9 @@
-import request from "supertest";
+import { MongoMemoryServer } from "mongodb-memory-server";
 import mongoose from "mongoose";
+import request from "supertest";
 import { web } from "../src/application/web.js";
 import { registerAdmin } from "../src/service/adminService.js";
 import { createIpWhitelist } from "../src/service/ipWhitelistService.js";
-import { MongoMemoryServer } from "mongodb-memory-server";
 
 let mongoServer;
 
@@ -34,7 +34,7 @@ export const login = async () => {
         fullName: "New Admin",
     });
 
-    const ip = await createIpWhitelist({
+    await createIpWhitelist({
         adminId: result._id,
         ipAddress: "::ffff:127.0.0.1",
     });
