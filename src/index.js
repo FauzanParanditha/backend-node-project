@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { connectDB } from "./application/db.js";
 import logger, { flushLogsAndExit } from "./application/logger.js";
 import { web } from "./application/web.js";
+import { wss } from "./application/websocket_server.js";
 
 export let serverIsClosing = false;
 export let activeTask = 0;
@@ -46,6 +47,9 @@ function handleShutdownGracefully(signal) {
             logger.debug(`Active tasks count: ${activeTask}`);
 
             if (activeTask === 0) {
+                wss.close(() => {
+                    logger.info("WebSocket server closed");
+                });
                 clearInterval(shutdownInterval); // Stop the interval once all tasks are done
                 logger.info("All active tasks completed. Proceeding with shutdown...");
 
