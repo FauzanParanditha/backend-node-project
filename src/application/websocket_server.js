@@ -1,6 +1,8 @@
 import { WebSocket, WebSocketServer } from "ws";
 import logger from "./logger.js";
+
 const PORT = 5001;
+const heartbeatInterval = 30000;
 
 export const wss = new WebSocketServer({ port: PORT });
 
@@ -24,6 +26,17 @@ export const broadcastPaymentUpdate = (data) => {
 wss.on("connection", (ws) => {
     logger.info("New client connected");
 
+    // Set up a heartbeat
+    const interval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.ping(); // Send a ping to the client
+        }
+    }, heartbeatInterval);
+
+    ws.on("pong", () => {
+        logger.info("Received pong from client");
+    });
+
     ws.on("message", (message) => {
         try {
             const parsedMessage = JSON.parse(message);
@@ -38,6 +51,7 @@ wss.on("connection", (ws) => {
 
     ws.on("close", () => {
         logger.info("Client disconnected");
+        clearInterval(interval);
     });
 });
 
