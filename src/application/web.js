@@ -55,6 +55,14 @@ web.use(
         },
     }),
 );
+web.use(
+    helmet.contentSecurityPolicy({
+        directives: {
+            defaultSrc: ["'self'"],
+            connectSrc: ["https:", "wss://wss.api.pg.pandi.id"],
+        },
+    }),
+);
 
 // Define the rate limit rule
 const limiter = rateLimit({
