@@ -161,7 +161,7 @@ router.post("/order/webhook/xendit", xenditCallback);
  *       401:
  *         description: Unauthorized
  */
-router.get("/order/:id", jwtMiddlewareAdmin, order);
+router.get("/order/:id", jwtMiddlewareVerify, order);
 
 router.put("/order/:id", jwtMiddlewareAdmin, editOrder);
 router.get("/xendit/balance", jwtMiddlewareAdmin, balance);

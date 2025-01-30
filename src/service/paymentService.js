@@ -94,6 +94,33 @@ export const callbackPaylabs = async ({ payload }) => {
         const currentDateTime = new Date();
         const expiredDateTime = convertToDate(order.paymentExpired);
 
+        // Prepare response payload and headers
+        const responsePayload = (errorCode, errCodeDes) => ({
+            merchantId: process.env.PAYLABS_MERCHANT_ID,
+            requestId: generateRequestId(),
+            errCode: errorCode || notificationData.errCode,
+            ...(errCodeDes && { errCodeDes }),
+        });
+
+        const payloadResponse = responsePayload(0, "");
+
+        const { responseHeaders } = generateHeaders(
+            "POST",
+            "/api/order/webhook/paylabs",
+            payloadResponse,
+            generateRequestId(),
+        );
+
+        const payloadResponseError = responsePayload("orderExpired", "order expired");
+        if (currentDateTime > expiredDateTime && expiredDateTime != null) {
+            order.paymentStatus = "expired";
+
+            broadcastPaymentUpdate({ paymentId: sanitizedPaymentId, status: "expired" });
+
+            await order.save();
+            return { currentDateTime, expiredDateTime, payloadResponseError };
+        }
+
         // Process based on notification status
         switch (notificationData.status) {
             case "02": // Payment successful
@@ -134,30 +161,6 @@ export const callbackPaylabs = async ({ payload }) => {
             default:
                 logger.error(`Unhandled notification status: ${notificationData.status}`);
                 throw new ResponseError(400, "Unhandled notification status");
-        }
-
-        // Prepare response payload and headers
-        const responsePayload = (errorCode, errCodeDes) => ({
-            merchantId: process.env.PAYLABS_MERCHANT_ID,
-            requestId: generateRequestId(),
-            errCode: errorCode || notificationData.errCode,
-            ...(errCodeDes && { errCodeDes }),
-        });
-
-        const payloadResponse = responsePayload(0, "");
-
-        const { responseHeaders } = generateHeaders(
-            "POST",
-            "/api/order/webhook/paylabs",
-            payloadResponse,
-            generateRequestId(),
-        );
-
-        const payloadResponseError = responsePayload("orderExpired", "order expired");
-        if (currentDateTime > expiredDateTime && expiredDateTime != null) {
-            order.paymentStatus = "expired";
-            await order.save();
-            return { currentDateTime, expiredDateTime, payloadResponseError };
         }
 
         return { responseHeaders, payloadResponse };

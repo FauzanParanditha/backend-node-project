@@ -163,6 +163,7 @@ export const createOrderLink = async ({ validatedOrder, partnerId }) => {
             clientId: partnerId.clientId,
             ...(validatedOrder.paymentType && { paymentType: validatedOrder.paymentType }),
             ...(validatedOrder.storeId && { storeId: validatedOrder.storeId }),
+            expired: Math.floor((Date.now() + 30 * 60 * 1000) / 1000),
         };
 
         // Encrypt orderData if necessary
