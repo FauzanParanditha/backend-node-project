@@ -33,6 +33,7 @@ export const getAllAdmin = async (req, res, next) => {
 
 export const register = async (req, res, next) => {
     const { email, password, fullName } = req.body;
+    const { adminId } = req.admin;
 
     try {
         const { error } = registerSchema.validate({ email, password, fullName });
@@ -42,6 +43,7 @@ export const register = async (req, res, next) => {
             email,
             password,
             fullName,
+            adminId,
         });
         res.status(201).json({ success: true, message: "Registered successfully" });
     } catch (error) {
@@ -70,6 +72,7 @@ export const admin = async (req, res, next) => {
 export const updateAdmin = async (req, res, next) => {
     const { id } = req.params;
     const { fullName } = req.body;
+    const { adminId } = req.admin;
 
     try {
         const { error, value } = updateAdminSchema.validate({ fullName });
@@ -83,6 +86,7 @@ export const updateAdmin = async (req, res, next) => {
         await adminService.updateAdmin({
             id,
             value,
+            adminId,
         });
 
         return res.status(200).json({
@@ -97,9 +101,10 @@ export const updateAdmin = async (req, res, next) => {
 
 export const deleteAdmin = async (req, res, next) => {
     const { id } = req.params;
+    const { adminId } = req.admin;
 
     try {
-        await adminService.deleteAdminById(id);
+        await adminService.deleteAdminById(id, adminId);
         return res.status(200).json({
             success: true,
             message: "Successfully deleted admin",

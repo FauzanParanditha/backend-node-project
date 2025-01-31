@@ -33,6 +33,7 @@ export const getAllUser = async (req, res, next) => {
 
 export const register = async (req, res, next) => {
     const { email, password, fullName } = req.body;
+    const { adminId } = req.admin;
 
     try {
         const { error } = registerSchema.validate({ email, password, fullName });
@@ -42,6 +43,7 @@ export const register = async (req, res, next) => {
             email,
             password,
             fullName,
+            adminId,
         });
         res.status(201).json({ success: true, message: "Registered successfully" });
     } catch (error) {
@@ -70,6 +72,7 @@ export const user = async (req, res, next) => {
 export const updateUser = async (req, res, next) => {
     const { id } = req.params;
     const { fullName } = req.body;
+    const { adminId } = req.admin;
 
     try {
         const { error, value } = updateUserSchema.validate({ fullName });
@@ -83,6 +86,7 @@ export const updateUser = async (req, res, next) => {
         await userService.updateUser({
             id,
             value,
+            adminId,
         });
 
         return res.status(200).json({
@@ -97,9 +101,10 @@ export const updateUser = async (req, res, next) => {
 
 export const deleteUser = async (req, res, next) => {
     const { id } = req.params;
+    const { adminId } = req.admin;
 
     try {
-        await userService.deleteUserById(id);
+        await userService.deleteUserById(id, adminId);
         return res.status(200).json({
             success: true,
             message: "Successfully deleted user",

@@ -1,9 +1,8 @@
 import jwt from "jsonwebtoken";
 import { ResponseError } from "../error/responseError.js";
-import transport from "../middlewares/sendMail.js";
 import Admin from "../models/adminModel.js";
 import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
-import { generateForgotPasswordLink, sendForgotPasswordEmail } from "./sendMail.js";
+import { generateForgotPasswordLink, sendForgotPasswordEmail, sendVerifiedEmail } from "./sendMail.js";
 
 export const loginAdmin = async ({ email, password }) => {
     const sanitizedEmail = email.trim();
@@ -37,15 +36,17 @@ export const sendVerificationCodeService = async (email) => {
 
     if (existAdmin.verified) throw new ResponseError(400, "Admin is already verified!");
 
-    const codeValue = Math.floor(Math.random() * 1000000).toString();
-    const info = await transport.sendMail({
-        from: process.env.MAIL_ADDRESS,
-        to: existAdmin.email,
-        subject: "Verification code",
-        html: `<h1>${codeValue}</h1>`,
-    });
+    const codeValue = Math.floor(100000 + Math.random() * 900000).toString();
+    await sendVerifiedEmail(codeValue, existAdmin.email, existAdmin.fullName);
 
-    if (info.accepted[0] !== existAdmin.email) throw new ResponseError(400, "Code sent failed!");
+    // const info = await transport.sendMail({
+    //     from: process.env.MAIL_ADDRESS,
+    //     to: existAdmin.email,
+    //     subject: "Verification code",
+    //     html: `<h1>${codeValue}</h1>`,
+    // });
+
+    // if (info.accepted[0] !== existAdmin.email) throw new ResponseError(400, "Code sent failed!");
 
     existAdmin.verificationCode = hmacProcess(codeValue, process.env.HMAC_VERIFICATION_CODE);
     existAdmin.verificationCodeValidation = Date.now();

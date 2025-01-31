@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get("/users", jwtMiddlewareAdmin, getAllUser);
 router.get("/user/:id", jwtMiddlewareAdmin, user);
-router.post("/register", register);
+router.post("/register", jwtMiddlewareAdmin, register);
 router.put("/user/:id", jwtMiddlewareAdmin, updateUser);
 router.delete("/user/:id", jwtMiddlewareAdmin, deleteUser);
 

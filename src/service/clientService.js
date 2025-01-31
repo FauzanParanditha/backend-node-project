@@ -1,4 +1,5 @@
 import { ResponseError } from "../error/responseError.js";
+import Admin from "../models/adminModel.js";
 import Client from "../models/clientModel.js";
 import User from "../models/userModel.js";
 import { escapeRegExp } from "../utils/helper.js";
@@ -54,10 +55,15 @@ export const createClient = async ({ value }) => {
     const existClient = await Client.findOne({ name: { $eq: value.name } });
     if (existClient) throw new ResponseError(400, "Client already exists!");
 
-    const clientId = await generateUniqueClientId();
+    const verifiedAdmin = await Admin.findOne({ _id: value.adminId });
+    if (!verifiedAdmin.verified) {
+        throw new ResponseError(400, `Admin is not verified`);
+    }
 
     const existUser = await User.findOne({ _id: value.userId });
     if (!existUser) throw new ResponseError(400, "User is not registerd!");
+
+    const clientId = await generateUniqueClientId();
 
     const newClient = new Client({
         name: value.name,
@@ -89,6 +95,11 @@ export const updateClient = async ({ id, value }) => {
 
     if (existClient.adminId.toString() != value.adminId) throw new ResponseError(401, "Unauthorized!");
 
+    const verifiedAdmin = await Admin.findOne({ _id: value.adminId });
+    if (!verifiedAdmin.verified) {
+        throw new ResponseError(400, `Admin is not verified`);
+    }
+
     // Sanitize the input
     const sanitizedName = value.name.trim();
 
@@ -110,6 +121,11 @@ export const updateClient = async ({ id, value }) => {
 export const deleteClient = async ({ id, adminId }) => {
     const existClient = await Client.findOne({ _id: id });
     if (!existClient) throw new ResponseError(404, "Client does not exist!");
+
+    const verifiedAdmin = await Admin.findOne({ _id: adminId });
+    if (!verifiedAdmin.verified) {
+        throw new ResponseError(400, `Admin is not verified`);
+    }
 
     // if (existClient.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
 

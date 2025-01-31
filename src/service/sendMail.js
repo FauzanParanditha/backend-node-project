@@ -61,6 +61,41 @@ export const sendForgotPasswordEmail = async (url, emailTo, name) => {
     }
 };
 
+// Send the verify email
+export const sendVerifiedEmail = async (code, emailTo, name) => {
+    try {
+        const templateSource = fs.readFileSync("./src/application/mail/email.html", "utf8");
+        const template = compile(templateSource);
+
+        const body = `  
+        <table class="message mt-2">  
+            <tr class="text-left">  
+                <td><strong>Hello, ${name}</strong></td>  
+            </tr>  
+            <tr class="text-center">  
+                <td>  
+                    <p>This is your verification code:</p>  
+                    <p class="text-blue" style="font-size: 24px; font-weight: bold;">${code}</p>  
+                    <p>Please enter this code to verify your account.</p>  
+                    <p>If you did not request this, <span class="text-red">IGNORE THIS EMAIL</span></p>
+                </td>  
+            </tr>  
+        </table>`;
+
+        const emailHtml = template({ Body: body });
+        const mailData = {
+            to: emailTo,
+            subject: "Verification",
+            body: encodeToBase64(emailHtml),
+        };
+
+        await sendEmail(mailData);
+    } catch (error) {
+        logger.error("Error sending forgot password email:", error);
+        throw new Error("Failed to send forgot password email.");
+    }
+};
+
 // Send email using the configured mail service
 export const sendEmail = async (mailData) => {
     validateMailConfig(); // Validate mail configuration

@@ -1,4 +1,5 @@
 import { ResponseError } from "../error/responseError.js";
+import Admin from "../models/adminModel.js";
 import IPWhitelist from "../models/ipWhitelistModel.js";
 import { escapeRegExp } from "../utils/helper.js";
 
@@ -54,6 +55,11 @@ export const createIpWhitelist = async ({ value }) => {
     });
     if (existIpWhitelist) throw new ResponseError(400, `IpAddress ${value.ipAddress} already exist!`);
 
+    const verifiedAdmin = await Admin.findOne({ _id: value.adminId });
+    if (!verifiedAdmin.verified) {
+        throw new ResponseError(400, `Admin is not verified`);
+    }
+
     const newIP = new IPWhitelist({ adminId: value.adminId, ipAddress: value.ipAddress });
     const result = await newIP.save();
 
@@ -74,6 +80,11 @@ export const updateIpWhitelist = async ({ id, value }) => {
     if (!existIpWhitelist) throw new ResponseError(404, "IpAddress does not exist!");
     if (existIpWhitelist.adminId.toString() != value.adminId) throw new ResponseError(401, "Unauthorized!");
 
+    const verifiedAdmin = await Admin.findOne({ _id: value.adminId });
+    if (!verifiedAdmin.verified) {
+        throw new ResponseError(400, `Admin is not verified`);
+    }
+
     // Sanitize the input
     const sanitizedipAddress = value.ipAddress.trim();
 
@@ -92,6 +103,11 @@ export const deleteIpWhitelist = async ({ id, adminId }) => {
     if (!existIpWhitelist) throw new ResponseError(404, "IpWhitelist does not exist!");
 
     if (existIpWhitelist.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
+
+    const verifiedAdmin = await Admin.findOne({ _id: value.adminId });
+    if (!verifiedAdmin.verified) {
+        throw new ResponseError(400, `Admin is not verified`);
+    }
 
     await IPWhitelist.deleteOne({ _id: id });
     return true;

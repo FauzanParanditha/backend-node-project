@@ -2,6 +2,7 @@ import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { ResponseError } from "../error/responseError.js";
+import Admin from "../models/adminModel.js";
 import AvailablePayment from "../models/availablePaymentModel.js";
 import { escapeRegExp } from "../utils/helper.js";
 
@@ -61,6 +62,11 @@ export const createAvailablePayment = async ({ req, adminId }) => {
     const existingAvailablePayment = await AvailablePayment.findOne({ name: { $eq: name } });
     if (existingAvailablePayment) throw new ResponseError(400, "Available Payment already exist!");
 
+    const verifiedAdmin = await Admin.findOne({ _id: adminId });
+    if (!verifiedAdmin.verified) {
+        throw new ResponseError(400, `Admin is not verified`);
+    }
+
     // Check if an image was uploaded
     if (!req.file) throw new ResponseError(400, "Image is required!");
 
@@ -91,6 +97,11 @@ export const updateAvailablePayment = async ({ id, adminId, value, req }) => {
     if (!existingAvailablePayment) throw new ResponseError(404, "AvailablePayment does not exist!");
 
     if (existingAvailablePayment.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
+
+    const verifiedAdmin = await Admin.findOne({ _id: adminId });
+    if (!verifiedAdmin.verified) {
+        throw new ResponseError(400, `Admin is not verified`);
+    }
 
     // Prepare the update data
     const updateData = {
@@ -129,6 +140,11 @@ export const deleteAvailablepayment = async ({ id, adminId }) => {
     if (!availablePayment) throw new ResponseError(404, "Available payment does not exist!");
 
     if (availablePayment.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
+
+    const verifiedAdmin = await Admin.findOne({ _id: adminId });
+    if (!verifiedAdmin.verified) {
+        throw new ResponseError(400, `Admin is not verified`);
+    }
 
     // Delete the associated image file
     try {

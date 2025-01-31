@@ -47,11 +47,16 @@ export const getAllAdmins = async ({ query, limit, page, sort_by, sort, countOnl
     };
 };
 
-export const registerAdmin = async ({ email, password, fullName }) => {
+export const registerAdmin = async ({ email, password, fullName, adminId }) => {
     const sanitizedEmail = email.trim();
 
     const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
     if (existAdmin) throw new ResponseError(400, "Admin already exists!");
+
+    const verifiedAdmin = await Admin.findOne({ _id: adminId });
+    if (!verifiedAdmin.verified) {
+        throw new ResponseError(400, `Admin is not verified`);
+    }
 
     const hashPassword = await doHash(password, 12);
     const newAdmin = new Admin({ email, password: hashPassword, fullName });
@@ -66,26 +71,39 @@ export const admin = async ({ id }) => {
     return result;
 };
 
-export const updateAdmin = async ({ id, value }) => {
+export const updateAdmin = async ({ id, value, adminId }) => {
     const existAdmin = await Admin.findOne({ _id: id });
     if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
+
+    const verifiedAdmin = await Admin.findOne({ _id: adminId });
+    if (!verifiedAdmin.verified) {
+        throw new ResponseError(400, `Admin is not verified`);
+    }
 
     // Sanitize the input
     const sanitizedadmin = value.fullName.trim();
 
-    const existingAdmin = await Admin.findOne({
-        fullName: { $eq: sanitizedadmin },
-    });
-    if (existingAdmin) throw new ResponseError(400, `Admin ${value.fullName} already exist!`);
+    if (existAdmin.fullName != value.fullName) {
+        const existingAdmin = await Admin.findOne({
+            fullName: { $eq: sanitizedadmin },
+        });
+        if (existingAdmin) throw new ResponseError(400, `Admin ${value.fullName} already exist!`);
+    }
 
     existAdmin.fullName = value.fullName;
     const result = await existAdmin.save();
     return result;
 };
 
-export const deleteAdminById = async (id) => {
+export const deleteAdminById = async (id, adminId) => {
     const existAdmin = await Admin.findById(id);
     if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
+
+    const verifiedAdmin = await Admin.findOne({ _id: adminId });
+    if (!verifiedAdmin.verified) {
+        throw new ResponseError(400, `Admin is not verified`);
+    }
+
     await Admin.deleteOne({ _id: id });
     return { success: true, message: "successfully deleted admin" };
 };

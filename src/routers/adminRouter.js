@@ -8,7 +8,7 @@ const router = express.Router();
 
 router.get("/admins", jwtMiddlewareAdmin, getAllAdmin);
 router.get("/admin/:id", jwtMiddlewareAdmin, admin);
-router.post("/register", register);
+router.post("/register", jwtMiddlewareAdmin, register);
 router.put("/admin/:id", jwtMiddlewareAdmin, updateAdmin);
 router.delete("/admin/:id", jwtMiddlewareAdmin, deleteAdmin);
 
