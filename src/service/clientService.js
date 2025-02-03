@@ -1,6 +1,7 @@
 import { ResponseError } from "../error/responseError.js";
 import Admin from "../models/adminModel.js";
 import Client from "../models/clientModel.js";
+import Order from "../models/orderModel.js";
 import User from "../models/userModel.js";
 import { escapeRegExp } from "../utils/helper.js";
 
@@ -63,7 +64,7 @@ export const createClient = async ({ value }) => {
     const existUser = await User.findOne({ _id: value.userId });
     if (!existUser) throw new ResponseError(400, "User is not registerd!");
 
-    const clientId = await generateUniqueClientId();
+    const clientId = await generateUniqueClientId(value.name);
 
     const newClient = new Client({
         name: value.name,
@@ -127,31 +128,47 @@ export const deleteClient = async ({ id, adminId }) => {
         throw new ResponseError(400, `Admin is not verified`);
     }
 
+    const haveOrder = await Order.findOne({ clientId: existClient.clientId });
+    if (haveOrder) throw new ResponseError(400, "This Client Have Order");
+
     // if (existClient.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
 
     await Client.deleteOne({ _id: id });
     return true;
 };
 
-export async function generateUniqueClientId() {
-    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const numbers = "0123456789";
+export async function generateUniqueClientId(name) {
     const maxRetries = 10;
 
+    // Normalisasi nama: hapus karakter khusus, ubah ke huruf besar
+    let sanitizedPrefix = name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+
+    // Ambil 3 huruf pertama atau tambahkan huruf jika kurang
+    let shortName = sanitizedPrefix.slice(0, 3);
+    while (shortName.length < 3) {
+        shortName += "X"; // Tambahkan 'X' jika kurang dari 3 huruf
+    }
+
     for (let i = 0; i < maxRetries; i++) {
-        let alphabetPart = Array.from({ length: 5 }, () =>
-            letters.charAt(Math.floor(Math.random() * letters.length)),
-        ).join("");
+        // Cari jumlah klien yang sudah ada dengan prefix yang sama
+        const existingClients = await Client.find({ clientId: new RegExp(`^${shortName}-\\d{3}$`) })
+            .sort({ clientId: -1 }) // Ambil ID terbesar
+            .limit(1)
+            .select("+clientId");
 
-        let numericPart = Array.from({ length: 6 }, () =>
-            numbers.charAt(Math.floor(Math.random() * numbers.length)),
-        ).join("");
+        let nextNumber = "001"; // Default jika belum ada ID
+        if (existingClients.length > 0) {
+            // Ambil angka terakhir dan tambahkan 1
+            const lastNumber = parseInt(existingClients[0].clientId.split("-")[1], 10);
+            nextNumber = String(lastNumber + 1).padStart(3, "0");
+        }
 
-        const clientId = alphabetPart + numericPart;
+        const newClientId = `${shortName}-${nextNumber}`;
 
-        const existingClient = await Client.findOne({ clientId });
-        if (!existingClient) {
-            return clientId;
+        // Pastikan ID belum ada (redundansi untuk keamanan)
+        const exists = await Client.findOne({ clientId: newClientId });
+        if (!exists) {
+            return newClientId;
         }
     }
 
