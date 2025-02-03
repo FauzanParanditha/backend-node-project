@@ -155,7 +155,9 @@ export const validateOrderProducts = async (products, paymentType = "DEFAULT", t
 export function generateOrderId(clientId) {
     const randomXXX = Math.floor(100 + Math.random() * 900);
     const formattedClientId = clientId.replace("-", "");
-    const datePart = dayjs().format("YYYYMMDD");
+    const date = new Date();
+    const datePart =
+        date.getFullYear() + String(date.getMonth() + 1).padStart(2, "0") + String(date.getDate()).padStart(2, "0");
 
     return `${formattedClientId}${datePart}${randomXXX}`;
 }
