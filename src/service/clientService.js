@@ -141,29 +141,46 @@ export async function generateUniqueClientId(name) {
     const maxRetries = 10;
 
     // Normalisasi nama: hapus karakter khusus, ubah ke huruf besar
-    let sanitizedPrefix = name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+    let sanitizedName = name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-    // Ambil 3 huruf pertama atau tambahkan huruf jika kurang
-    let shortName = sanitizedPrefix.slice(0, 3);
+    // Ambil 3 huruf pertama atau tambahkan 'X' jika kurang
+    let shortName = sanitizedName.slice(0, 3);
     while (shortName.length < 3) {
         shortName += "X"; // Tambahkan 'X' jika kurang dari 3 huruf
     }
 
+    // Cek apakah prefix 3 huruf ini sudah digunakan
+    const existingClients = await Client.find({ clientId: new RegExp(`^${shortName}-\\d{3}$`) });
+
+    let finalPrefix;
+    if (existingClients.length === 0) {
+        // Jika belum ada yang menggunakan prefix ini, gunakan langsung
+        finalPrefix = shortName;
+    } else {
+        // Jika sudah ada, gunakan huruf pertama, tengah, dan terakhir
+        let firstChar = sanitizedName[0] || "X";
+        let middleChar = sanitizedName[Math.floor(sanitizedName.length / 2)] || "Y";
+        let lastChar = sanitizedName[sanitizedName.length - 1] || "Z";
+
+        finalPrefix = `${firstChar}${middleChar}${lastChar}`;
+    }
+
     for (let i = 0; i < maxRetries; i++) {
-        // Cari jumlah klien yang sudah ada dengan prefix yang sama
-        const existingClients = await Client.find({ clientId: new RegExp(`^${shortName}-\\d{3}$`) })
-            .sort({ clientId: -1 }) // Ambil ID terbesar
-            .limit(1)
-            .select("+clientId");
+        // Cari jumlah klien yang sudah ada dengan prefix ini
+        const existingClientsWithPrefix = await Client.find({
+            clientId: new RegExp(`^${finalPrefix}-\\d{3}$`),
+        })
+            .sort({ clientId: -1 })
+            .limit(1);
 
         let nextNumber = "001"; // Default jika belum ada ID
-        if (existingClients.length > 0) {
+        if (existingClientsWithPrefix.length > 0) {
             // Ambil angka terakhir dan tambahkan 1
-            const lastNumber = parseInt(existingClients[0].clientId.split("-")[1], 10);
+            const lastNumber = parseInt(existingClientsWithPrefix[0].clientId.split("-")[1], 10);
             nextNumber = String(lastNumber + 1).padStart(3, "0");
         }
 
-        const newClientId = `${shortName}-${nextNumber}`;
+        const newClientId = `${finalPrefix}-${nextNumber}`;
 
         // Pastikan ID belum ada (redundansi untuk keamanan)
         const exists = await Client.findOne({ clientId: newClientId });

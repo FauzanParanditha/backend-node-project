@@ -1,5 +1,4 @@
 import axios from "axios";
-import uuid4 from "uuid4";
 import logger from "../application/logger.js";
 import { broadcastPaymentUpdate } from "../application/websocket_server.js";
 import { ResponseError } from "../error/responseError.js";
@@ -205,7 +204,7 @@ export const callbackPaylabsVaStatic = async ({ payload }) => {
         switch (notificationData.status) {
             case "02": // Payment successful
                 await Order.create({
-                    orderId: uuid4(),
+                    orderId: generateOrderId(partnerId.clientId),
                     payer: va.payer,
                     totalAmount: notificationData.amount,
                     phoneNumber: va.phoneNumber,

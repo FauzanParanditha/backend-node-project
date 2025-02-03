@@ -1,4 +1,3 @@
-import uuid4 from "uuid4";
 import logger from "../application/logger.js";
 import { expiredXendit } from "../controllers/xenditController.js";
 import { ResponseError } from "../error/responseError.js";
@@ -106,7 +105,7 @@ export const createOrder = async ({ validatedOrder, partnerId }) => {
 
         // Construct order data
         const orderData = {
-            orderId: uuid4(),
+            orderId: generateOrderId(partnerId.clientId),
             items: validProducts,
             totalAmount,
             phoneNumber: validatedOrder.phoneNumber,

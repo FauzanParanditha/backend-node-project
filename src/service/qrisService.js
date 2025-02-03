@@ -1,5 +1,4 @@
 import axios from "axios";
-import uuid4 from "uuid4";
 import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
@@ -29,7 +28,7 @@ export const createQris = async ({ validatedProduct, partnerId }) => {
 
         // Construct order data
         const requestBodyForm = {
-            orderId: uuid4(),
+            orderId: generateOrderId(partnerId.clientId),
             userId: validatedProduct.userId,
             items: validProducts,
             totalAmount,

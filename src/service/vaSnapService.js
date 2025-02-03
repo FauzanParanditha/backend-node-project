@@ -37,7 +37,7 @@ export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
 
         // Construct order data
         const requestBodyForm = {
-            orderId: uuid4(),
+            orderId: generateOrderId(partnerId.clientId),
             userId: validatedProduct.userId,
             items: validProducts,
             totalAmount,
