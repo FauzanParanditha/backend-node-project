@@ -68,7 +68,7 @@ export const createAvailablePayment = async ({ req, adminId }) => {
     }
 
     // Check if an image was uploaded
-    if (!req.file) throw new ResponseError(400, "Image is required!");
+    // if (!req.file) throw new ResponseError(400, "Image is required!");
 
     const newAvailablePayment = new AvailablePayment({
         name: name,
