@@ -3,7 +3,7 @@ import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
 import VirtualAccount from "../models/vaModel.js";
-import { validateOrderProducts } from "../utils/helper.js";
+import { generateOrderId, validateOrderProducts } from "../utils/helper.js";
 import { validateGenerateVA, validateStaticVA, validateVaStatus } from "../validators/paymentValidator.js";
 import { generateHeaders, generateMerchantTradeNo, generateRequestId, merchantId, paylabsApiUrl } from "./paylabs.js";
 

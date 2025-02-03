@@ -4,7 +4,7 @@ import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
 import Client from "../models/clientModel.js";
 import Order from "../models/orderModel.js";
-import { validateOrderProducts } from "../utils/helper.js";
+import { generateOrderId, validateOrderProducts } from "../utils/helper.js";
 import {
     validateCreateVASNAP,
     validatedeleteVASNAP,

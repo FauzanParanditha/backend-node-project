@@ -4,7 +4,7 @@ import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
 import User from "../models/userModel.js";
 import { encryptData } from "../utils/encryption.js";
-import { calculateTotal, escapeRegExp, validateOrderProducts } from "../utils/helper.js";
+import { calculateTotal, escapeRegExp, generateOrderId, validateOrderProducts } from "../utils/helper.js";
 import { handlePaymentLink } from "./paylabs.js";
 
 export const getAllOrders = async ({ query, limit, page, sort_by, sort, countOnly }) => {

@@ -2,7 +2,7 @@ import axios from "axios";
 import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
-import { validateOrderProducts } from "../utils/helper.js";
+import { generateOrderId, validateOrderProducts } from "../utils/helper.js";
 import { cancelQrisValidator, validateQrisRequest, validateQrisStatus } from "../validators/paymentValidator.js";
 import {
     convertToDate,

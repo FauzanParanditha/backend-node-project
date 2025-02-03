@@ -2,7 +2,7 @@ import axios from "axios";
 import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
-import { validateOrderProducts } from "../utils/helper.js";
+import { generateOrderId, validateOrderProducts } from "../utils/helper.js";
 import { validateCCStatus, validateCreditCardRequest } from "../validators/paymentValidator.js";
 import { generateHeaders, generateMerchantTradeNo, generateRequestId, merchantId, paylabsApiUrl } from "./paylabs.js";
 

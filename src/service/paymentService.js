@@ -4,6 +4,7 @@ import { broadcastPaymentUpdate } from "../application/websocket_server.js";
 import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
 import VirtualAccount from "../models/vaModel.js";
+import { generateOrderId } from "../utils/helper.js";
 import { validateCallback, validateCreateLinkRequest } from "../validators/paymentValidator.js";
 import {
     convertToDate,
@@ -204,7 +205,7 @@ export const callbackPaylabsVaStatic = async ({ payload }) => {
         switch (notificationData.status) {
             case "02": // Payment successful
                 await Order.create({
-                    orderId: generateOrderId(partnerId.clientId),
+                    orderId: generateOrderId(va.clientId),
                     payer: va.payer,
                     totalAmount: notificationData.amount,
                     phoneNumber: va.phoneNumber,
