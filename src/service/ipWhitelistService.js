@@ -104,7 +104,7 @@ export const deleteIpWhitelist = async ({ id, adminId }) => {
 
     if (existIpWhitelist.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
 
-    const verifiedAdmin = await Admin.findOne({ _id: value.adminId });
+    const verifiedAdmin = await Admin.findOne({ _id: adminId });
     if (!verifiedAdmin.verified) {
         throw new ResponseError(400, `Admin is not verified`);
     }
