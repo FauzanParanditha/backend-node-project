@@ -18,6 +18,7 @@ import {
     generateMerchantTradeNo,
     generateRequestId,
     generateTimestamp,
+    generateTimestampSnap,
     merchantId,
     paylabsApiUrl,
 } from "./paylabs.js";
@@ -68,7 +69,7 @@ export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
                 value: String(requestBodyForm.totalAmount),
                 currency: "IDR",
             },
-            expiredDate: generateTimestamp(300), // 300 minutes
+            expiredDate: generateTimestampSnap(300), // 300 minutes
             additionalInfo: {
                 paymentType: requestBodyForm.paymentType,
             },

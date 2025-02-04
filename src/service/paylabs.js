@@ -31,8 +31,12 @@ export const generateTimestamp = (offsetMinutes = 0) => {
     return dayjs().add(offsetMinutes, "minute").tz("Asia/Jakarta").format("YYYY-MM-DDTHH:mm:ss.SSSZ");
 };
 
+export const generateTimestampSnap = (offsetMinutes = 0) => {
+    return dayjs().add(offsetMinutes, "minute").tz("Asia/Jakarta").format("YYYY-MM-DDTHH:mm:ssZ");
+};
+
 export const addMinutesToTimestamp = (timestamp, minutes) => {
-    return dayjs(timestamp).add(minutes, "minute").tz("Asia/Jakarta").format("YYYY-MM-DDTHH:mm:ss.SSSZ");
+    return dayjs(timestamp).add(minutes, "minute").tz("Asia/Jakarta").format("YYYY-MM-DDTHH:mm:ssZ");
 };
 
 //PAYLABS
