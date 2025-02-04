@@ -1,4 +1,7 @@
 import crypto from "crypto";
+import dayjs from "dayjs";
+import timezone from "dayjs/plugin/timezone.js";
+import utc from "dayjs/plugin/utc.js";
 import dotenv from "dotenv";
 import fs from "fs";
 import uuid4 from "uuid4";
@@ -6,6 +9,9 @@ import logger from "../application/logger.js";
 import { createXenditPaymentLink } from "../controllers/xenditController.js";
 import { ResponseError } from "../error/responseError.js";
 import { createPaymentLink } from "../service/paymentService.js";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 dotenv.config();
 export const paylabsApiUrl = process.env.PAYLABS_API_URL;
@@ -21,42 +27,12 @@ export const deriveUUID8 = (uuid12) => {
     return uuid12.slice(0, 8);
 };
 
-export const generateTimestamp = (offsetMs = 0) => {
-    // Create a new Date object and apply the offset if provided
-    const date = new Date(Date.now() + offsetMs);
-
-    // Extract date and time components
-    const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
-    const day = String(date.getDate()).padStart(2, "0");
-    const year = date.getFullYear();
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    const seconds = String(date.getSeconds()).padStart(2, "0");
-
-    // Get the timezone offset in hours and minutes
-    const timezoneOffset = -date.getTimezoneOffset();
-    const offsetHours = String(Math.floor(Math.abs(timezoneOffset) / 60)).padStart(2, "0");
-    const offsetMinutes = String(Math.abs(timezoneOffset) % 60).padStart(2, "0");
-    const offsetSign = timezoneOffset >= 0 ? "+" : "-";
-
-    // Include milliseconds only if offsetMs is zero (immediate timestamp generation)
-    const milliseconds = offsetMs === 0 ? `.${String(date.getMilliseconds()).padStart(3, "0")}` : "";
-
-    // Format the timestamp with or without milliseconds
-    const formattedTimestamp = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${milliseconds}${offsetSign}${offsetHours}:${offsetMinutes}`;
-
-    return formattedTimestamp;
+export const generateTimestamp = (offsetMinutes = 0) => {
+    return dayjs().add(offsetMinutes, "minute").tz("Asia/Jakarta").format("YYYY-MM-DDTHH:mm:ss.SSSZ");
 };
 
 export const addMinutesToTimestamp = (timestamp, minutes) => {
-    // Parse the existing timestamp to get the date object
-    const date = new Date(timestamp);
-
-    // Add the specified minutes
-    date.setMinutes(date.getMinutes() + minutes);
-
-    // Return the new timestamp in the same format using generateTimestamp
-    return generateTimestamp(date.getTime() - Date.now());
+    return dayjs(timestamp).add(minutes, "minute").tz("Asia/Jakarta").format("YYYY-MM-DDTHH:mm:ss.SSSZ");
 };
 
 //PAYLABS

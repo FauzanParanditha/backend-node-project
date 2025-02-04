@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import logger from "../application/logger.js";
 import { expiredXendit } from "../controllers/xenditController.js";
 import { ResponseError } from "../error/responseError.js";
@@ -162,7 +163,7 @@ export const createOrderLink = async ({ validatedOrder, partnerId }) => {
             clientId: partnerId.clientId,
             ...(validatedOrder.paymentType && { paymentType: validatedOrder.paymentType }),
             ...(validatedOrder.storeId && { storeId: validatedOrder.storeId }),
-            expired: Math.floor((Date.now() + 30 * 60 * 1000) / 1000),
+            expired: Math.floor(dayjs().add(30, "minute").valueOf() / 1000),
         };
 
         // Encrypt orderData if necessary
