@@ -1,6 +1,6 @@
-import { orderSchema, vaStaticSchema } from "../validators/orderValidator.js";
-import * as vaService from "../service/vaService.js";
 import logger from "../application/logger.js";
+import * as vaService from "../service/vaService.js";
+import { orderSchema, vaStaticSchema } from "../validators/orderValidator.js";
 
 export const createVA = async (req, res, next) => {
     const partnerId = req.partnerId;
@@ -20,7 +20,8 @@ export const createVA = async (req, res, next) => {
             paymentId: response.data.merchantTradeNo,
             totalAmount: response.data.amount,
             storeId: response.data.storeId,
-            orderId: result._id,
+            orderId: result.clientId,
+            id: result._id,
         });
     } catch (error) {
         // Handle unexpected errors

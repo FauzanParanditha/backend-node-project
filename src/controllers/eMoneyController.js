@@ -1,6 +1,6 @@
-import { orderSchema, refundSchema } from "../validators/orderValidator.js";
-import * as eMoneyService from "../service/eMoneyService.js";
 import logger from "../application/logger.js";
+import * as eMoneyService from "../service/eMoneyService.js";
+import { orderSchema, refundSchema } from "../validators/orderValidator.js";
 
 export const createEMoney = async (req, res, next) => {
     const partnerId = req.partnerId;
@@ -23,7 +23,8 @@ export const createEMoney = async (req, res, next) => {
             paymentId: response.data.merchantTradeNo,
             totalAmount: response.data.amount,
             storeId: response.data.storeId,
-            orderId: result._id,
+            orderId: result.clientId,
+            id: result._id,
         });
     } catch (error) {
         // Handle unexpected errors

@@ -1,6 +1,6 @@
-import { orderSchema } from "../validators/orderValidator.js";
-import * as ccService from "../service/ccService.js";
 import logger from "../application/logger.js";
+import * as ccService from "../service/ccService.js";
+import { orderSchema } from "../validators/orderValidator.js";
 
 export const createCreditCard = async (req, res, next) => {
     const partnerId = req.partnerId;
@@ -20,7 +20,8 @@ export const createCreditCard = async (req, res, next) => {
             paymentId: response.data.merchantTradeNo,
             totalAmount: response.data.amount,
             storeId: response.data.storeId,
-            orderId: result._id,
+            orderId: result.clientId,
+            id: result._id,
         });
     } catch (error) {
         // Handle unexpected errors

@@ -1,7 +1,7 @@
-import { orderSchema } from "../validators/orderValidator.js";
-import * as qrisService from "../service/qrisService.js";
 import logger from "../application/logger.js";
 import { forwardCallback } from "../service/forwadCallback.js";
+import * as qrisService from "../service/qrisService.js";
+import { orderSchema } from "../validators/orderValidator.js";
 
 export const createQris = async (req, res, next) => {
     const partnerId = req.partnerId;
@@ -23,7 +23,8 @@ export const createQris = async (req, res, next) => {
             paymentId: response.data.merchantTradeNo,
             totalAmount: response.data.amount,
             storeId: response.data.storeId,
-            orderId: result._id,
+            orderId: result.clientId,
+            id: result._id,
         });
     } catch (error) {
         // Handle unexpected errors
