@@ -42,7 +42,6 @@ web.use(
         credentials: true,
     }),
 );
-web.set("trust proxy", true);
 web.use(helmet());
 web.use(cookieParser());
 web.use(express.json());
