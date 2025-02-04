@@ -76,7 +76,7 @@ export const createOrder = async (req, res, next) => {
             paymentLink: paymentLink.paymentLink,
             paymentId: paymentLink.paymentId,
             storeId: paymentLink.storeId,
-            orderId: result.clientId,
+            orderId: result.orderId,
             id: result._id,
         });
     } catch (error) {
@@ -134,7 +134,7 @@ export const editOrder = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             message: "order updated successfully",
-            orderId: result.clientId,
+            orderId: result.orderId,
             id: result._id,
             paymentLink: result.paymentLink,
         });

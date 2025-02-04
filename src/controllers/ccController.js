@@ -20,7 +20,7 @@ export const createCreditCard = async (req, res, next) => {
             paymentId: response.data.merchantTradeNo,
             totalAmount: response.data.amount,
             storeId: response.data.storeId,
-            orderId: result.clientId,
+            orderId: result.orderId,
             id: result._id,
         });
     } catch (error) {
