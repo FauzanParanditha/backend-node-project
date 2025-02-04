@@ -2,7 +2,8 @@ import { WebSocket, WebSocketServer } from "ws";
 import logger from "./logger.js";
 
 const PORT = 5001;
-const heartbeatInterval = 30000;
+const HEARTBEAT_INTERVAL = 30000;
+const TIMEOUT = 35000; // Time after which a client is considered inactive
 
 export const wss = new WebSocketServer({ port: PORT });
 
@@ -16,7 +17,7 @@ export const broadcastPaymentUpdate = (data) => {
                 if (error) {
                     logger.error(`Error sending message: ${error.message}`);
                 } else {
-                    logger.info(`Message successfully sent: ${message}`);
+                    logger.info(`Message successfully sent to client`);
                 }
             });
         }
@@ -26,23 +27,37 @@ export const broadcastPaymentUpdate = (data) => {
 wss.on("connection", (ws) => {
     logger.info("New client connected");
 
-    // Set up a heartbeat
-    const interval = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) {
-            ws.ping(); // Send a ping to the client
+    // Store last pong timestamp for heartbeat check
+    ws.isAlive = true;
+
+    // Heartbeat function to detect disconnected clients
+    const heartbeat = () => {
+        if (!ws.isAlive) {
+            logger.warn("Client is unresponsive, terminating connection...");
+            return ws.terminate();
         }
-    }, heartbeatInterval);
+        ws.isAlive = false; // Mark as unresponsive until pong is received
+        ws.ping(); // Send a ping to check if client is still active
+    };
+
+    const interval = setInterval(heartbeat, HEARTBEAT_INTERVAL);
 
     ws.on("pong", () => {
+        ws.isAlive = true;
         logger.info("Received pong from client");
     });
 
     ws.on("message", (message) => {
         try {
             const parsedMessage = JSON.parse(message);
-            logger.info(`Received: ${message}`);
-            // Add logic based on parsedMessage.type
-            ws.send(`Server received: ${parsedMessage}`);
+            logger.info(`Received message from client: ${message}`);
+
+            // Example: handle messages based on type
+            if (parsedMessage.type === "ping") {
+                ws.send(JSON.stringify({ type: "pong" }));
+            } else {
+                ws.send(`Server received: ${parsedMessage}`);
+            }
         } catch (error) {
             logger.error(`Error processing message: ${error.message}`);
             ws.send(JSON.stringify({ error: "Invalid message format" }));
@@ -51,7 +66,11 @@ wss.on("connection", (ws) => {
 
     ws.on("close", () => {
         logger.info("Client disconnected");
-        clearInterval(interval);
+        clearInterval(interval); // Ensure heartbeat interval is cleared
+    });
+
+    ws.on("error", (error) => {
+        logger.error(`WebSocket error: ${error.message}`);
     });
 });
 
@@ -59,4 +78,4 @@ wss.on("error", (error) => {
     logger.error(`WebSocket server error: ${error.message}`);
 });
 
-logger.info(`WebSocket server is running on ${PORT}`);
+logger.info(`WebSocket server is running on port ${PORT}`);
