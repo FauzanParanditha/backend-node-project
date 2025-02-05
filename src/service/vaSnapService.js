@@ -478,7 +478,7 @@ export const deleteVASNAP = async ({ id, validatedUpdateData, req }) => {
             partnerServiceId: existingOrder.vaSnap.virtualAccountData.partnerServiceId,
             customerNo: existingOrder.vaSnap.virtualAccountData.customerNo,
             virtualAccountNo: existingOrder.vaSnap.virtualAccountData.virtualAccountNo,
-            trxId: generateMerchantTradeNo(),
+            trxId: existingOrder.paymentId,
         };
 
         // Validate requestBody
