@@ -311,7 +311,7 @@ export const validateSnapDelete = (data) => {
                 partnerServiceId: joi.string().max(8).required(),
                 customerNo: joi.string().max(20).required(),
                 virtualAccountNo: joi.string().max(28).required(),
-                trxId: joi.string().max(12).optional(),
+                trxId: joi.string().max(64).optional(),
                 additionalInfo: joi.object().optional(),
             })
             .required(),
