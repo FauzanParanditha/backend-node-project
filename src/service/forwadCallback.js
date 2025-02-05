@@ -15,17 +15,19 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         logger.error(`Logging failed callback attempt ${retryCount}: ${JSON.stringify(payload)}`);
 
         await FailedCallback.findOneAndUpdate(
-            { clientId, retryCount, "payload.merchantTradeNo": payload.merchantTradeNo },
+            { "payload.merchantTradeNo": payload.merchantTradeNo },
             {
-                payload,
-                callbackUrl,
-                retryCount,
-                errDesc,
-                clientId,
-                nextRetryAt: new Date(Date.now() + delay * 1000), // Schedule next retry
-                status: "pending",
+                $set: {
+                    payload,
+                    callbackUrl,
+                    retryCount,
+                    errDesc,
+                    clientId,
+                    nextRetryAt: new Date(Date.now() + delay * 1000),
+                    status: "pending",
+                },
             },
-            { upsert: true },
+            { upsert: true, new: true },
         ).catch((err) => logger.error(`Failed to log callback: ${err.message}`));
     };
 
