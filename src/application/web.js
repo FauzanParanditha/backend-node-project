@@ -139,15 +139,19 @@ web.post("/callback", (req, res) => {
     const notificationData = payload;
 
     const responsePayload = (errorCode, errCodeDes) => {
+        const errCodeFromNotification =
+            notificationData?.errCode ??
+            (notificationData?.responseCode === "2003100" ? "0" : notificationData?.responseCode);
+
         return {
             clientId: "CLNT-12345",
             requestId: generateRequestId(),
-            errCode: errorCode ? errorCode : notificationData.errCode,
+            errCode: errorCode ?? errCodeFromNotification ?? "0",
             ...(errCodeDes && { errCodeDes: errCodeDes }),
         };
     };
 
-    const payloadResponse = responsePayload(0, "");
+    const payloadResponse = responsePayload();
 
     const { headers: responseHeaders } = generateHeadersForward(
         "POST",
