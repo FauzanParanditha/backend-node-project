@@ -1,6 +1,7 @@
 import axios from "axios";
 import uuid4 from "uuid4";
 import logger from "../application/logger.js";
+import { broadcastPaymentUpdate } from "../application/websocket_server.js";
 import { ResponseError } from "../error/responseError.js";
 import Client from "../models/clientModel.js";
 import Order from "../models/orderModel.js";
@@ -269,6 +270,9 @@ export const VaSnapCallback = async ({ payload }) => {
         existOrder.vaSnap = undefined; // Clear VA snap data
         await existOrder.save();
 
+        // Broadcast the payment update to all connected clients
+        broadcastPaymentUpdate({ paymentId: sanitizedTrxId, status: "paid" });
+
         // Prepare response payload and headers
         const responseHeaders = {
             "Content-Type": "application/json;charset=utf-8",
@@ -290,6 +294,10 @@ export const VaSnapCallback = async ({ payload }) => {
         if (currentDateTime > expiredDateTime) {
             existOrder.paymentStatus = "expired";
             await existOrder.save();
+
+            // Broadcast the payment update to all connected clients
+            broadcastPaymentUpdate({ paymentId: sanitizedTrxId, status: "expired" });
+
             const payloadResponseError = generateResponsePayload(existOrder, "4030000", "Expired");
             return {
                 responseHeaders,
