@@ -112,9 +112,11 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                 if (retryCount < retryIntervals.length) {
                     const delay = retryIntervals[retryCount - 1];
 
-                    // Store the failed attempt in DB before waiting
                     await logFailedCallback(payload, callbackUrl, retryCount, err.message, client._id, delay);
-                    return; // Stop here, a background job will retry it
+                    logger.info(`Retrying in ${delay} seconds...`);
+
+                    // Wait before retrying
+                    await new Promise((resolve) => setTimeout(resolve, delay * 1000));
                 } else {
                     logger.error("Exhausted retries.");
                     await logFailedCallback(payload, callbackUrl, retryCount, err.message, client._id, 0);
