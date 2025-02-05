@@ -302,6 +302,23 @@ export const validateVaSNAPStatus = (data) => {
     return schema.validate(data);
 };
 
+export const validateSnapDelete = (data) => {
+    const schema = joi.object({
+        responseCode: joi.string().max(7).required(),
+        resoponseMessage: joi.string().max(150).required(),
+        virtualAccountData: joi
+            .object({
+                partnerServiceId: joi.string().max(8).required(),
+                customerNo: joi.string().max(20).required(),
+                virtualAccountNo: joi.string().max(28).required(),
+                trxId: joi.string().max(12).optional(),
+                additionalInfo: joi.object().optional(),
+            })
+            .required(),
+    });
+    return schema.validate(data);
+};
+
 export const validatePaymentVASNAP = (data) => {
     const schema = joi.object({
         partnerServiceId: joi.string().max(8).required(),

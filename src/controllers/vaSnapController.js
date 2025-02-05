@@ -1,5 +1,5 @@
 import logger from "../application/logger.js";
-import { forwardCallbackSnap } from "../service/forwadCallback.js";
+import { forwardCallbackSnap, forwardCallbackSnapDelete } from "../service/forwadCallback.js";
 import { verifySignature } from "../service/paylabs.js";
 import * as vaSnapService from "../service/vaSnapService.js";
 import { orderSchema } from "../validators/orderValidator.js";
@@ -160,7 +160,7 @@ export const deleteVASNAP = async (req, res) => {
         res.set(responseHeaders).status(200).json(response.data);
 
         const payload = response.data;
-        await forwardCallbackSnap({ payload });
+        await forwardCallbackSnapDelete({ payload });
     } catch (error) {
         // Handle unexpected errors
         logger.error(`Error delete va snap: ${error.message}`);
