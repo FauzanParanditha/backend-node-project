@@ -158,6 +158,9 @@ export const deleteVASNAP = async (req, res) => {
         }
         // Send a response with the updated order details
         res.set(responseHeaders).status(200).json(response.data);
+
+        const payload = response.data;
+        await forwardCallback({ payload });
     } catch (error) {
         // Handle unexpected errors
         logger.error(`Error delete va snap: ${error.message}`);
