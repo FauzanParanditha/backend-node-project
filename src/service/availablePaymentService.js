@@ -70,10 +70,13 @@ export const createAvailablePayment = async ({ req, adminId }) => {
     // Check if an image was uploaded
     // if (!req.file) throw new ResponseError(400, "Image is required!");
 
+    // Adjust path to remove 'src/'
+    const filePath = req.file.path.replace(/^src[\\/]/, "");
+
     const newAvailablePayment = new AvailablePayment({
         name: name,
         active: req.body.active,
-        image: req.file.path,
+        image: filePath,
         category: req.body.category,
         adminId: adminId,
     });
@@ -114,7 +117,7 @@ export const updateAvailablePayment = async ({ id, adminId, value, req }) => {
     if (req.file) {
         try {
             // Delete the old image file if it exists
-            const oldImagePath = path.join(__dirname, "../..", existingAvailablePayment.image);
+            const oldImagePath = path.join(__dirname, "../../src", existingAvailablePayment.image);
             await fs.promises.unlink(oldImagePath);
 
             // Update the image path
@@ -149,7 +152,7 @@ export const deleteAvailablepayment = async ({ id, adminId }) => {
     // Delete the associated image file
     try {
         // Delete the old image file if it exists
-        const imagePath = path.join(__dirname, "../..", availablePayment.image);
+        const imagePath = path.join(__dirname, "../../src", availablePayment.image);
         await fs.promises.unlink(imagePath);
     } catch (error) {
         console.error("Failed to delete old image!, ", error);

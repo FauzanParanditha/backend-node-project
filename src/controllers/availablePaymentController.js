@@ -1,3 +1,4 @@
+import fs from "fs";
 import logger from "../application/logger.js";
 import * as availablePaymentService from "../service/availablePaymentService.js";
 import { availablePaymentValidationSchema } from "../validators/availablePaymentValidator.js";
@@ -52,6 +53,13 @@ export const createAvailablePayment = async (req, res, next) => {
         });
     } catch (error) {
         logger.error(`Error create available payment: ${error.message}`);
+
+        if (req.file) {
+            fs.unlink(req.file.path, (err) => {
+                if (err) console.error("Failed to delete unused image:", err);
+            });
+        }
+
         next(error);
     }
 };

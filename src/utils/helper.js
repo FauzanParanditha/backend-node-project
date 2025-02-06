@@ -65,7 +65,7 @@ export const escapeRegExp = (string) => {
 // Configure multer for image uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, "./src/uploads/images");
+        cb(null, "./src/public/payment");
     },
     filename: (req, file, cb) => {
         cb(null, Date.now() + path.extname(file.originalname));
@@ -92,7 +92,7 @@ export const __dirname = dirname(__filename);
 
 // Ensure uploads directory exists
 export const ensureUploadsDirExists = () => {
-    const uploadsDir = path.join(__dirname, "../uploads");
+    const uploadsDir = path.join(__dirname, "../public");
     if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir);
     }
