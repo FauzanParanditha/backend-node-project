@@ -36,6 +36,8 @@ const __dirname = dirname(__filename);
 ensureUploadsDirExists();
 export const web = express();
 
+web.set("trust proxy", ["loopback", "10.10.200.1"]);
+
 web.use(
     cors({
         origin: process.env.FRONTEND_URL || "http://localhost:3000",
