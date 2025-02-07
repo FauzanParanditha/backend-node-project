@@ -46,48 +46,38 @@ const router = express.Router();
  *         5. **Encode the signature**: The final signature is encoded in Base64.
  */
 
-/**
- * @swagger
- * /api/v1/orders:
- *   get:
- *     summary: Get all orders
- *     tags: [Orders]
- *     security:
- *       - BearerAuth: []  # Require JWT Bearer token
- *     responses:
- *       200:
- *         description: A list of orders
- *       401:
- *         description: Unauthorized
- */
 router.get("/orders", jwtMiddlewareAdmin, orders);
-
-/**
- * @swagger
- * /api/v1/order:
- *   get:
- *     summary: Get all orders without limit
- *     tags: [Orders]
- *     security:
- *       - BearerAuth: []  # Require JWT Bearer token
- *     responses:
- *       200:
- *         description: A list of orders without limit
- *       401:
- *         description: Unauthorized
- */
 router.get("/order", jwtMiddlewareAdmin, orderNoLimit);
 
 /**
  * @swagger
  * /api/v1/order/create:
  *   post:
- *     summary: Create a new order
+ *     summary: Create a new order paylabs link
  *     tags: [Orders]
  *     security:
  *       - xSignature: []
  *       - xTimestamp: []
  *       - xPartnerId: []
+ *     parameters:
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     requestBody:
  *       required: true
  *       content:
@@ -104,8 +94,8 @@ router.get("/order", jwtMiddlewareAdmin, orderNoLimit);
  *                       type: string
  *                       example: "671f3ac"
  *                     price:
- *                       type: string
- *                       example: "10000"
+ *                       type: integer
+ *                       example: 10000
  *                     quantity:
  *                       type: integer
  *                       example: 1
@@ -116,16 +106,17 @@ router.get("/order", jwtMiddlewareAdmin, orderNoLimit);
  *                       type: string
  *                       example: "sample"
  *               totalAmount:
- *                 type: string
- *                 example: "10000"
+ *                 type: integer
+ *                 example: 10000
  *               phoneNumber:
  *                 type: string
  *                 example: "1234567890"
  *               paymentMethod:
  *                 type: string
+ *                 enum: ["paylabs", "other_method"]
  *                 example: "paylabs"
  *     responses:
- *       201:
+ *       200:
  *         description: Order created successfully
  *       400:
  *         description: Bad request
@@ -134,6 +125,80 @@ router.get("/order", jwtMiddlewareAdmin, orderNoLimit);
  */
 router.post("/order/create", jwtMiddlewareVerify, createOrder);
 
+/**
+ * @swagger
+ * /api/v1/order/create/link:
+ *   post:
+ *     summary: Create a new order link
+ *     tags: [Orders]
+ *     security:
+ *       - xSignature: []
+ *       - xTimestamp: []
+ *       - xPartnerId: []
+ *     parameters:
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: "671f3ac"
+ *                     price:
+ *                       type: integer
+ *                       example: 10000
+ *                     quantity:
+ *                       type: integer
+ *                       example: 1
+ *                     name:
+ *                       type: string
+ *                       example: "sample"
+ *                     type:
+ *                       type: string
+ *                       example: "sample"
+ *               totalAmount:
+ *                 type: integer
+ *                 example: 10000
+ *               phoneNumber:
+ *                 type: string
+ *                 example: "1234567890"
+ *               paymentMethod:
+ *                 type: string
+ *                 enum: ["paylabs", "other_method"]
+ *                 example: "paylabs"
+ *     responses:
+ *       200:
+ *         description: Order created successfully
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ */
 router.post("/order/create/link", jwtMiddlewareVerify, createOrderLink);
 
 router.post("/order/webhook/xendit", xenditCallback);
@@ -145,7 +210,9 @@ router.post("/order/webhook/xendit", xenditCallback);
  *     summary: Get an order by ID
  *     tags: [Orders]
  *     security:
- *       - BearerAuth: []  # Require JWT Bearer token
+ *       - xSignature: []
+ *       - xTimestamp: []
+ *       - xPartnerId: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -153,6 +220,24 @@ router.post("/order/webhook/xendit", xenditCallback);
  *         description: The ID of the order
  *         schema:
  *           type: string
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     responses:
  *       200:
  *         description: Order details
@@ -180,6 +265,25 @@ router.post("/order/webhook/paylabs", paylabsCallback);
  *       - xSignature: []
  *       - xTimestamp: []
  *       - xPartnerId: []
+ *     parameters:
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     requestBody:
  *       required: true
  *       content:
@@ -220,7 +324,7 @@ router.post("/order/webhook/paylabs", paylabsCallback);
  *                 type: string
  *                 example: "QRIS"
  *     responses:
- *       201:
+ *       200:
  *         description: QRIS order created successfully
  *       400:
  *         description: Bad request
@@ -246,6 +350,24 @@ router.post("/order/create/qris", jwtMiddlewareVerify, createQris);
  *         description: The ID of the QRIS order
  *         schema:
  *           type: string
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     responses:
  *       200:
  *         description: QRIS order status
@@ -273,6 +395,24 @@ router.get("/order/status/qris/:id", jwtMiddlewareVerify, qrisOrderStatus);
  *         description: The ID of the QRIS order
  *         schema:
  *           type: string
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     responses:
  *       200:
  *         description: QRIS order canceled successfully
@@ -293,6 +433,25 @@ router.post("/order/cancel/qris/:id", jwtMiddlewareVerify, cancleQris);
  *       - xSignature: []
  *       - xTimestamp: []
  *       - xPartnerId: []
+ *     parameters:
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     requestBody:
  *       required: true
  *       content:
@@ -333,7 +492,7 @@ router.post("/order/cancel/qris/:id", jwtMiddlewareVerify, cancleQris);
  *                 type: string
  *                 example: "MandiriVA"
  *     responses:
- *       201:
+ *       200:
  *         description: VA Snap order created successfully
  *       400:
  *         description: Bad request
@@ -359,6 +518,24 @@ router.post("/order/create/va/snap", jwtMiddlewareVerify, createVASNAP);
  *         description: The ID of the VA Snap order
  *         schema:
  *           type: string
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     responses:
  *       200:
  *         description: VA Snap order status
@@ -381,6 +558,31 @@ router.post("/order/webhook/paylabs/vaSnap", VaSnapCallback);
  *       - xSignature: []
  *       - xTimestamp: []
  *       - xPartnerId: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: The ID of the VA Snap order
+ *         schema:
+ *           type: string
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     requestBody:
  *       required: true
  *       content:
@@ -444,6 +646,25 @@ router.delete("/order/delete/va/snap/:id", jwtMiddlewareVerify, deleteVASNAP);
  *       - xSignature: []
  *       - xTimestamp: []
  *       - xPartnerId: []
+ *     parameters:
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     requestBody:
  *       required: true
  *       content:
@@ -484,7 +705,7 @@ router.delete("/order/delete/va/snap/:id", jwtMiddlewareVerify, deleteVASNAP);
  *                 type: string
  *                 example: "BNIVA"
  *     responses:
- *       201:
+ *       200:
  *         description: VA order created successfully
  *       400:
  *         description: Bad request
@@ -510,6 +731,24 @@ router.post("/order/create/va", jwtMiddlewareVerify, createVA);
  *         description: The ID of the VA order
  *         schema:
  *           type: string
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     responses:
  *       200:
  *         description: VA order status
@@ -530,6 +769,25 @@ router.get("/order/status/va/:id", jwtMiddlewareVerify, vaOrderStatus);
  *       - xSignature: []
  *       - xTimestamp: []
  *       - xPartnerId: []
+ *     parameters:
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     requestBody:
  *       required: true
  *       content:
@@ -547,7 +805,7 @@ router.get("/order/status/va/:id", jwtMiddlewareVerify, vaOrderStatus);
  *                 type: string
  *                 example: "StaticMandiriVA"
  *     responses:
- *       201:
+ *       200:
  *         description: Static VA order created successfully
  *       400:
  *         description: Bad request
@@ -568,6 +826,25 @@ router.post("/order/webhook/paylabs/va", paylabsVaStaticCallback);
  *       - xSignature: []
  *       - xTimestamp: []
  *       - xPartnerId: []
+ *     parameters:
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     requestBody:
  *       required: true
  *       content:
@@ -608,7 +885,7 @@ router.post("/order/webhook/paylabs/va", paylabsVaStaticCallback);
  *                 type: string
  *                 example: "CreditCard"
  *     responses:
- *       201:
+ *       200:
  *         description: Credit card order created successfully
  *       400:
  *         description: Bad request
@@ -634,6 +911,24 @@ router.post("/order/create/cc", jwtMiddlewareVerify, createCreditCard);
  *         description: The ID of the credit card order
  *         schema:
  *           type: string
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     responses:
  *       200:
  *         description: Credit card order status
@@ -654,6 +949,25 @@ router.get("/order/status/cc/:id", jwtMiddlewareVerify, ccOrderStatus);
  *       - xSignature: []
  *       - xTimestamp: []
  *       - xPartnerId: []
+ *     parameters:
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     requestBody:
  *       required: true
  *       content:
@@ -694,7 +1008,7 @@ router.get("/order/status/cc/:id", jwtMiddlewareVerify, ccOrderStatus);
  *                 type: string
  *                 example: "SHOPEEBALANCE"
  *     responses:
- *       201:
+ *       200:
  *         description: E-wallet order created successfully
  *       400:
  *         description: Bad request
@@ -720,6 +1034,24 @@ router.post("/order/create/ewallet", jwtMiddlewareVerify, createEMoney);
  *         description: The ID of the e-wallet order
  *         schema:
  *           type: string
+ *       - in: header
+ *         name: x-signature
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Request signature for authentication
+ *       - in: header
+ *         name: x-timestamp
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Timestamp of the request
+ *       - in: header
+ *         name: x-partner-id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Partner ID for authentication
  *     responses:
  *       200:
  *         description: E-wallet order status
