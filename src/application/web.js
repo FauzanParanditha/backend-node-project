@@ -66,8 +66,8 @@ web.use(
 
 // Define the rate limit rule
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: process.env.RATE_LIMIT_MAX || 100,
+    windowMs: 1 * 60 * 1000,
+    max: 1000,
     standardHeaders: true,
     legacyHeaders: false,
 });
