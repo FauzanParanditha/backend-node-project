@@ -1,4 +1,4 @@
-import fs from "fs";
+import fs from "fs/promises";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { ResponseError } from "../error/responseError.js";
@@ -99,42 +99,55 @@ export const updateAvailablePayment = async ({ id, adminId, value, req }) => {
     const existingAvailablePayment = await AvailablePayment.findById(id);
     if (!existingAvailablePayment) throw new ResponseError(404, "AvailablePayment does not exist!");
 
-    if (existingAvailablePayment.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
-
-    const verifiedAdmin = await Admin.findOne({ _id: adminId });
-    if (!verifiedAdmin.verified) {
-        throw new ResponseError(400, `Admin is not verified`);
+    if (existingAvailablePayment.adminId.toString() !== adminId) {
+        throw new ResponseError(401, "Unauthorized!");
     }
 
-    // Prepare the update data
-    const updateData = {
-        name: value.name,
-        active: value.active,
-        category: value.category,
-    };
+    const verifiedAdmin = await Admin.findById(adminId);
+    if (!verifiedAdmin?.verified) {
+        throw new ResponseError(400, "Admin is not verified");
+    }
+
+    // Allow only specific fields for update
+    const allowedFields = ["name", "active", "category"];
+    const updateData = {};
+
+    Object.keys(value).forEach((key) => {
+        if (allowedFields.includes(key)) {
+            updateData[key] = value[key];
+        }
+    });
 
     // Handle image upload
     if (req.file) {
         try {
-            // Delete the old image file if it exists
-            const oldImagePath = path.join(__dirname, "../../src", existingAvailablePayment.image);
-            await fs.promises.unlink(oldImagePath);
+            // Delete old image if it exists
+            if (existingAvailablePayment.image) {
+                const oldImagePath = path.join(__dirname, "../../src", existingAvailablePayment.image);
+                await fs.unlink(oldImagePath);
+            }
 
-            // Update the image path
+            // Assign new image path
             updateData.image = req.file.path;
         } catch (error) {
-            console.error("Failed to delete old image!, ", error);
+            console.error("Failed to delete old image:", error);
             throw new ResponseError(400, "Failed to delete old image!");
         }
     }
 
-    // Update the available payment
-    await AvailablePayment.findByIdAndUpdate(id, updateData, {
-        new: true,
-        runValidators: true,
-    });
+    // Update the document safely
+    const updatedAvailablePayment = await AvailablePayment.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        {
+            new: true,
+            runValidators: true,
+        },
+    );
 
-    return updateData;
+    if (!updatedAvailablePayment) throw new ResponseError(500, "Failed to update AvailablePayment!");
+
+    return updatedAvailablePayment;
 };
 
 export const deleteAvailablepayment = async ({ id, adminId }) => {

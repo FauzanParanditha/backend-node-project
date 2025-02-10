@@ -1,7 +1,13 @@
-import fs from "fs";
+import fs from "fs/promises";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
 import logger from "../application/logger.js";
 import * as availablePaymentService from "../service/availablePaymentService.js";
 import { availablePaymentValidationSchema } from "../validators/availablePaymentValidator.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const UPLOADS_DIR = path.resolve(__dirname, "../public/payment");
 
 export const availablePayments = async (req, res, next) => {
     const { query = "", limit = 10, page = 1, sort_by = "_id", sort = -1, countOnly = false } = req.query;
@@ -54,10 +60,29 @@ export const createAvailablePayment = async (req, res, next) => {
     } catch (error) {
         logger.error(`Error create available payment: ${error.message}`);
 
-        if (req.file) {
-            fs.unlink(req.file.path, (err) => {
-                if (err) console.error("Failed to delete unused image:", err);
-            });
+        if (req.file?.path) {
+            try {
+                const filePath = path.resolve(UPLOADS_DIR, path.basename(req.file.path));
+
+                if (filePath.startsWith(UPLOADS_DIR)) {
+                    // Cek apakah file benar-benar ada sebelum dihapus
+                    const fileExists = await fs
+                        .access(filePath)
+                        .then(() => true)
+                        .catch(() => false);
+
+                    if (fileExists) {
+                        await fs.unlink(filePath);
+                        logger.log("Deleted unused image:", filePath);
+                    } else {
+                        logger.error("File not found, skipping deletion:", filePath);
+                    }
+                } else {
+                    logger.error("Invalid file path detected:", filePath);
+                }
+            } catch (unlinkError) {
+                logger.error("Failed to delete unused image:", unlinkError);
+            }
         }
 
         next(error);
