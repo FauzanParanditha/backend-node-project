@@ -13,6 +13,11 @@ const apiLogSchema = new mongoose.Schema(
     { timestamps: true },
 );
 
+apiLogSchema.index({ endpoint: "text" });
+apiLogSchema.index({ createdAt: -1 });
+apiLogSchema.index({ endpoint: 1, createdAt: -1 });
+apiLogSchema.index({ endpoint: 1 }, { collation: { locale: "en", strength: 2 } });
+
 const ApiLog = mongoose.model("ApiLog", apiLogSchema);
 
 export default ApiLog;

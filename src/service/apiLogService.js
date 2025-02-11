@@ -6,13 +6,20 @@ import { escapeRegExp } from "../utils/helper.js";
 export const getAllApiLogs = async ({ query, limit, page, sort_by, sort, countOnly }) => {
     const filter = {};
 
-    // Apply search term if provided
+    // ✅ Pilih metode pencarian yang paling optimal
     if (query && query.trim()) {
-        const searchTerm = escapeRegExp(query.trim());
-        filter["$or"] = [{ endpoint: { $regex: searchTerm, $options: "i" } }];
+        const searchTerm = query.trim();
+
+        if (searchTerm.split(" ").length > 1) {
+            // 🔍 Full-text search jika query memiliki lebih dari satu kata
+            filter["$text"] = { $search: searchTerm };
+        } else {
+            // 🔍 Jika hanya satu kata, coba pakai prefix search dulu
+            filter["endpoint"] = { $regex: `^${escapeRegExp(searchTerm)}`, $options: "i" };
+        }
     }
 
-    const sortField = sort_by || "_id";
+    const sortField = sort_by || "createdAt";
     const sortValue = Number(sort) || -1;
     const limitNum = Number(limit);
     const skip = (Number(page) - 1) * limitNum;
@@ -22,6 +29,7 @@ export const getAllApiLogs = async ({ query, limit, page, sort_by, sort, countOn
     }
 
     const apiLogs = await ApiLog.find(filter)
+        .collation({ locale: "en", strength: 2 }) // ✅ Gunakan collation agar regex search lebih cepat
         .sort({ [sortField]: sortValue })
         .limit(limitNum)
         .skip(skip)
