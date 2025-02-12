@@ -275,17 +275,17 @@ export const refundEmoney = async ({ id, validatedRequest }) => {
     } catch (error) {
         let errorMessage = error?.message || "Unknown error";
 
-        // Jika error adalah objek dan memiliki response dari axios
         if (error.response) {
-            errorMessage = error.response.data?.errCodeDes || error.response.data || "Error from external API";
-        }
+            const statusCode = error.response.status;
+            const responseData = error.response.data;
 
-        // Jika error memiliki lebih banyak detail
-        if (typeof error === "object") {
-            errorMessage += ` | Detail: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`;
+            if (statusCode === 404) {
+                errorMessage = `Paylabs API endpoint not found (404)`;
+            } else {
+                errorMessage = `Paylabs API error: ${statusCode} - ${JSON.stringify(responseData)}`;
+            }
         }
-
-        logger.error(`Error in refundEmoney (Order ${id}): ${errorMessage}`);
-        throw error;
+        logger.error("Error in refundEmoney: ", errorMessage);
+        throw error; // Re-throw the error for further handling
     }
 };
