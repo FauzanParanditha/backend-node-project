@@ -273,19 +273,7 @@ export const refundEmoney = async ({ id, validatedRequest }) => {
         logger.info("E-Money refund processed successfully: ", response.data);
         return { response, responseHeaders };
     } catch (error) {
-        let errorMessage = error?.message || "Unknown error";
-
-        if (error.response) {
-            const statusCode = error.response.status;
-            const responseData = error.response.data;
-
-            if (statusCode === 404) {
-                errorMessage = `Paylabs API endpoint not found (404)`;
-            } else {
-                errorMessage = `Paylabs API error: ${statusCode} - ${JSON.stringify(responseData)}`;
-            }
-        }
-        logger.error("Error in refundEmoney: ", errorMessage);
+        logger.error("Error in refundEmoney: ", error.response);
         throw error; // Re-throw the error for further handling
     }
 };
