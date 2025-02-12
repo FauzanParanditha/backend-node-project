@@ -273,7 +273,7 @@ export const refundEmoney = async ({ id, validatedRequest }) => {
         logger.info("E-Money refund processed successfully: ", response.data);
         return { response, responseHeaders };
     } catch (error) {
-        logger.error("Error in refundEmoney: ", error.response.statusMessage);
+        logger.error("Error in refundEmoney: ", error.response.request.res.statusMessage);
         throw error; // Re-throw the error for further handling
     }
 };
