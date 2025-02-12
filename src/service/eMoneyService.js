@@ -273,7 +273,19 @@ export const refundEmoney = async ({ id, validatedRequest }) => {
         logger.info("E-Money refund processed successfully: ", response.data);
         return { response, responseHeaders };
     } catch (error) {
-        logger.error("Error in refundEmoney: ", error);
-        throw error; // Re-throw the error for further handling
+        let errorMessage = error?.message || "Unknown error";
+
+        // Jika error adalah objek dan memiliki response dari axios
+        if (error.response) {
+            errorMessage = error.response.data?.errCodeDes || error.response.data || "Error from external API";
+        }
+
+        // Jika error memiliki lebih banyak detail
+        if (typeof error === "object") {
+            errorMessage += ` | Detail: ${JSON.stringify(error, Object.getOwnPropertyNames(error))}`;
+        }
+
+        logger.error(`Error in refundEmoney (Order ${id}): ${errorMessage}`);
+        throw error;
     }
 };
