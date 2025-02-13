@@ -40,10 +40,18 @@ web.set("trust proxy", ["loopback", "10.10.200.1"]);
 
 web.use(
     cors({
-        origin: process.env.FRONTEND_URL || "http://localhost:3000",
+        origin: (origin, callback) => {
+            const allowedOrigins = [process.env.FRONTEND_URL, process.env.FRONTEND_URL_APPS_2];
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
+            }
+        },
         credentials: true,
     }),
 );
+
 web.use(helmet());
 web.use(cookieParser());
 web.use(express.json());
