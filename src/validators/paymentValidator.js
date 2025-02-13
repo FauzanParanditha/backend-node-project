@@ -467,7 +467,7 @@ export const validateEMoneyRequest = (data) => {
                 redirectUrl: joi.string().max(200).required(),
                 phoneNumber: joi
                     .string()
-                    .pattern(/^[0-9]+$/)
+                    .pattern(/^\+?[0-9]+$/)
                     .min(10)
                     .max(15)
                     .optional(),
