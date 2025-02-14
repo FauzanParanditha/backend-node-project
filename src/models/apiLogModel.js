@@ -6,7 +6,7 @@ const apiLogSchema = new mongoose.Schema(
         endpoint: { type: String, required: true },
         headers: { type: Object, required: true },
         body: { type: Object },
-        statusCode: { type: Number },
+        statusCode: { type: mongoose.Schema.Types.Mixed },
         response: { type: Object },
         ipAddress: { type: String, required: true },
     },

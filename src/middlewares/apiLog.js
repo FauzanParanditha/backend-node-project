@@ -8,11 +8,9 @@ const apiLogger = async (req, res, next) => {
         endpoint: req.originalUrl,
         headers: req.headers,
         body:
-            req.is("application/json") || req.is("application/*+json")
-                ? req.body
-                : req.body instanceof Buffer
-                  ? req.body.toString("utf8")
-                  : req.body,
+            req.body instanceof Buffer
+                ? req.body.toString("utf8") // Buffer => String
+                : req.body,
         ipAddress: req.ip || req.connection.remoteAddress,
         statusCode: null,
     };
