@@ -1,5 +1,5 @@
-import ApiLog from "../models/apiLogModel.js";
 import logger from "../application/logger.js";
+import ApiLog from "../models/apiLogModel.js";
 import { validateLog } from "../validators/apiLogValidator.js";
 
 const apiLogger = async (req, res, next) => {
@@ -7,22 +7,20 @@ const apiLogger = async (req, res, next) => {
         method: req.method,
         endpoint: req.originalUrl,
         headers: req.headers,
-        body: req.body,
+        body:
+            req.is("application/json") || req.is("application/*+json")
+                ? req.body
+                : req.body instanceof Buffer
+                  ? req.body.toString("utf8")
+                  : req.body,
         ipAddress: req.ip || req.connection.remoteAddress,
         statusCode: null,
-        // response: null,
     };
 
     const originalSend = res.send.bind(res);
 
     res.send = function (body) {
         logData.statusCode = res.statusCode;
-
-        // try {
-        //     logData.response = JSON.parse(body);
-        // } catch (error) {
-        //     logData.response = body;
-        // }
 
         const { error } = validateLog(logData);
         if (!error) {
@@ -36,7 +34,6 @@ const apiLogger = async (req, res, next) => {
             next(error);
         }
 
-        // Send the response to the client
         return originalSend(body);
     };
 
