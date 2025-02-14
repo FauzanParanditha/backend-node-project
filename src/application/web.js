@@ -73,7 +73,6 @@ web.use(
         },
     }),
 );
-web.use("/api/v1/order/webhook/paylabs", express.raw({ type: "application/json" }));
 
 // Define the rate limit rule
 const limiter = rateLimit({

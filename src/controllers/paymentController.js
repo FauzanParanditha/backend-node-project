@@ -9,7 +9,9 @@ export const paylabsCallback = async (req, res, next) => {
         const { "x-partner-id": partnerId, "x-signature": signature, "x-timestamp": timestamp } = req.headers;
         const { method: httpMethod, originalUrl: endpointUrl } = req;
 
-        const payloadRaw = req.body.toString("utf8");
+        const payloadRaw = req.body instanceof Buffer ? req.body.toString("utf8").trim() : JSON.stringify(req.body);
+        logger.info(`Raw Payload: ${payloadRaw}`);
+
         const payload = JSON.parse(payloadRaw);
 
         const allowedPartnerId = process.env.PAYLABS_MERCHANT_ID;
@@ -32,7 +34,7 @@ export const paylabsCallback = async (req, res, next) => {
 
         await forwardCallback({ payload });
     } catch (error) {
-        logger.error(`Error handling webhook paylabs: ${error.message}, rawBody: ${req.body.toString("utf8").trim()}`);
+        logger.error(`Error handling webhook paylabs: ${error.message}, rawBody: ${req.body}`);
         next(error);
     }
 };
