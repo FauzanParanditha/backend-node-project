@@ -9,7 +9,7 @@ export const paylabsCallback = async (req, res, next) => {
         const { "x-partner-id": partnerId, "x-signature": signature, "x-timestamp": timestamp } = req.headers;
         const { method: httpMethod, originalUrl: endpointUrl } = req;
 
-        const payloadRaw = req.body instanceof Buffer ? req.body.toString("utf8").trim() : JSON.stringify(req.body);
+        const payloadRaw = req.body.toString("utf8").trim();
         logger.info(`Raw Payload: ${payloadRaw}`);
 
         const payload = JSON.parse(payloadRaw);
@@ -20,6 +20,7 @@ export const paylabsCallback = async (req, res, next) => {
         }
 
         if (!verifySignature(httpMethod, endpointUrl, payloadRaw, timestamp, signature)) {
+            logger.error(`Signature verification failed for payload: ${payloadRaw}`);
             return res.status(401).send("Invalid signature");
         }
 
