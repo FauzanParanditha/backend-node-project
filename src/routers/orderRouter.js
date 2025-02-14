@@ -253,7 +253,7 @@ router.put("/order/:id", jwtMiddlewareAdmin, editOrder);
 router.get("/xendit/balance", jwtMiddlewareAdmin, balance);
 
 // Paylabs
-router.post("/order/webhook/paylabs", express.raw({ type: "application/json" }), paylabsCallback);
+router.post("/order/webhook/paylabs", paylabsCallback);
 
 /**
  * @swagger

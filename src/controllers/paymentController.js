@@ -35,7 +35,11 @@ export const paylabsCallback = async (req, res, next) => {
 
         await forwardCallback({ payload });
     } catch (error) {
-        logger.error(`Error handling webhook paylabs: ${error.message}, rawBody: ${req.body}`);
+        logger.error(
+            `Error handling webhook paylabs: ${error.message}, rawBody: ${
+                req.body instanceof Buffer ? req.body.toString("utf8") : req.body
+            }`,
+        );
         next(error);
     }
 };

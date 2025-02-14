@@ -51,7 +51,7 @@ web.use(
         credentials: true,
     }),
 );
-
+web.use("/api/v1/order/webhook/paylabs", express.raw({ type: "application/json" }));
 web.use(helmet());
 web.use(cookieParser());
 web.use(express.json());
