@@ -83,7 +83,7 @@ export const createSignature = (httpMethod, endpointUrl, body, timestamp) => {
     return signature;
 };
 
-export const verifySignature = (httpMethod, endpointUrl, body, timestamp, signature, rawBody) => {
+export const verifySignature = (httpMethod, endpointUrl, rawBody, timestamp, signature) => {
     const minifiedBody = rawBody.trim();
     logger.info(`verify minifiedBody: ${minifiedBody}`);
     logger.info(`verify timestamp: ${timestamp}`);

@@ -17,7 +17,7 @@ export const paylabsCallback = async (req, res, next) => {
             return res.status(401).send("Invalid partner ID");
         }
 
-        if (!verifySignature(httpMethod, endpointUrl, payload, timestamp, signature, payloadRaw)) {
+        if (!verifySignature(httpMethod, endpointUrl, payloadRaw, timestamp, signature)) {
             return res.status(401).send("Invalid signature");
         }
 
@@ -32,7 +32,7 @@ export const paylabsCallback = async (req, res, next) => {
 
         await forwardCallback({ payload });
     } catch (error) {
-        logger.error(`Error handling webhook paylabs: ${error.message}`);
+        logger.error(`Error handling webhook paylabs: ${error.message}, rawBody: ${payloadRaw}`);
         next(error);
     }
 };
