@@ -4,7 +4,7 @@ const logSchema = joi.object({
     method: joi.string().required(),
     endpoint: joi.string().required(),
     headers: joi.object().required(),
-    body: joi.object(),
+    body: joi.alternatives().try(joi.object(), joi.string()),
     statusCode: joi.number().required(),
     ipAddress: joi.string().required(),
     response: joi.any().optional(),
