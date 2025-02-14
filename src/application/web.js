@@ -73,6 +73,7 @@ web.use(
         },
     }),
 );
+web.use("/api/v1/order/webhook/paylabs", express.raw({ type: "application/json" }));
 
 // Define the rate limit rule
 const limiter = rateLimit({
@@ -136,7 +137,7 @@ web.get("/", (req, res) => {
 });
 
 // test purpose only
-web.post("/callback", (req, res) => {
+web.post("/callback", express.raw({ type: "application/json" }), (req, res) => {
     // Extract and verify signature
     const { "x-signature": signature, "x-timestamp": timestamp } = req.headers;
     const { body: payload, method: httpMethod, originalUrl: endpointUrl } = req;

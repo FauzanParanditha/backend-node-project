@@ -83,15 +83,15 @@ export const createSignature = (httpMethod, endpointUrl, body, timestamp) => {
     return signature;
 };
 
-export const verifySignature = (httpMethod, endpointUrl, body, timestamp, signature) => {
-    const minifiedBody = minifyJson(body);
-    logger.info(`verify ${minifiedBody}`);
-    logger.info(`verify ${timestamp}`);
+export const verifySignature = (httpMethod, endpointUrl, body, timestamp, signature, rawBody) => {
+    const minifiedBody = rawBody.trim();
+    logger.info(`verify minifiedBody: ${minifiedBody}`);
+    logger.info(`verify timestamp: ${timestamp}`);
 
     const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
 
     const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
-    logger.info(`verify ${stringContent}`);
+    logger.info(`verify stringContent: ${stringContent}`);
 
     const publicKey = fs.readFileSync("public.pem", "utf8");
 
@@ -99,7 +99,7 @@ export const verifySignature = (httpMethod, endpointUrl, body, timestamp, signat
     verify.update(stringContent);
 
     const isVerified = verify.verify(publicKey, signature, "base64");
-    logger.info(`verify ${isVerified}`);
+    logger.info(`verify result: ${isVerified}`);
 
     return isVerified;
 };

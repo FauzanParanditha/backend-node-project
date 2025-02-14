@@ -1,21 +1,23 @@
-import { verifySignature } from "../service/paylabs.js";
-import * as paymentService from "../service/paymentService.js";
 import logger from "../application/logger.js";
 import { forwardCallback } from "../service/forwadCallback.js";
+import { verifySignature } from "../service/paylabs.js";
+import * as paymentService from "../service/paymentService.js";
 
 // Handle Paylabs callback notifications
 export const paylabsCallback = async (req, res, next) => {
     try {
-        // Extract and verify signature
         const { "x-partner-id": partnerId, "x-signature": signature, "x-timestamp": timestamp } = req.headers;
-        const { body: payload, method: httpMethod, originalUrl: endpointUrl } = req;
+        const { method: httpMethod, originalUrl: endpointUrl } = req;
+
+        const payloadRaw = req.body.toString("utf8");
+        const payload = JSON.parse(payloadRaw);
 
         const allowedPartnerId = process.env.PAYLABS_MERCHANT_ID;
         if (partnerId !== allowedPartnerId) {
             return res.status(401).send("Invalid partner ID");
         }
 
-        if (!verifySignature(httpMethod, endpointUrl, payload, timestamp, signature)) {
+        if (!verifySignature(httpMethod, endpointUrl, payload, timestamp, signature, payloadRaw)) {
             return res.status(401).send("Invalid signature");
         }
 
