@@ -125,7 +125,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                 logger.info(`Callback successfully forwarded on attempt ${retryCount + 1}`);
                 return true; // Exit loop on success
             } catch (err) {
-                logger.error(`Attempt ${retryCount + 1} failed: ${err.message}`);
+                logger.error(`Attempt ${retryCount + 1} failed: ${err.code}`);
                 // logger.error(`Full error object: ${JSON.stringify(err, Object.getOwnPropertyNames(err))}`);
 
                 retryCount++;
