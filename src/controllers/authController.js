@@ -17,7 +17,7 @@ export const login = async (req, res, next) => {
         }
 
         const { token } = await authService.loginAdmin({ email, password });
-        res.cookie("Authorization", "Bearer " + token, {
+        res.cookie("dsbTkn", "Bearer " + token, {
             expires: new Date(Date.now() + 2 * 3600000),
             httpOnly: process.env.NODE_ENV === "production",
             secure: process.env.NODE_ENV === "production",

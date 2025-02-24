@@ -5,17 +5,17 @@ import IPWhitelist from "../models/ipWhitelistModel.js";
 
 export const jwtMiddlewareAdmin = async (req, res, next) => {
     let token;
-    const clientIP = req.ip;
+    const clientIP = req.headers["x-forwarded-for"] || req.ip;
     // console.log(clientIP);
 
     if (req.headers.client === "not-browser") {
         token = req.headers.authorization;
     } else {
-        token = req.cookies["Authorization"] || req.headers.authorization;
+        token = req.cookies["dsbTkn"] || req.headers.authorization;
     }
 
     if (!token) {
-        return res.status(403).json({
+        return res.status(401).json({
             success: false,
             message: "Unauthorized!",
         });
