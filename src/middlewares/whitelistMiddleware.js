@@ -2,7 +2,7 @@ import logger from "../application/logger.js";
 import IPWhitelist from "../models/ipWhitelistModel.js";
 
 export const whitelistMiddlewareVerify = async (req, res, next) => {
-    const clientIP = req.ip;
+    const clientIP = req.headers["x-forwarded-for"] || req.ip;
     // console.log(clientIP);
 
     try {
