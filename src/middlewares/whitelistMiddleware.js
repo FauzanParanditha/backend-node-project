@@ -1,5 +1,5 @@
-import logger from "../application/logger";
-import IPWhitelist from "../models/ipWhitelistModel";
+import logger from "../application/logger.js";
+import IPWhitelist from "../models/ipWhitelistModel.js";
 
 export const whitelistMiddlewareVerify = async (req, res, next) => {
     const clientIP = req.ip;
