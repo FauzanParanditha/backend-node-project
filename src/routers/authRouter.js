@@ -9,10 +9,11 @@ import {
     verifyVerificationCode,
 } from "../controllers/authController.js";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
+import { whitelistMiddlewareVerify } from "../middlewares/whitelistMiddleware.js";
 
 const router = express.Router();
 
-router.post("/login", login);
+router.post("/login", whitelistMiddlewareVerify,login);
 router.post("/logout", jwtMiddlewareAdmin, logout);
 
 router.patch("/send-verification-code", jwtMiddlewareAdmin, sendVerificationCode);
