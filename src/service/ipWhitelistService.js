@@ -88,10 +88,12 @@ export const updateIpWhitelist = async ({ id, value }) => {
     // Sanitize the input
     const sanitizedipAddress = value.ipAddress.trim();
 
-    const existingIpWhitelist = await IPWhitelist.findOne({
-        ipAddress: { $eq: sanitizedipAddress },
-    });
-    if (existingIpWhitelist) throw new ResponseError(400, `IpAddress ${value.ipAddress} already exist!`);
+    if (existIpWhitelist.ipAddress != value.ipAddress) {
+        const existingIpWhitelist = await IPWhitelist.findOne({
+            ipAddress: { $eq: sanitizedipAddress },
+        });
+        if (existingIpWhitelist) throw new ResponseError(400, `IpAddress ${value.ipAddress} already exist!`);
+    }
 
     existIpWhitelist.ipAddress = value.ipAddress;
     const result = await existIpWhitelist.save();

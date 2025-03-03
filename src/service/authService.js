@@ -10,10 +10,10 @@ export const loginAdmin = async ({ email, password }) => {
     const existAdmin = await Admin.findOne({
         email: { $eq: sanitizedEmail },
     }).select("+password");
-    if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
+    if (!existAdmin) throw new ResponseError(400, "Invalid username or password");
 
     const isValidPassword = await compareDoHash(password, existAdmin.password);
-    if (!isValidPassword) throw new ResponseError(400, "Invalid credentials!");
+    if (!isValidPassword) throw new ResponseError(400, "Invalid username or password");
 
     const token = jwt.sign(
         {
@@ -104,7 +104,7 @@ export const sendForgotPasswordService = async (email) => {
     const sanitizedEmail = email.trim();
 
     const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
-    if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
+    if (!existAdmin) return "Send Email Reset Password Successfully";
 
     const codeValue = Math.floor(Math.random() * 100000).toString();
     const url = generateForgotPasswordLink(existAdmin.email, codeValue);
@@ -122,7 +122,7 @@ export const sendForgotPasswordService = async (email) => {
     existAdmin.forgotPasswordCodeValidation = Date.now();
     await existAdmin.save();
 
-    return "Code send successfully!";
+    return "Send Email Reset Password Successfully";
 };
 
 export const verifyForgotPasswordCodeService = async ({ value }) => {

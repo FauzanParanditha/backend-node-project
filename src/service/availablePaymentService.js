@@ -15,7 +15,7 @@ export const getAllAvailablePayment = async ({ query, limit, page, sort_by, sort
     // Parse and handle search term
     if (query.trim()) {
         const searchTerm = escapeRegExp(query.trim());
-        filter["$or"] = [{ title: { $regex: searchTerm, $options: "i" } }];
+        filter["$or"] = [{ name: { $regex: searchTerm, $options: "i" } }];
     }
 
     // Sort and pagination settings
@@ -68,7 +68,7 @@ export const createAvailablePayment = async ({ req, adminId }) => {
     }
 
     // Check if an image was uploaded
-    // if (!req.file) throw new ResponseError(400, "Image is required!");
+    if (!req.file) throw new ResponseError(400, "Upload File Required");
 
     // Adjust path to remove 'src/'
     const filePath = req.file.path.replace(/^src[\\/]/, "");
@@ -128,7 +128,8 @@ export const updateAvailablePayment = async ({ id, adminId, value, req }) => {
             }
 
             // Assign new image path
-            updateData.image = req.file.path;
+            const filePath = req.file.path.replace(/^src[\\/]/, "");
+            updateData.image = filePath;
         } catch (error) {
             console.error("Failed to delete old image:", error);
             throw new ResponseError(400, "Failed to delete old image!");
@@ -166,7 +167,7 @@ export const deleteAvailablepayment = async ({ id, adminId }) => {
     try {
         // Delete the old image file if it exists
         const imagePath = path.join(__dirname, "../../src", availablePayment.image);
-        await fs.promises.unlink(imagePath);
+        await fs.unlink(imagePath);
     } catch (error) {
         console.error("Failed to delete old image!, ", error);
         throw new ResponseError(400, "Failed to delete old image!");
