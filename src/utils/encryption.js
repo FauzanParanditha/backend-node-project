@@ -11,8 +11,8 @@ if (!key || key.length !== 32) {
 export const encryptData = (data) => {
     const iv = randomBytes(16); // Generate a new IV for each encryption
     const cipher = createCipheriv(algorithm, Buffer.from(key), iv);
-    let encrypted = cipher.update(JSON.stringify(data), "utf8", "hex");
-    encrypted += cipher.final("hex");
+    let encrypted = cipher.update(JSON.stringify(data), "utf8", "base64");
+    encrypted += cipher.final("base64");
     // Return IV and encrypted data together
     return `${iv.toString("hex")}:${encrypted}`;
 };
@@ -21,7 +21,7 @@ export const decryptData = (data) => {
     const [ivHex, encryptedData] = data.split(":");
     const iv = Buffer.from(ivHex, "hex"); // Convert IV back to buffer
     const decipher = createDecipheriv(algorithm, Buffer.from(key), iv);
-    let decrypted = decipher.update(encryptedData, "hex", "utf8");
+    let decrypted = decipher.update(encryptedData, "base64", "utf8");
     decrypted += decipher.final("utf8");
     return JSON.parse(decrypted);
 };
