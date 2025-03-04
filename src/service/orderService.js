@@ -168,6 +168,7 @@ export const createOrderLink = async ({ validatedOrder, partnerId }) => {
 
         // Encrypt orderData if necessary
         const encryptedOrderData = encryptData(orderData);
+        console.log("🔐 Encrypted Order Data:", encryptedOrderData);
 
         // Generate a link to the frontend payment page with the encrypted data
         const paymentLink = `${process.env.FRONTEND_URL}/payment?q=${encodeURIComponent(encryptedOrderData)}`;
