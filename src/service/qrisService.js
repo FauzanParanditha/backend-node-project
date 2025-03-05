@@ -127,10 +127,10 @@ export const qrisOrderStatus = async ({ id }) => {
         //     throw new ResponseError(409, "Payment already processed!");
         // }
 
-        if (existOrder.paymentStatus === "expired") {
-            logger.error("Payment already expired for order: ", id);
-            throw new ResponseError(408, "Payment already processed!");
-        }
+        // if (existOrder.paymentStatus === "expired") {
+        //     logger.error("Payment already expired for order: ", id);
+        //     throw new ResponseError(408, "Payment already processed!");
+        // }
 
         // if (!existOrder.qris) {
         //     logger.error("QRIS data not found in the order: ", id);
