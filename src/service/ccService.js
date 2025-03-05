@@ -83,10 +83,10 @@ export const createCC = async ({ validatedProduct, partnerId }) => {
 
         // Check for successful response
         if (!response.data || response.data.errCode !== "0") {
-            logger.error("Paylabs error: ", response.data ? response.data.errCodeDes : "failed to create payment");
+            logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to create payment");
             throw new ResponseError(
                 400,
-                response.data ? `error: ${response.data.errCodeDes}` : "failed to create payment",
+                response.data ? `error: ${response.data.errCode}` : "failed to create payment",
             );
         }
 
@@ -164,13 +164,10 @@ export const ccOrderStatus = async ({ id }) => {
 
         // Check for successful response
         if (!response.data || response.data.errCode !== "0") {
-            logger.error(
-                "Paylabs error: ",
-                response.data ? response.data.errCodeDes : "failed to query payment status",
-            );
+            logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to query payment status");
             throw new ResponseError(
                 400,
-                response.data ? `error: ${response.data.errCodeDes}` : "failed to query payment status",
+                response.data ? `error: ${response.data.errCode}` : "failed to query payment status",
             );
         }
 
