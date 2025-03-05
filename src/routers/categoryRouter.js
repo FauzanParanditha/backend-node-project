@@ -1,11 +1,5 @@
 import express from "express";
-import {
-  categories,
-  category,
-  create,
-  deleteCategory,
-  updateCategory,
-} from "../controllers/categoryController.js";
+import { categories, category, create, deleteCategory, updateCategory } from "../controllers/categoryController.js";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
 
 const router = express.Router();

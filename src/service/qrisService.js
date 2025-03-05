@@ -1,272 +1,276 @@
-import uuid4 from "uuid4";
-import { ResponseError } from "../error/responseError.js";
-import User from "../models/userModel.js";
-import { validateOrderProducts } from "../utils/helper.js";
-import {
-  convertToDate,
-  generateHeaders,
-  generateMerchantTradeNo,
-  generateRequestId,
-  merchantId,
-  paylabsApiUrl,
-} from "./paylabs.js";
-import {
-  cancelQrisValidator,
-  validateQrisRequest,
-  validateQrisStatus,
-} from "../validators/paymentValidator.js";
 import axios from "axios";
+import logger from "../application/logger.js";
+import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
-
-export const createQris = async ({ validatedProduct }) => {
-  // Verify user existence
-  const existUser = await User.findById(validatedProduct.userId);
-  if (!existUser) throw new ResponseError(404, "User does not exist!");
-
-  // Validate products in the order
-  const { validProducts, totalAmount } = await validateOrderProducts(
-    validatedProduct.products,
-    validatedProduct.paymentType
-  );
-  if (!validProducts.length)
-    throw new ResponseError(404, "No valid products found to update the order");
-
-  // Construct order data
-  const requestBodyForm = {
-    orderId: uuid4(),
-    userId: validatedProduct.userId,
-    products: validProducts,
-    totalAmount,
-    phoneNumber: validatedProduct.phoneNumber,
-    paymentStatus: "pending",
-    paymentMethod: validatedProduct.paymentMethod,
-    paymentType: validatedProduct.paymentType,
-    ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
-  };
-
-  // Generate IDs and other necessary fields
-  const requestId = generateRequestId();
-  const merchantTradeNo = generateMerchantTradeNo();
-
-  // Prepare Paylabs request payload
-  const requestBody = {
-    requestId,
+import { generateOrderId, validateOrderProducts } from "../utils/helper.js";
+import { cancelQrisValidator, validateQrisRequest, validateQrisStatus } from "../validators/paymentValidator.js";
+import {
+    convertToDate,
+    generateHeaders,
+    generateMerchantTradeNo,
+    generateRequestId,
     merchantId,
-    ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
-    paymentType: requestBodyForm.paymentType,
-    amount: requestBodyForm.totalAmount,
-    merchantTradeNo,
-    notifyUrl: process.env.NOTIFY_URL,
-    expire: 300,
-    feeType: "OUR",
-    productName: requestBodyForm.products.map((p) => p.title).join(", "),
-    // productInfo: requestBodyForm.products.map((product) => ({
-    //   id: product.productId.toString(),
-    //   name: product.title,
-    //   price: product.price,
-    //   type: product.category,
-    //   quantity: product.quantity,
-    // })),
-  };
+    paylabsApiUrl,
+} from "./paylabs.js";
 
-  // Validate requestBody
-  const { error } = validateQrisRequest(requestBody);
-  if (error)
-    throw new ResponseError(
-      400,
-      error.details.map((err) => err.message)
-    );
+export const createQris = async ({ validatedProduct, partnerId }) => {
+    try {
+        // Validate products in the order
+        const { validProducts, totalAmount } = await validateOrderProducts(
+            validatedProduct.items,
+            validatedProduct.paymentType,
+            validatedProduct.totalAmount,
+        );
+        if (!validProducts.length) {
+            logger.error("No valid products found to create the order");
+            throw new ResponseError(404, "No valid products found to update the order");
+        }
 
-  // Generate headers for Paylabs request
-  const { headers } = generateHeaders(
-    "POST",
-    "/payment/v2.1/qris/create",
-    requestBody,
-    requestId
-  );
+        // Construct order data
+        const requestBodyForm = {
+            orderId: generateOrderId(partnerId.clientId),
+            userId: validatedProduct.userId,
+            items: validProducts,
+            totalAmount,
+            phoneNumber: validatedProduct.phoneNumber,
+            paymentStatus: "pending",
+            payer: partnerId.name,
+            paymentMethod: validatedProduct.paymentMethod,
+            paymentType: validatedProduct.paymentType,
+            clientId: partnerId.clientId,
+            ...(validatedProduct.storeId && { storeId: validatedProduct.storeId }),
+        };
 
-  // console.log(requestBody);
-  // console.log(headers);
+        // Generate IDs and other necessary fields
+        const requestId = generateRequestId();
+        const merchantTradeNo = generateMerchantTradeNo();
 
-  // Send request to Paylabs
-  const response = await axios.post(
-    `${paylabsApiUrl}/payment/v2.1/qris/create`,
-    requestBody,
-    { headers }
-  );
-  // console.log("Response:", response.data);
+        // Prepare Paylabs request payload
+        const requestBody = {
+            requestId,
+            merchantId,
+            ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
+            paymentType: requestBodyForm.paymentType,
+            amount: requestBodyForm.totalAmount,
+            merchantTradeNo,
+            notifyUrl: process.env.NOTIFY_URL,
+            expire: 300,
+            feeType: "OUR",
+            productName: requestBodyForm.items.map((p) => p.name).join(", "),
+            productInfo: requestBodyForm.items.map((product) => ({
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                type: product.type,
+                quantity: product.quantity,
+            })),
+        };
 
-  // Check for successful response
-  if (!response.data || response.data.errCode != 0)
-    throw new ResponseError(
-      400,
-      response.data
-        ? `error: ${response.data.errCodeDes}`
-        : "failed to create payment"
-    );
+        // Validate requestBody
+        const { error } = validateQrisRequest(requestBody);
+        if (error) {
+            logger.error(
+                "QRIS request validation failed: ",
+                error.details.map((err) => err.message),
+            );
+            throw new ResponseError(
+                400,
+                error.details.map((err) => err.message),
+            );
+        }
 
-  // Save order details in the database
-  const result = await Order.create({
-    ...requestBodyForm,
-    totalAmount: response.data.amount,
-    paymentLink: response.data.qrisUrl,
-    paymentId: response.data.merchantTradeNo,
-    paymentExpired: response.data.expiredTime,
-    storeId: response.data.storeId,
-    qris: response.data,
-  });
-  return { response, result };
+        // Generate headers for Paylabs request
+        const { headers } = generateHeaders("POST", "/payment/v2.1/qris/create", requestBody, requestId);
+
+        // Send request to Paylabs
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/qris/create`, requestBody, { headers });
+
+        // Check for successful response
+        if (!response.data || response.data.errCode !== "0") {
+            logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to create payment");
+            throw new ResponseError(
+                400,
+                response.data ? `error: ${response.data.errCode}` : "failed to create payment",
+            );
+        }
+
+        // Save order details in the database
+        const result = await Order.create({
+            ...requestBodyForm,
+            totalAmount: response.data.amount,
+            paymentLink: response.data.qrisUrl,
+            paymentId: response.data.merchantTradeNo,
+            paymentExpired: response.data.expiredTime,
+            storeId: response.data.storeId,
+            qris: response.data,
+        });
+
+        logger.info("QRIS payment created successfully");
+        return { response, result };
+    } catch (error) {
+        logger.error("Error in createQris: ", error);
+        throw error; // Re-throw the error for further handling
+    }
 };
 
 export const qrisOrderStatus = async ({ id }) => {
-  // Check if the order exists
-  const existOrder = await Order.findById(id);
-  if (!existOrder) throw new ResponseError(404, "Order does not exist!");
+    try {
+        // Check if the order exists
+        const existOrder = await Order.findById(id);
+        if (!existOrder) {
+            logger.error("Order does not exist: ", id);
+            throw new ResponseError(404, "Order does not exist!");
+        }
 
-  if (existOrder.paymentStatus === "paid")
-    throw new ResponseError(200, "Payment already processed!");
+        // if (existOrder.paymentStatus === "paid") {
+        //     logger.error("Payment already processed for order: ", id);
+        //     throw new ResponseError(409, "Payment already processed!");
+        // }
 
-  if (existOrder.paymentStatus === "expired")
-    throw new ResponseError(200, "Payment expired!");
+        // if (existOrder.paymentStatus === "expired") {
+        //     logger.error("Payment already expired for order: ", id);
+        //     throw new ResponseError(408, "Payment already processed!");
+        // }
 
-  if (!existOrder.qris)
-    throw new ResponseError(400, "Qris data not found in the order");
+        // if (!existOrder.qris) {
+        //     logger.error("QRIS data not found in the order: ", id);
+        //     throw new ResponseError(400, "QRIS data not found in the order");
+        // }
 
-  // Prepare request payload for Paylabs
-  const requestId = generateRequestId();
+        // Prepare request payload for Paylabs
+        const requestId = generateRequestId();
+        const requestBody = {
+            requestId,
+            merchantId,
+            ...(existOrder.storeId && { storeId: existOrder.storeId }),
+            merchantTradeNo: existOrder.paymentId,
+            paymentType: existOrder.paymentType,
+        };
 
-  const requestBody = {
-    requestId,
-    merchantId,
-    ...(existOrder.storeId && { storeId: existOrder.storeId }),
-    merchantTradeNo: existOrder.paymentId,
-    paymentType: existOrder.paymentType,
-  };
+        // Validate requestBody
+        const { error } = validateQrisStatus(requestBody);
+        if (error) {
+            logger.error(
+                "QRIS status validation failed: ",
+                error.details.map((err) => err.message),
+            );
+            throw new ResponseError(
+                400,
+                error.details.map((err) => err.message),
+            );
+        }
 
-  // Validate requestBody
-  const { error } = validateQrisStatus(requestBody);
-  if (error)
-    throw new ResponseError(
-      400,
-      error.details.map((err) => err.message)
-    );
+        // Generate headers for Paylabs request
+        const { headers } = generateHeaders("POST", "/payment/v2.1/qris/query", requestBody, requestId);
 
-  // Generate headers for Paylabs request
-  const { headers } = generateHeaders(
-    "POST",
-    "/payment/v2.1/qris/query",
-    requestBody,
-    requestId
-  );
+        // Send request to Paylabs
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/qris/query`, requestBody, { headers });
 
-  // console.log(requestBody);
-  // console.log(headers);
+        // Check for successful response
+        if (!response.data || response.data.errCode !== "0") {
+            logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to query payment status");
+            throw new ResponseError(
+                400,
+                response.data ? `error: ${response.data.errCode}` : "failed to query payment status",
+            );
+        }
 
-  // Send request to Paylabs
-  const response = await axios.post(
-    `${paylabsApiUrl}/payment/v2.1/qris/query`,
-    requestBody,
-    { headers }
-  );
-  // console.log(response.data);
+        // Generate headers for Paylabs request
+        const { responseHeaders } = generateHeaders("POST", "/api/order/status/qris/:id", response.data, requestId);
 
-  // Check for successful response
-  if (!response.data || response.data.errCode != 0)
-    throw new ResponseError(
-      400,
-      response.data
-        ? `error: ${response.data.errCodeDes}`
-        : "failed to create payment"
-    );
-
-  // Generate headers for Paylabs request
-  const { responseHeaders } = generateHeaders(
-    "POST",
-    "/api/order/status/qris/:id",
-    response.data,
-    requestId
-  );
-
-  return { response, responseHeaders };
+        return { response, responseHeaders };
+    } catch (error) {
+        logger.error("Error in qrisOrderStatus: ", error);
+        throw error; // Re-throw the error for further handling
+    }
 };
 
 export const cancelQris = async ({ id }) => {
-  // Check if the order exists
-  const existOrder = await Order.findById(id);
-  if (!existOrder) throw new ResponseError(404, "Order does not exist!");
+    try {
+        // Check if the order exists
+        const existOrder = await Order.findById(id);
+        if (!existOrder) {
+            logger.error("Order does not exist: ", id);
+            throw new ResponseError(404, "Order does not exist!");
+        }
 
-  //check expired
-  const currentDateTime = new Date();
-  const expiredDateTime = convertToDate(existOrder.paymentExpired);
+        // Check if the order has expired
+        const currentDateTime = new Date();
+        const expiredDateTime = convertToDate(existOrder.paymentExpired);
 
-  if (currentDateTime > expiredDateTime) {
-    existOrder.paymentStatus = "expired";
-    await existOrder.save();
-    return { currentDateTime, expiredDateTime, payloadResponseError };
-  }
+        if (currentDateTime > expiredDateTime) {
+            existOrder.paymentStatus = "expired";
+            const payloadResponseError = {
+                merchantId: process.env.PAYLABS_MERCHANT_ID,
+                requestId: generateRequestId(),
+                errCode: "orderExpired",
+                errCodeDes: "order expired",
+            };
+            await existOrder.save();
+            return { currentDateTime, expiredDateTime, payloadResponseError };
+        }
 
-  if (existOrder.paymentStatus === "paid")
-    throw new ResponseError(200, "Payment already processed!");
+        if (existOrder.paymentStatus === "paid") {
+            logger.error("Payment already processed for order: ", id);
+            throw new ResponseError(409, "Payment already processed!");
+        }
 
-  // Prepare request payload for Paylabs
-  const requestId = generateRequestId();
+        // Prepare request payload for Paylabs
+        const requestId = generateRequestId();
+        const requestBody = {
+            requestId,
+            merchantId,
+            ...(existOrder.storeId && { storeId: existOrder.storeId }),
+            merchantTradeNo: existOrder.paymentId,
+            platformTradeNo: existOrder.qris.platformTradeNo,
+            qrCode: existOrder.qris.qrCode,
+        };
 
-  const requestBody = {
-    requestId,
-    merchantId,
-    ...(existOrder.storeId && { storeId: existOrder.storeId }),
-    merchantTradeNo: existOrder.paymentId,
-    platformTradeNo: existOrder.qris.platformTradeNo,
-    qrCode: existOrder.qris.qrCode,
-  };
+        // Validate requestBody
+        const { error } = cancelQrisValidator(requestBody);
+        if (error) {
+            logger.error(
+                "QRIS cancel validation failed: ",
+                error.details.map((err) => err.message),
+            );
+            throw new ResponseError(
+                400,
+                error.details.map((err) => err.message),
+            );
+        }
 
-  // console.log(requestBody);
+        // Generate headers for Paylabs request
+        const { headers } = generateHeaders("POST", "/payment/v2.1/qris/cancel", requestBody, requestId);
 
-  // Validate requestBody
-  const { error } = cancelQrisValidator(requestBody);
-  if (error)
-    throw new ResponseError(
-      400,
-      error.details.map((err) => err.message)
-    );
+        // Send request to Paylabs
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/qris/cancel`, requestBody, { headers });
 
-  // Generate headers for Paylabs request
-  const { headers } = generateHeaders(
-    "POST",
-    "/payment/v2.1/qris/cancel",
-    requestBody,
-    requestId
-  );
+        // Check for successful response
+        if (!response.data || response.data.errCode !== "0") {
+            logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to cancel payment");
+            throw new ResponseError(
+                400,
+                response.data ? `error: ${response.data.errCode}` : "failed to cancel payment",
+            );
+        }
 
-  // Send request to Paylabs
-  const response = await axios.post(
-    `${paylabsApiUrl}/payment/v2.1/qris/cancel`,
-    requestBody,
-    { headers }
-  );
+        // Update order details in the database
+        existOrder.paymentLink = undefined;
+        existOrder.paymentStatus = "cancel";
+        existOrder.qris.set(response.data);
+        await existOrder.save();
 
-  // Check for successful response
-  if (!response.data || response.data.errCode != 0)
-    throw new ResponseError(
-      400,
-      response.data
-        ? `error: ${response.data.errCodeDes}`
-        : "failed to create payment"
-    );
+        // Generate headers for Paylabs request
+        const { responseHeaders } = generateHeaders(
+            "POST",
+            "/payment/v2.1/qris/cancel",
+            response.data,
+            generateRequestId(),
+        );
 
-  // Generate headers for Paylabs request
-  const { responseHeaders } = generateHeaders(
-    "POST",
-    "/payment/v2.1/qris/cancel",
-    response.data,
-    generateRequestId()
-  );
-
-  // Update order details in the database
-  existOrder.paymentLink = undefined;
-  existOrder.paymentStatus = "cancel";
-  existOrder.qris.set(response.data);
-  await existOrder.save();
-
-  return { response, responseHeaders };
+        return { response, responseHeaders };
+    } catch (error) {
+        logger.error("Error in cancelQris: ", error);
+        throw error; // Re-throw the error for further handling
+    }
 };

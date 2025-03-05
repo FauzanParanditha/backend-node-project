@@ -32,7 +32,7 @@ src/
 
 Before running the project, ensure you have the following installed:
 
-- **Node.js** (v16+ recommended)
+- **Node.js** (v20+ recommended)
 - **MongoDB**
 - **npm** or **yarn**
 
@@ -42,27 +42,35 @@ Before running the project, ensure you have the following installed:
 
 1. Clone the repository:
 
-   ```bash
-   git clone https://github.com/FauzanParanditha/backend-node-project.git
-   cd your-repo
-   ```
+    ```bash
+    git clone https://github.com/FauzanParanditha/backend-node-project.git
+    cd your-repo
+    ```
 
 2. Install dependencies:
 
-   ```bash
-   npm install
-   ```
+    ```bash
+    npm install
+    ```
 
 3. Create a `.env` file and configure the environment variables:
 
-   ```env
-   PORT=5000
-   MONGO_URI=mongodb://localhost:27017/your-database
-   PAYLABS_API_URL=https://paylabs-provide
-   PAYLABS_MERCHANT_ID=your_merchant_id
-   NOTIFY_URL=https://your-domain.com/callback/paylabs
-   REDIRECT_URL=https://your-domain.com/
-   ```
+    ```env
+    PORT=5000
+    MONGO_URI=mongodb://localhost:27017/your-database
+    PAYLABS_API_URL=https://paylabs-provide
+    PAYLABS_MERCHANT_ID=your_merchant_id
+    NOTIFY_URL=https://your-domain.com/callback/paylabs
+    REDIRECT_URL=https://your-domain.com/
+    ```
+
+4. Seed database:
+    ```bash
+    npm run seed:all  #for all seed
+    npm run seed:availablePayments
+    npm run seed:client
+    npm run seed:ip
+    ```
 
 ---
 
@@ -70,9 +78,9 @@ Before running the project, ensure you have the following installed:
 
 1. Run the project:
 
-   ```bash
-   npm start
-   ```
+    ```bash
+    npm start
+    ```
 
 2. Access the API at `http://localhost:5000`.
 
@@ -80,19 +88,19 @@ Before running the project, ensure you have the following installed:
 
 ## Key API Endpoints
 
-| Method | Endpoint                            | Description                             |
-| ------ | ----------------------------------- | --------------------------------------- |
-| POST   | `/api/order/create`                 | Create a HTML 5 payment transaction     |
-| POST   | `/api/order/create/qris`            | Create a QRIS payment transaction       |
-| POST   | `/api/order/create/va/snap`         | Create a virtual account SNAP payment   |
-| POST   | `/api/order/create/va`              | Create a virtual account payment        |
-| POST   | `/api/order/create/va/static`       | Create a virtual account static payment |
-| POST   | `/api/order/create/cc`              | Create a credit card payment            |
-| POST   | `/api/order/create/ewallet`         | Create a e-wallet payment               |
-| POST   | `/api/order/webhook/paylabs`        | Handle payment notifications            |
-| POST   | `/api/order/webhook/paylabs/va`     | Handle payment notifications va static  |
-| POST   | `/api/order/webhook/paylabs/vaSnap` | Handle payment notifications va SNAP    |
-| GET    | `/api/orders`                       | Fetch orders from the database          |
+| Method | Endpoint                               | Description                             |
+| ------ | -------------------------------------- | --------------------------------------- |
+| POST   | `/api/v1/order/create`                 | Create a HTML 5 payment transaction     |
+| POST   | `/api/v1/order/create/qris`            | Create a QRIS payment transaction       |
+| POST   | `/api/v1/order/create/va/snap`         | Create a virtual account SNAP payment   |
+| POST   | `/api/v1/order/create/va`              | Create a virtual account payment        |
+| POST   | `/api/v1/order/create/va/static`       | Create a virtual account static payment |
+| POST   | `/api/v1/order/create/cc`              | Create a credit card payment            |
+| POST   | `/api/v1/order/create/ewallet`         | Create a e-wallet payment               |
+| POST   | `/api/v1/order/webhook/paylabs`        | Handle payment notifications            |
+| POST   | `/api/v1/order/webhook/paylabs/va`     | Handle payment notifications va static  |
+| POST   | `/api/v1/order/webhook/paylabs/vaSnap` | Handle payment notifications va SNAP    |
+| GET    | `/api/v1/orders`                       | Fetch orders from the database          |
 
 ---
 
@@ -122,23 +130,23 @@ Before running the project, ensure you have the following installed:
 
 ```json
 {
-  "merchantId": "xxxx",
-  "requestId": "xxxx",
-  "errCode": "xxxx",
-  "paymentType": "xxxx",
-  "amount": "xxx",
-  "createTime": "xxxx",
-  "successTime": "xxxx",
-  "merchantTradeNo": "xxxx",
-  "platformTradeNo": "xxxx",
-  "status": "xxxx",
-  "paymentMethodInfo": {
-    "vaCode": "xxxx"
-  },
-  "productName": "xxxx",
-  "transFeeRate": "xxxx",
-  "transFeeAmount": "xxxx",
-  "totalTransFee": "xxxx"
+    "merchantId": "xxxx",
+    "requestId": "xxxx",
+    "errCode": "xxxx",
+    "paymentType": "xxxx",
+    "amount": "xxx",
+    "createTime": "xxxx",
+    "successTime": "xxxx",
+    "merchantTradeNo": "xxxx",
+    "platformTradeNo": "xxxx",
+    "status": "xxxx",
+    "paymentMethodInfo": {
+        "vaCode": "xxxx"
+    },
+    "productName": "xxxx",
+    "transFeeRate": "xxxx",
+    "transFeeAmount": "xxxx",
+    "totalTransFee": "xxxx"
 }
 ```
 
