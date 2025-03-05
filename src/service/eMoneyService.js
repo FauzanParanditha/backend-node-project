@@ -126,10 +126,10 @@ export const eMoneyOrderStatus = async ({ id }) => {
         //     throw new ResponseError(409, "Payment already processed!");
         // }
 
-        if (existOrder.paymentStatus === "expired") {
-            logger.error("Payment expired for order: ", id);
-            throw new ResponseError(408, "Payment already processed!");
-        }
+        // if (existOrder.paymentStatus === "expired") {
+        //     logger.error("Payment expired for order: ", id);
+        //     throw new ResponseError(408, "Payment already processed!");
+        // }
 
         // if (!existOrder.eMoney) {
         //     logger.error("E-Money data not found in the order: ", id);

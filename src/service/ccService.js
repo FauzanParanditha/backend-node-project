@@ -123,10 +123,10 @@ export const ccOrderStatus = async ({ id }) => {
         //     throw new ResponseError(409, "Payment already processed!");
         // }
 
-        if (existOrder.paymentStatus === "expired") {
-            logger.error("Payment expired for order: ", id);
-            throw new ResponseError(408, "Payment already processed!");
-        }
+        // if (existOrder.paymentStatus === "expired") {
+        //     logger.error("Payment expired for order: ", id);
+        //     throw new ResponseError(408, "Payment already processed!");
+        // }
 
         // if (!existOrder.cc) {
         //     logger.error("CC data not found in the order: ", id);
