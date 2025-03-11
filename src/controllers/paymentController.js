@@ -9,25 +9,23 @@ export const paylabsCallback = async (req, res, next) => {
         const { "x-partner-id": partnerId, "x-signature": signature, "x-timestamp": timestamp } = req.headers;
         const { method: httpMethod, originalUrl: endpointUrl } = req;
 
-        const payloadRaw = req.body.toString("utf8").trim();
-        logger.info(`Raw Payload: ${payloadRaw}`);
-
-        const payload = JSON.parse(payloadRaw);
-
-        const allowedPartnerId = process.env.PAYLABS_MERCHANT_ID;
-        if (partnerId !== allowedPartnerId) {
+        if (partnerId !== process.env.PAYLABS_MERCHANT_ID) {
             return res.status(401).send("Invalid partner ID");
         }
 
+        const payloadRaw = req.body.toString("utf8").trim();
+        logger.info(`Raw Payload: ${payloadRaw}`);
+        const payload = JSON.parse(payloadRaw);
+
         if (!verifySignature(httpMethod, endpointUrl, payloadRaw, timestamp, signature)) {
-            logger.error(`Signature verification failed for payload: ${payloadRaw}`);
+            logger.error(`Signature verification failed: partnerId=${partnerId}, payload=${payloadRaw}`);
             return res.status(401).send("Invalid signature");
         }
 
         const { responseHeaders, payloadResponse, currentDateTime, expiredDateTime, payloadResponseError } =
             await paymentService.callbackPaylabs({ payload });
 
-        if (currentDateTime > expiredDateTime && expiredDateTime != null) {
+        if (expiredDateTime && currentDateTime > expiredDateTime) {
             return res.status(200).json(payloadResponseError);
         }
 
