@@ -21,34 +21,21 @@ const apiLogger = async (req, res, next) => {
         logData.body = "***BODY TOO LARGE - TRUNCATED***";
     }
 
-    const originalSend = res.send.bind(res);
-    const originalJson = res.json.bind(res);
-    const originalEnd = res.end.bind(res);
-
-    const logResponse = () => {
+    res.on("finish", async () => {
         logData.statusCode = res.statusCode;
+
         const { error } = validateLog(logData);
         if (!error) {
-            new ApiLog(logData).save().catch((err) => logger.error(`❌ Error saving API log: ${err.message}`));
+            try {
+                await ApiLog.create(logData);
+                logger.info("✅ API request logged successfully.");
+            } catch (err) {
+                logger.error(`❌ Error saving API log: ${err.message}`);
+            }
         } else {
             logger.error(`❌ Log validation failed: ${error.details.map((e) => e.message)}`);
         }
-    };
-
-    res.send = function (body) {
-        logResponse();
-        return originalSend(body);
-    };
-
-    res.json = function (body) {
-        logResponse();
-        return originalJson(body);
-    };
-
-    res.end = function (body) {
-        logResponse();
-        return originalEnd(body);
-    };
+    });
 
     next();
 };
