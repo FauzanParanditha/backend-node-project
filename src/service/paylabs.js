@@ -67,14 +67,27 @@ export const minifyJson = (body) => {
 
 // Function to create signature
 export const createSignature = (httpMethod, endpointUrl, body, timestamp) => {
+    if (!httpMethod || !endpointUrl || !body || !timestamp) {
+        logger.error("Invalid parameters provided for signature verification");
+        return false;
+    }
+
     const minifiedBody = minifyJson(body);
-    logger.info(minifiedBody);
-    logger.info(timestamp);
-    const privateKey = fs.readFileSync("private-key.pem", "utf8");
+    logger.info(`create minifiedBody (length): ${minifiedBody.length}`);
+    logger.info(`create timestamp: ${timestamp}`);
+
+    let privateKey;
+    try {
+        privateKey = fs.readFileSync("private-key.pem", "utf8");
+    } catch (err) {
+        logger.error(`Failed to read private key: ${err.message}`);
+        return null;
+    }
 
     const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
+
     const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
-    logger.info(stringContent);
+    logger.info(`create stringContent (hashed): ${crypto.createHash("sha256").update(stringContent).digest("hex")}`);
 
     const sign = crypto.createSign("RSA-SHA256");
     sign.update(stringContent);
@@ -84,21 +97,32 @@ export const createSignature = (httpMethod, endpointUrl, body, timestamp) => {
 };
 
 export const verifySignature = (httpMethod, endpointUrl, rawBody, timestamp, signature) => {
-    const minifiedBody = rawBody.trim();
-    logger.info(`verify minifiedBody: ${minifiedBody}`);
+    if (!httpMethod || !endpointUrl || !rawBody || !timestamp || !signature) {
+        logger.error("Invalid parameters provided for signature verification");
+        return false;
+    }
+
+    const minifiedBody = typeof rawBody === "string" ? rawBody.trim() : "";
+    logger.info(`verify minifiedBody (length): ${minifiedBody.length}`);
     logger.info(`verify timestamp: ${timestamp}`);
 
     const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
 
     const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
-    logger.info(`verify stringContent: ${stringContent}`);
+    logger.info(`verify stringContent (hashed): ${crypto.createHash("sha256").update(stringContent).digest("hex")}`);
 
-    const publicKey = fs.readFileSync("public.pem", "utf8");
+    let publicKey;
+    try {
+        publicKey = fs.readFileSync("public.pem", "utf8");
+    } catch (err) {
+        logger.error(`Failed to read public key: ${err.message}`);
+        return false;
+    }
 
     const verify = crypto.createVerify("RSA-SHA256");
     verify.update(stringContent);
 
-    const isVerified = verify.verify(publicKey, signature, "base64");
+    const isVerified = verify.verify(publicKey, Buffer.from(signature, "base64"));
     logger.info(`verify result: ${isVerified}`);
 
     return isVerified;
@@ -106,14 +130,20 @@ export const verifySignature = (httpMethod, endpointUrl, rawBody, timestamp, sig
 
 export const createSignatureForward = (httpMethod, endpointUrl, body, timestamp) => {
     const secret = process.env.SECRET_KEY;
+    if (!httpMethod || !endpointUrl || !body || !timestamp) {
+        logger.error("Invalid parameters provided for signature verification");
+        return false;
+    }
+
     const minifiedBody = minifyJson(body);
-    logger.info(minifiedBody);
-    logger.info(timestamp);
+    logger.info(`create minifiedBody (length): ${minifiedBody.length}`);
+    logger.info(`create timestamp: ${timestamp}`);
     // const privateKey = fs.readFileSync("private-key.pem", "utf8");
 
     const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
+
     const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
-    logger.info(stringContent);
+    logger.info(`create stringContent (hashed): ${crypto.createHash("sha256").update(stringContent).digest("hex")}`);
 
     const sign = crypto.createHmac("sha256", secret);
     sign.update(stringContent);
@@ -124,14 +154,19 @@ export const createSignatureForward = (httpMethod, endpointUrl, body, timestamp)
 
 export const verifySignatureForward = (httpMethod, endpointUrl, body, timestamp, signature) => {
     const secret = process.env.SECRET_KEY;
+    if (!httpMethod || !endpointUrl || !body || !timestamp || !signature) {
+        logger.error("Invalid parameters provided for signature verification");
+        return false;
+    }
+
     const minifiedBody = minifyJson(body);
-    logger.info(`verify ${minifiedBody}`);
-    logger.info(`verify ${timestamp}`);
+    logger.info(`verify minifiedBody (length): ${minifiedBody.length}`);
+    logger.info(`verify timestamp: ${timestamp}`);
 
     const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
 
     const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
-    logger.info(`verify ${stringContent}`);
+    logger.info(`verify stringContent (hashed): ${crypto.createHash("sha256").update(stringContent).digest("hex")}`);
 
     const verify = crypto.createHmac("sha256", secret);
     verify.update(stringContent);
@@ -139,7 +174,7 @@ export const verifySignatureForward = (httpMethod, endpointUrl, body, timestamp,
     const expectedSignature = verify.digest("base64");
 
     const isVerified = signature === expectedSignature;
-    logger.info(`verify ${isVerified}`);
+    logger.info(`verify result: ${isVerified}`);
 
     return isVerified;
 };
@@ -166,15 +201,21 @@ export const generateCustomerNumber = () => {
 
 export const generateHeaders = (method, endpoint, requestBody, requestId, offsetMs = 0) => {
     const timestamp = generateTimestamp(offsetMs);
-    const signature = createSignature(method, endpoint, requestBody, timestamp);
+    let signature;
+    try {
+        signature = createSignature(method, endpoint, requestBody, timestamp);
+    } catch (error) {
+        logger.error(`❌ Failed to generate signature: ${error.message}`);
+        throw new Error("Signature generation failed.");
+    }
 
     return {
         headers: {
-            "Content-Type": "application/json;charset=utf-8",
-            "X-TIMESTAMP": timestamp,
-            "X-SIGNATURE": signature,
-            "X-PARTNER-ID": merchantId,
-            "X-REQUEST-ID": requestId,
+            "content-type": "application/json;charset=utf-8",
+            "x-timestamp": timestamp,
+            "x-signature": signature,
+            "x-partner-id": merchantId,
+            "x-request-id": requestId,
         },
         timestamp,
     };

@@ -13,9 +13,8 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
 
     const logFailedCallback = async (payload, callbackUrl, retryCount, errDesc, clientId, delay) => {
         logger.error(`Logging failed callback attempt ${retryCount}: ${JSON.stringify(payload)}`);
-        const merchantTradeNo = String(payload.merchantTradeNo);
 
-        // Validasi format merchantTradeNo
+        const merchantTradeNo = String(payload.merchantTradeNo);
         if (!/^PL-[a-f0-9]{16}$/.test(merchantTradeNo)) {
             throw new Error("Invalid merchantTradeNo format");
         }
@@ -29,7 +28,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                     retryCount,
                     errDesc,
                     clientId,
-                    nextRetryAt: new Date(Date.now() + delay * 1000),
+                    nextRetryAt: new Date(Date.now() + (delay ? delay * 1000 : 0)),
                     status: "pending",
                 },
             },
@@ -37,7 +36,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         ).catch((err) => logger.error(`Failed to log callback: ${err.message}`));
     };
 
-    const validateResponse = async (response) => {
+    const validateResponse = (response) => {
         const {
             "content-type": contentType,
             "x-timestamp": timestamp,
@@ -45,21 +44,15 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
             "x-request-id": requestId,
         } = response.headers;
 
-        if (!contentType || !contentType.toLowerCase().includes("application/json")) {
+        if (!contentType?.toLowerCase().includes("application/json")) {
             throw new ResponseError(400, "Invalid Content-Type header");
         }
         if (!timestamp || !signature || !requestId) {
             throw new ResponseError(400, "Missing required headers");
         }
 
-        const { clientId, requestId: bodyRequestId, errCode } = response.data;
-        if (!clientId) throw new ResponseError(400, "Missing clientId in response body");
-
-        const existingClientId = await Client.findOne({ clientId });
-        if (!existingClientId) throw new ResponseError(400, "Client Id is not registered!");
-
+        const { requestId: bodyRequestId, errCode } = response.data;
         if (!bodyRequestId) throw new ResponseError(400, "Missing requestId in response body");
-
         if (errCode !== "0") throw new ResponseError(400, `Error code received: ${errCode}`);
     };
 
@@ -77,15 +70,11 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
             );
         }
 
-        const notificationData = payload;
-        const paymentId = notificationData.merchantTradeNo?.trim();
+        const paymentId = payload.merchantTradeNo?.trim();
         if (!paymentId) throw new ResponseError(400, "Invalid transaction ID");
 
         const order = await Order.findOne({ paymentId });
-        if (!order) {
-            logger.error("Order not found for orderID: ", notificationData.trxId);
-            throw new ResponseError(404, `Order not found for ID: ${paymentId}`);
-        }
+        if (!order) throw new ResponseError(404, `Order not found for ID: ${paymentId}`);
 
         const client = await Client.findOne({ clientId: order.clientId }).select("+clientId");
         if (!client || !client.notifyUrl) throw new ResponseError(400, "Missing callback URL");
@@ -94,58 +83,46 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         const parsedUrl = new URL(callbackUrl);
         const path = parsedUrl.pathname;
 
-        while (retryCount < retryIntervals.length) {
-            if (serverIsClosing) {
-                logger.warn("Server shutting down. Aborting retries.");
-                await logFailedCallback(
-                    payload,
-                    callbackUrl,
-                    retryCount,
-                    "Server shutting down.",
-                    client._id,
-                    retryIntervals[retryCount - 1],
-                );
-                return;
-            }
-
+        const attemptCallback = async (retryAttempt) => {
             try {
-                const { headers: responseHeaders } = generateHeadersForward(
-                    "POST",
-                    path,
-                    notificationData,
-                    generateRequestId(),
-                );
+                if (serverIsClosing) {
+                    logger.warn("Server shutting down. Aborting retries.");
+                    await logFailedCallback(payload, callbackUrl, retryAttempt, "Server shutting down.", client._id, 0);
+                    return;
+                }
 
-                const response = await axios.post(callbackUrl, notificationData, {
+                const { headers: responseHeaders } = generateHeadersForward("POST", path, payload, generateRequestId());
+
+                const response = await axios.post(callbackUrl, payload, {
                     headers: responseHeaders,
                     timeout: 10000,
                 });
 
-                await validateResponse(response);
-                logger.info(`Callback successfully forwarded on attempt ${retryCount + 1}`);
-                return true; // Exit loop on success
+                validateResponse(response);
+                logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
             } catch (err) {
-                logger.error(`Attempt ${retryCount + 1} failed: ${err.code}`);
-                // logger.error(`Full error object: ${JSON.stringify(err, Object.getOwnPropertyNames(err))}`);
+                logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
+                logger.error(`Stack Trace: ${err.stack}`);
 
-                retryCount++;
-                if (retryCount < retryIntervals.length) {
-                    const delay = retryIntervals[retryCount - 1];
+                if (retryAttempt < retryIntervals.length) {
+                    const delay = retryIntervals[retryAttempt];
 
-                    await logFailedCallback(payload, callbackUrl, retryCount, err.message, client._id, delay);
+                    await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, delay);
                     logger.info(`Retrying in ${delay} seconds...`);
 
-                    // Wait before retrying
-                    await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+                    setTimeout(() => attemptCallback(retryAttempt + 1), delay * 1000);
                 } else {
                     logger.error("Exhausted retries.");
-                    await logFailedCallback(payload, callbackUrl, retryCount, err.message, client._id, 0);
-                    sendAlert(`Failed to forward callback after ${retryCount} attempts: ${err.message}`);
+                    await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, 0);
+                    sendAlert(`Failed to forward callback after ${retryAttempt + 1} attempts: ${err.message}`);
                 }
             }
-        }
+        };
+
+        attemptCallback(retryCount);
     } catch (error) {
         logger.error(`Critical error in forwardCallback: ${error.message}`);
+        logger.error(error.stack);
         throw error;
     } finally {
         decrementActiveTask();
@@ -197,14 +174,8 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
             throw new ResponseError(400, "Missing required headers");
         }
 
-        const { clientId, requestId: bodyRequestId, errCode } = response.data;
-        if (!clientId) throw new ResponseError(400, "Missing clientId in response body");
-
-        const existingClientId = await Client.findOne({ clientId });
-        if (!existingClientId) throw new ResponseError(404, "Client Id is not registered!");
-
+        const { requestId: bodyRequestId, errCode } = response.data;
         if (!bodyRequestId) throw new ResponseError(400, "Missing requestId in response body");
-
         if (errCode !== "0") throw new ResponseError(400, `Error code received: ${errCode}`);
     };
 
@@ -243,56 +214,46 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
         const parsedUrl = new URL(callbackUrl);
         const path = parsedUrl.pathname;
 
-        while (retryCount < retryIntervals.length) {
-            if (serverIsClosing) {
-                logger.warn("Server shutting down. Aborting retries.");
-                await logFailedCallback(
-                    payload,
-                    callbackUrl,
-                    retryCount,
-                    "Server shutting down. Aborting retries.",
-                    client._id,
-                    retryIntervals[retryCount - 1],
-                );
-                return; // Stop retries during shutdown
-            }
-
+        const attemptCallback = async (retryAttempt) => {
             try {
-                const { headers: responseHeaders } = generateHeadersForward(
-                    "POST",
-                    path,
-                    notificationData,
-                    generateRequestId(),
-                );
+                if (serverIsClosing) {
+                    logger.warn("Server shutting down. Aborting retries.");
+                    await logFailedCallback(payload, callbackUrl, retryAttempt, "Server shutting down.", client._id, 0);
+                    return;
+                }
 
-                const response = await axios.post(callbackUrl, notificationData, {
+                const { headers: responseHeaders } = generateHeadersForward("POST", path, payload, generateRequestId());
+
+                const response = await axios.post(callbackUrl, payload, {
                     headers: responseHeaders,
-                    timeout: 10000, // Timeout in milliseconds
+                    timeout: 10000,
                 });
 
-                await validateResponse(response);
-                logger.info(`Callback successfully forwarded on attempt ${retryCount + 1}`);
-                return true;
+                validateResponse(response);
+                logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
             } catch (err) {
-                logger.error(`Attempt ${retryCount + 1} failed: ${err.message}`);
+                logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
+                logger.error(`Stack Trace: ${err.stack}`);
 
-                retryCount++;
-                if (retryCount < retryIntervals.length) {
-                    const delay = retryIntervals[retryCount - 1];
+                if (retryAttempt < retryIntervals.length) {
+                    const delay = retryIntervals[retryAttempt];
 
-                    await logFailedCallback(payload, callbackUrl, retryCount, err.message, client._id, delay);
+                    await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, delay);
                     logger.info(`Retrying in ${delay} seconds...`);
 
-                    await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+                    setTimeout(() => attemptCallback(retryAttempt + 1), delay * 1000);
                 } else {
                     logger.error("Exhausted retries.");
-                    await logFailedCallback(payload, callbackUrl, retryCount, err.message, client._id, 0);
-                    sendAlert(`Failed to forward callback after ${retryCount} attempts: ${err.message}`);
+                    await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, 0);
+                    sendAlert(`Failed to forward callback after ${retryAttempt + 1} attempts: ${err.message}`);
                 }
             }
-        }
+        };
+
+        attemptCallback(retryCount);
     } catch (error) {
         logger.error(`Critical error in forwardCallback: ${error.message}`);
+        logger.error(error.stack);
         throw error;
     } finally {
         decrementActiveTask();
