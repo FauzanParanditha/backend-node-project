@@ -84,21 +84,32 @@ export const createSignature = (httpMethod, endpointUrl, body, timestamp) => {
 };
 
 export const verifySignature = (httpMethod, endpointUrl, rawBody, timestamp, signature) => {
-    const minifiedBody = rawBody.trim();
-    logger.info(`verify minifiedBody: ${minifiedBody}`);
+    if (!httpMethod || !endpointUrl || !rawBody || !timestamp || !signature) {
+        logger.error("Invalid parameters provided for signature verification");
+        return false;
+    }
+
+    const minifiedBody = typeof rawBody === "string" ? rawBody.trim() : "";
+    logger.info(`verify minifiedBody (length): ${minifiedBody.length}`);
     logger.info(`verify timestamp: ${timestamp}`);
 
     const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
 
     const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
-    logger.info(`verify stringContent: ${stringContent}`);
+    logger.info(`verify stringContent (hashed): ${crypto.createHash("sha256").update(stringContent).digest("hex")}`);
 
-    const publicKey = fs.readFileSync("public.pem", "utf8");
+    let publicKey;
+    try {
+        publicKey = fs.readFileSync("public.pem", "utf8");
+    } catch (err) {
+        logger.error(`Failed to read public key: ${err.message}`);
+        return false;
+    }
 
     const verify = crypto.createVerify("RSA-SHA256");
     verify.update(stringContent);
 
-    const isVerified = verify.verify(publicKey, signature, "base64");
+    const isVerified = verify.verify(publicKey, Buffer.from(signature, "base64"));
     logger.info(`verify result: ${isVerified}`);
 
     return isVerified;
@@ -166,15 +177,21 @@ export const generateCustomerNumber = () => {
 
 export const generateHeaders = (method, endpoint, requestBody, requestId, offsetMs = 0) => {
     const timestamp = generateTimestamp(offsetMs);
-    const signature = createSignature(method, endpoint, requestBody, timestamp);
+    let signature;
+    try {
+        signature = createSignature(method, endpoint, requestBody, timestamp);
+    } catch (error) {
+        logger.error(`❌ Failed to generate signature: ${error.message}`);
+        throw new Error("Signature generation failed.");
+    }
 
     return {
         headers: {
-            "Content-Type": "application/json;charset=utf-8",
-            "X-TIMESTAMP": timestamp,
-            "X-SIGNATURE": signature,
-            "X-PARTNER-ID": merchantId,
-            "X-REQUEST-ID": requestId,
+            "content-type": "application/json;charset=utf-8",
+            "x-timestamp": timestamp,
+            "x-signature": signature,
+            "x-partner-id": merchantId,
+            "x-request-id": requestId,
         },
         timestamp,
     };
