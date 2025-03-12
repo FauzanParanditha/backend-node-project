@@ -28,7 +28,7 @@ const apiLogger = async (req, res, next) => {
         if (!error) {
             try {
                 await ApiLog.create(logData);
-                logger.info("✅ API request logged successfully.");
+                // logger.info("✅ API request logged successfully.");
             } catch (err) {
                 logger.error(`❌ Error saving API log: ${err.message}`);
             }
