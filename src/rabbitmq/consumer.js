@@ -8,6 +8,8 @@ const QUEUE_NAME = "payment_events";
 const MAX_RETRY = 5;
 
 const consumeQueue = async () => {
+    await connectDB();
+
     let connection;
     let channel;
 
@@ -71,6 +73,5 @@ const consumeQueue = async () => {
     });
 };
 
-await connectDB();
 // Jalankan worker
 consumeQueue();
