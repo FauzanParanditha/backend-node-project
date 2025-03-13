@@ -1,6 +1,6 @@
 import amqplib from "amqplib";
 
-const RABBITMQ_URL = "amqp://localhost"; // Sesuaikan jika pakai Docker: amqp://guest:guest@localhost
+const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://localhost"; // Sesuaikan jika pakai Docker: amqp://guest:guest@localhost
 
 const testConnection = async () => {
     try {

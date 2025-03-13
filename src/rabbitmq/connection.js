@@ -1,7 +1,7 @@
 import amqplib from "amqplib";
 import logger from "../application/logger.js";
 
-const RABBITMQ_URL = "amqp://localhost";
+const RABBITMQ_URL = process.env.RABBITMQ_URL;
 let connection;
 let channel;
 let reconnectTimeout = 5000;
