@@ -57,7 +57,7 @@ export const createPaymentLink = async (order) => {
     }
 };
 
-export const callbackPaylabs = async ({ payload }) => {
+export const callbackPaylabs = async (payload) => {
     try {
         const { error } = validateCallback(payload);
         if (error) {
@@ -94,31 +94,14 @@ export const callbackPaylabs = async ({ payload }) => {
         const currentDateTime = new Date();
         const expiredDateTime = convertToDate(order.paymentExpired);
 
-        // Prepare response payload and headers
-        const responsePayload = (errorCode, errCodeDes) => ({
-            merchantId: process.env.PAYLABS_MERCHANT_ID,
-            requestId: generateRequestId(),
-            errCode: errorCode || notificationData.errCode,
-            ...(errCodeDes && { errCodeDes }),
-        });
-
-        const payloadResponse = responsePayload(0, "");
-
-        const { responseHeaders } = generateHeaders(
-            "POST",
-            "/api/order/webhook/paylabs",
-            payloadResponse,
-            generateRequestId(),
-        );
-
-        const payloadResponseError = responsePayload("orderExpired", "order expired");
         if (currentDateTime > expiredDateTime && expiredDateTime != null) {
             order.paymentStatus = "expired";
 
             broadcastPaymentUpdate({ paymentId: sanitizedPaymentId, status: "expired" });
 
             await order.save();
-            return { currentDateTime, expiredDateTime, payloadResponseError };
+            return;
+            // return { currentDateTime, expiredDateTime, payloadResponseError };
         }
 
         // Process based on notification status
@@ -163,7 +146,8 @@ export const callbackPaylabs = async ({ payload }) => {
                 throw new ResponseError(400, "Unhandled notification status");
         }
 
-        return { responseHeaders, payloadResponse };
+        return;
+        // return { responseHeaders, payloadResponse };
     } catch (error) {
         logger.error("Error in callbackPaylabs: ", error);
         throw error; // Re-throw the error for further handling
