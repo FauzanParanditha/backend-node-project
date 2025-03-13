@@ -15,7 +15,7 @@
         "dev": "nodemon ./src/index.js",
         "test": "jest --runInBand --detectOpenHandles",
         "start:websocket": "node src/application/websocket_server.js",
-        "worker:payment_event": "set WORKER_MODE=true && node src/workers/consumer.js"
+        "worker:payment_event": "set WORKER_MODE=true && node src/rabbitmq/consumer.js"
     },
     "type": "module",
     "keywords": [],
