@@ -1,9 +1,9 @@
 import axios from "axios";
 import logger from "../application/logger.js";
-import { broadcastPaymentUpdate } from "../application/websocket_server.js";
 import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
 import VirtualAccount from "../models/vaModel.js";
+import { sendWebSocketMessage } from "../rabbitmq/wspublisher.js";
 import { generateOrderId } from "../utils/helper.js";
 import { validateCallback, validateCreateLinkRequest } from "../validators/paymentValidator.js";
 import {
@@ -97,7 +97,7 @@ export const callbackPaylabs = async (payload) => {
         if (currentDateTime > expiredDateTime && expiredDateTime != null) {
             order.paymentStatus = "expired";
 
-            broadcastPaymentUpdate({ paymentId: sanitizedPaymentId, status: "expired" });
+            await sendWebSocketMessage({ paymentId: sanitizedPaymentId, status: "expired" });
 
             await order.save();
             return;
@@ -130,7 +130,7 @@ export const callbackPaylabs = async (payload) => {
                 await order.save();
 
                 // Broadcast the payment update to all connected clients
-                broadcastPaymentUpdate({ paymentId: sanitizedPaymentId, status: "paid" });
+                await sendWebSocketMessage({ paymentId: sanitizedPaymentId, status: "paid" });
                 break;
 
             case "09": // Payment failed
@@ -138,7 +138,7 @@ export const callbackPaylabs = async (payload) => {
                 await order.save();
 
                 // Broadcast the payment update to all connected clients
-                broadcastPaymentUpdate({ paymentId: sanitizedPaymentId, status: "failed" });
+                await sendWebSocketMessage({ paymentId: sanitizedPaymentId, status: "failed" });
                 break;
 
             default:

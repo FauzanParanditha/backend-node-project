@@ -9,6 +9,7 @@ export const publishToQueue = async (queue, message, retries = 3, delay = 1000) 
 
             channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)), {
                 persistent: true, // Pesan tidak hilang jika RabbitMQ restart
+                headers: { "x-retry-count": attempt }, // Menambahkan header retry count
             });
 
             logger.info(`📨 Pesan terkirim ke queue: ${queue}, attempt ${attempt}`);

@@ -1,4 +1,5 @@
 import { WebSocket, WebSocketServer } from "ws";
+import { listenForWebSocketMessages } from "../rabbitmq/wsconsumer.js";
 import logger from "./logger.js";
 
 const PORT = 5001;
@@ -59,6 +60,7 @@ if (!process.env.WORKER_MODE) {
         logger.error(`WebSocket server error: ${error.message}`);
     });
 
+    listenForWebSocketMessages();
     logger.info(`✅ WebSocket server running on port ${PORT}`);
 }
 
@@ -66,6 +68,11 @@ export const wss = wssInstance;
 export const getWebSocketServer = () => wssInstance;
 
 export const broadcastPaymentUpdate = (data) => {
+    if (!wssInstance) {
+        logger.warn("WebSocket instance is not available, skipping broadcast.");
+        return;
+    }
+
     const message = JSON.stringify(data);
     logger.info(`Broadcasting payment update: ${message}`);
 

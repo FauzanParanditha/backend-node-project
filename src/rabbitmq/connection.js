@@ -22,7 +22,13 @@ const connectRabbitMQ = async () => {
         });
 
         channel = await connection.createChannel();
-        await channel.assertQueue("callback-retry-queue", { durable: true });
+        await channel.assertExchange("dlx", "direct", { durable: true });
+        await channel.assertQueue("callback-retry-queue", {
+            durable: true,
+            deadLetterExchange: "dlx",
+        });
+        await channel.assertQueue("callback-retry-queue-dlq", { durable: true });
+        await channel.bindQueue("callback-retry-queue-dlq", "dlx", "callback-retry-queue");
 
         logger.info("✅ Berhasil terhubung ke RabbitMQ");
     } catch (error) {
