@@ -1,5 +1,8 @@
 import amqplib from "amqplib";
+import dotenv from "dotenv";
 import logger from "../application/logger.js";
+
+dotenv.config();
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL;
 let connection;
