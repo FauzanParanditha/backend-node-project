@@ -67,15 +67,19 @@ export const VaSnapCallback = async (req, res, next) => {
     try {
         // Extract and verify signature
         const { "x-partner-id": partnerId, "x-signature": signature, "x-timestamp": timestamp } = req.headers;
-        const { body: payload, method: httpMethod } = req;
+        const { method: httpMethod } = req;
 
         const allowedPartnerId = process.env.PAYLABS_MERCHANT_ID;
         if (partnerId !== allowedPartnerId) {
             return res.status(401).send("Invalid partner ID");
         }
 
+        const payloadRaw = req.body.toString("utf8").trim();
+        logger.info(`Raw Payload: ${payloadRaw}`);
+        const payload = JSON.parse(payloadRaw);
+
         const endpointUrl = "/transfer-va/payment";
-        if (!verifySignature(httpMethod, endpointUrl, payload, timestamp, signature)) {
+        if (!verifySignature(httpMethod, endpointUrl, payloadRaw, timestamp, signature)) {
             return res.status(401).send("Invalid signature");
         }
 

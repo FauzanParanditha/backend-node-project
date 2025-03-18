@@ -276,7 +276,7 @@ export const VaSnapCallback = async ({ payload }) => {
         // Prepare response payload and headers
         const responseHeaders = {
             "Content-Type": "application/json;charset=utf-8",
-            "X-TIMESTAMP": generateTimestamp(),
+            "X-TIMESTAMP": generateTimestampSnap(),
         };
 
         const generateResponsePayload = (existOrder, statusCode, statusMessage) => ({
