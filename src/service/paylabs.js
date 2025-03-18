@@ -102,7 +102,7 @@ export const verifySignature = (httpMethod, endpointUrl, rawBody, timestamp, sig
         return false;
     }
 
-    const minifiedBody = typeof rawBody === "string" ? rawBody.trim() : JSON.stringify(rawBody);
+    const minifiedBody = typeof rawBody === "string" ? rawBody.trim() : "";
     logger.info(`verify minifiedBody (length): ${minifiedBody.length}`);
     logger.info(`verify timestamp: ${timestamp}`);
 

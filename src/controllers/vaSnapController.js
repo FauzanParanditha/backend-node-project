@@ -79,7 +79,7 @@ export const VaSnapCallback = async (req, res, next) => {
         const payload = JSON.parse(payloadRaw);
 
         const endpointUrl = "/transfer-va/payment";
-        if (!verifySignature(httpMethod, endpointUrl, payload, timestamp, signature)) {
+        if (!verifySignature(httpMethod, endpointUrl, payloadRaw, timestamp, signature)) {
             return res.status(401).send("Invalid signature");
         }
 
