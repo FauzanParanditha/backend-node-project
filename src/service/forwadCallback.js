@@ -345,54 +345,43 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
         const parsedUrl = new URL(callbackUrl);
         const path = parsedUrl.pathname;
 
-        while (retryCount < retryIntervals.length) {
-            if (serverIsClosing) {
-                logger.warn("Server shutting down. Aborting retries.");
-                await logFailedCallback(
-                    payload,
-                    callbackUrl,
-                    retryCount,
-                    "Server shutting down. Aborting retries.",
-                    client._id,
-                    retryIntervals[retryCount - 1],
-                );
-                return; // Stop retries during shutdown
-            }
-
+        const attemptCallback = async (retryAttempt) => {
             try {
-                const { headers: responseHeaders } = generateHeadersForward(
-                    "POST",
-                    path,
-                    notificationData,
-                    generateRequestId(),
-                );
+                if (serverIsClosing) {
+                    logger.warn("Server shutting down. Aborting retries.");
+                    await logFailedCallback(payload, callbackUrl, retryAttempt, "Server shutting down.", client._id, 0);
+                    return;
+                }
 
-                const response = await axios.post(callbackUrl, notificationData, {
+                const { headers: responseHeaders } = generateHeadersForward("POST", path, payload, generateRequestId());
+
+                const response = await axios.post(callbackUrl, payload, {
                     headers: responseHeaders,
-                    timeout: 10000, // Timeout in milliseconds
+                    timeout: 10000,
                 });
 
-                await validateResponse(response);
-                logger.info(`Callback successfully forwarded on attempt ${retryCount + 1}`);
-                return true;
+                validateResponse(response);
+                logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
             } catch (err) {
-                logger.error(`Attempt ${retryCount + 1} failed: ${err.message}`);
+                logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
+                logger.error(`Stack Trace: ${err.stack}`);
 
-                retryCount++;
-                if (retryCount < retryIntervals.length) {
-                    const delay = retryIntervals[retryCount - 1];
+                if (retryAttempt < retryIntervals.length) {
+                    const delay = retryIntervals[retryAttempt];
 
-                    await logFailedCallback(payload, callbackUrl, retryCount, err.message, client._id, delay);
+                    await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, delay);
                     logger.info(`Retrying in ${delay} seconds...`);
 
-                    await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+                    setTimeout(() => attemptCallback(retryAttempt + 1), delay * 1000);
                 } else {
                     logger.error("Exhausted retries.");
-                    await logFailedCallback(payload, callbackUrl, retryCount, err.message, client._id, 0);
-                    sendAlert(`Failed to forward callback after ${retryCount} attempts: ${err.message}`);
+                    await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, 0);
+                    sendAlert(`Failed to forward callback after ${retryAttempt + 1} attempts: ${err.message}`);
                 }
             }
-        }
+        };
+
+        attemptCallback(retryCount);
     } catch (error) {
         logger.error(`Critical error in forwardCallback: ${error.message}`);
         throw error;
