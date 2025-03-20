@@ -224,7 +224,7 @@ export const vaSNAPOrderStatus = async ({ id }) => {
     }
 };
 
-export const VaSnapCallback = async ({ payload }) => {
+export const VaSnapCallback = async (payload) => {
     try {
         const { error } = validatePaymentVASNAP(payload);
         if (error) {
@@ -261,7 +261,7 @@ export const VaSnapCallback = async ({ payload }) => {
         // }
 
         const currentDateTime = new Date();
-        const expiredDateTime = new Date(existOrder.vaSnap.virtualAccountData.expiredDate);
+        const expiredDateTime = new Date(existOrder.paymentExpired);
 
         // Update order details in the database
         existOrder.paymentStatus = "paid";
@@ -273,24 +273,6 @@ export const VaSnapCallback = async ({ payload }) => {
         // Broadcast the payment update to all connected clients
         await sendWebSocketMessage({ paymentId: sanitizedTrxId, status: "paid" });
 
-        // Prepare response payload and headers
-        const responseHeaders = {
-            "Content-Type": "application/json;charset=utf-8",
-            "X-TIMESTAMP": generateTimestampSnap(),
-        };
-
-        const generateResponsePayload = (existOrder, statusCode, statusMessage) => ({
-            responseCode: statusCode || "2002500",
-            responseMessage: statusMessage || "Success",
-            virtualAccountData: {
-                partnerServiceId: existOrder.partnerServiceId,
-                customerNo: existOrder.paymentPaylabsVaSnap.customerNo,
-                virtualAccountNo: existOrder.paymentPaylabsVaSnap.virtualAccountNo,
-                virtualAccountName: existOrder.paymentPaylabsVaSnap.virtualAccountName,
-                paymentRequestId: generateRequestId(),
-            },
-        });
-
         if (currentDateTime > expiredDateTime) {
             existOrder.paymentStatus = "expired";
             await existOrder.save();
@@ -298,17 +280,17 @@ export const VaSnapCallback = async ({ payload }) => {
             // Broadcast the payment update to all connected clients
             await sendWebSocketMessage({ paymentId: sanitizedTrxId, status: "expired" });
 
-            const payloadResponseError = generateResponsePayload(existOrder, "4030000", "Expired");
-            return {
-                responseHeaders,
-                currentDateTime,
-                expiredDateTime,
-                payloadResponseError,
-            };
+            // return {
+            //     responseHeaders,
+            //     currentDateTime,
+            //     expiredDateTime,
+            //     payloadResponseError,
+            // };
+            return;
         }
 
-        const payloadResponse = generateResponsePayload(existOrder, "2002500", "Success");
-        return { responseHeaders, payloadResponse };
+        // return { responseHeaders, payloadResponse };
+        return;
     } catch (error) {
         logger.error("Error in VaSnapCallback: ", error);
         throw error; // Re-throw the error for further handling

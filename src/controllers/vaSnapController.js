@@ -1,6 +1,8 @@
 import logger from "../application/logger.js";
+import Order from "../models/orderModel.js";
+import { publishToQueue } from "../rabbitmq/producer.js";
 import { forwardCallbackSnap, forwardCallbackSnapDelete } from "../service/forwadCallback.js";
-import { verifySignature } from "../service/paylabs.js";
+import { generateRequestId, generateTimestampSnap, verifySignature } from "../service/paylabs.js";
 import * as vaSnapService from "../service/vaSnapService.js";
 import { orderSchema } from "../validators/orderValidator.js";
 
@@ -76,18 +78,68 @@ export const VaSnapCallback = async (req, res, next) => {
 
         const payloadRaw = req.body.toString("utf8").trim();
         logger.info(`Raw Payload: ${payloadRaw}`);
-        const payload = JSON.parse(payloadRaw);
+
+        let payload;
+        try {
+            payload = JSON.parse(payloadRaw);
+        } catch (err) {
+            logger.error(`Failed to parse JSON payload: ${err.message}`);
+            return res.status(400).json({ error: "Invalid JSON payload" });
+        }
 
         const endpointUrl = "/transfer-va/payment";
         if (!verifySignature(httpMethod, endpointUrl, payloadRaw, timestamp, signature)) {
             return res.status(401).send("Invalid signature");
         }
 
-        const { responseHeaders, payloadResponse, currentDateTime, expiredDateTime, payloadResponseError } =
-            await vaSnapService.VaSnapCallback({ payload });
+        // Validate transaction ID
+        const trxId = payload.trxId;
+        if (typeof trxId !== "string" || trxId.trim() === "") {
+            throw new ResponseError(400, "Invalid transaction ID");
+        }
+
+        // Sanitize and query database
+        const sanitizedTrxId = trxId.trim();
+        const existOrder = await Order.findOne({ paymentId: sanitizedTrxId });
+        if (!existOrder) {
+            logger.error("Order not found for orderID: ", payload.trxId);
+            throw new ResponseError(404, `Order not found for orderID: ${payload.trxId}`);
+        }
+
+        const currentDateTime = new Date();
+        const expiredDateTime = new Date(existOrder.paymentExpired);
+
+        const generateResponsePayload = (existOrder, statusCode, statusMessage) => ({
+            responseCode: statusCode || "2002500",
+            responseMessage: statusMessage || "Success",
+            virtualAccountData: {
+                partnerServiceId: existOrder.partnerServiceId,
+                customerNo: existOrder.paymentPaylabsVaSnap.customerNo,
+                virtualAccountNo: existOrder.paymentPaylabsVaSnap.virtualAccountNo,
+                virtualAccountName: existOrder.paymentPaylabsVaSnap.virtualAccountName,
+                paymentRequestId: generateRequestId(),
+            },
+        });
+
+        const payloadResponse = generateResponsePayload(existOrder, "2002500", "Success");
+
+        const responseHeaders = {
+            "Content-Type": "application/json;charset=utf-8",
+            "X-TIMESTAMP": generateTimestampSnap(),
+        };
+
+        // const { responseHeaders, payloadResponse, currentDateTime, expiredDateTime, payloadResponseError } =
+        //     await vaSnapService.VaSnapCallback({ payload });
 
         if (currentDateTime > expiredDateTime) {
+            const payloadResponseError = generateResponsePayload(existOrder, "4030000", "Expired");
             res.set(responseHeaders).status(403).json(payloadResponseError);
+        }
+
+        try {
+            await publishToQueue("payment_events_va_snap", payload);
+        } catch (err) {
+            logger.error(`Failed to publish to queue: ${err.message}`);
         }
 
         // Respond
