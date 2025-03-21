@@ -18,7 +18,7 @@ export const paylabsCallback = async (req, res, next) => {
         const payload = JSON.parse(payloadRaw);
 
         if (!verifySignature(httpMethod, endpointUrl, payloadRaw, timestamp, signature)) {
-            logger.error(`Signature verification failed: partnerId=${partnerId}, payload=${payloadRaw}`);
+            // logger.error(`Signature verification failed: partnerId=${partnerId}, payload=${payloadRaw}`);
             return res.status(401).send("Invalid signature");
         }
 
@@ -45,14 +45,18 @@ export const paylabsCallback = async (req, res, next) => {
 export const paylabsVaStaticCallback = async (req, res, next) => {
     try {
         const { "x-partner-id": partnerId, "x-signature": signature, "x-timestamp": timestamp } = req.headers;
-        const { body: payload, method: httpMethod, originalUrl: endpointUrl } = req;
+        const { method: httpMethod, originalUrl: endpointUrl } = req;
 
         const allowedPartnerId = process.env.PAYLABS_MERCHANT_ID;
         if (partnerId !== allowedPartnerId) {
             return res.status(401).send("Invalid partner ID");
         }
 
-        if (!verifySignature(httpMethod, endpointUrl, payload, timestamp, signature)) {
+        const payloadRaw = req.body.toString("utf8").trim();
+        logger.info(`Raw Payload: ${payloadRaw}`);
+        const payload = JSON.parse(payloadRaw);
+
+        if (!verifySignature(httpMethod, endpointUrl, payloadRaw, timestamp, signature)) {
             return res.status(401).send("Invalid signature");
         }
 
