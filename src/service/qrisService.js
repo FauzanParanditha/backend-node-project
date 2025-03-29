@@ -35,7 +35,7 @@ export const createQris = async ({ validatedProduct, partnerId }) => {
             phoneNumber: validatedProduct.phoneNumber,
             paymentStatus: "pending",
             payer: partnerId.name,
-            paymentExpired: validatedProduct.expire || 300,
+            paymentExpired: validatedProduct.expire ? validatedProduct.expire : 300,
             paymentMethod: validatedProduct.paymentMethod,
             paymentType: validatedProduct.paymentType,
             clientId: partnerId.clientId,
