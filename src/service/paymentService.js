@@ -154,7 +154,7 @@ export const callbackPaylabs = async (payload) => {
     }
 };
 
-export const callbackPaylabsVaStatic = async ({ payload }) => {
+export const callbackPaylabsVaStatic = async (payload) => {
     try {
         const { error } = validateCallback(payload);
         if (error) {
@@ -180,7 +180,6 @@ export const callbackPaylabsVaStatic = async ({ payload }) => {
         // Sanitize and query database
         const sanitizedVaCode = vaCode.trim();
         const va = await VirtualAccount.findOne({ vaCode: sanitizedVaCode });
-
         if (!va) {
             throw new ResponseError(404, `Virtual account not found for vaCode: ${sanitizedVaCode}`);
         }
@@ -201,9 +200,14 @@ export const callbackPaylabsVaStatic = async ({ payload }) => {
                     clientId: va.clientId,
                     paymentPaylabs: { ...notificationData },
                 });
+
+                // Broadcast the payment update to all connected clients
+                await sendWebSocketMessage({ vaCode: sanitizedVaCode, status: "paid" });
                 break;
 
             case "09": // Payment failed
+                // Broadcast the payment update to all connected clients
+                await sendWebSocketMessage({ vaCode: sanitizedVaCode, status: "failed" });
                 break;
 
             default:
@@ -211,21 +215,8 @@ export const callbackPaylabsVaStatic = async ({ payload }) => {
                 throw new ResponseError(400, "Unhandled notification status");
         }
 
-        // Prepare response payload and headers
-        const responsePayload = {
-            merchantId: process.env.PAYLABS_MERCHANT_ID,
-            requestId: generateRequestId(),
-            errCode: notificationData.errCode,
-        };
-
-        const { responseHeaders } = generateHeaders(
-            "POST",
-            "/api/order/webhook/paylabs/va",
-            responsePayload,
-            generateRequestId(),
-        );
-
-        return { responseHeaders, responsePayload };
+        // return { responseHeaders, responsePayload };
+        return;
     } catch (error) {
         logger.error("Error in callbackPaylabsVaStatic: ", error);
         throw error; // Re-throw the error for further handling

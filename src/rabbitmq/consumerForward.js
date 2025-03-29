@@ -1,10 +1,9 @@
 import { connectDB } from "../application/db.js";
 import logger from "../application/logger.js";
-import { callbackPaylabs } from "../service/paymentService.js";
+import { forwardCallback, forwardCallbackSnap } from "../service/forwadCallback.js";
 import { getRabbitMQChannel } from "./connection.js";
-import { publishToQueue } from "./producer.js";
 
-const QUEUE_NAME = "payment_events";
+const QUEUE_NAME = "forward_events";
 const MAX_RETRY = 5;
 
 const consumeQueue = async () => {
@@ -23,31 +22,31 @@ const consumeQueue = async () => {
                     payload = JSON.parse(msg.content.toString());
                     logger.info("📥 Menerima event pembayaran:", payload);
 
-                    if (!payload || !payload.merchantTradeNo) {
+                    if (!payload) {
                         logger.error("❌ Payload tidak valid, pesan akan dihapus");
                         return channel.ack(msg);
                     }
 
-                    await callbackPaylabs(payload);
-                    logger.info(`✅ Berhasil memproses event ${payload.merchantTradeNo}`);
-
-                    // 🔄 Kirim pesan ke queue forward_events setelah callbackPaylabs sukses
-                    await publishToQueue("forward_events", payload);
-                    logger.info(`📡 Forward event dikirim untuk ${payload.merchantTradeNo}`);
-
+                    if (payload.trxId) {
+                        await forwardCallbackSnap(payload);
+                        logger.info(`✅ Berhasil memproses event ${QUEUE_NAME} dengan Va SNAP: ${payload.trxId}`);
+                    } else {
+                        await forwardCallback(payload);
+                        logger.info(
+                            `✅ Berhasil memproses event ${QUEUE_NAME} dengan merchantTradeNo: ${payload.merchantTradeNo}`,
+                        );
+                    }
                     channel.ack(msg);
                 } catch (error) {
                     let headers = msg.properties.headers || {};
                     let retryCount = headers["x-retry-count"] || 0;
 
                     if (retryCount >= MAX_RETRY) {
-                        logger.error(
-                            `❌ Event ${payload?.merchantTradeNo} gagal setelah ${MAX_RETRY} kali retry. Pesan dihapus.`,
-                        );
+                        logger.error(`❌ Event ${QUEUE_NAME} gagal setelah ${MAX_RETRY} kali retry. Pesan dihapus.`);
                         return channel.ack(msg); // Hapus pesan setelah gagal beberapa kali
                     }
 
-                    logger.warn(`⚠️ Gagal memproses event ${payload?.merchantTradeNo}, retry ke-${retryCount + 1}`);
+                    logger.warn(`⚠️ Gagal memproses event ${QUEUE_NAME}, retry ke-${retryCount + 1}`);
 
                     // 🔴 **Tambah header sebelum requeue**
                     headers["x-retry-count"] = retryCount + 1;

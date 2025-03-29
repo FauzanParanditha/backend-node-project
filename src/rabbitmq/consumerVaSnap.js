@@ -2,6 +2,7 @@ import { connectDB } from "../application/db.js";
 import logger from "../application/logger.js";
 import { VaSnapCallback } from "../service/vaSnapService.js";
 import { getRabbitMQChannel } from "./connection.js";
+import { publishToQueue } from "./producer.js";
 
 const QUEUE_NAME = "payment_events_va_snap";
 const MAX_RETRY = 5;
@@ -28,6 +29,11 @@ const consumeQueue = async () => {
                     }
                     await VaSnapCallback(payload);
                     logger.info(`✅ Berhasil memproses event ${payload.trxId}`);
+
+                    // 🔄 Kirim pesan ke queue forward_events setelah callbackPaylabs sukses
+                    await publishToQueue("forward_events", payload);
+                    logger.info(`📡 Forward event dikirim untuk ${payload.merchantTradeNo}`);
+
                     channel.ack(msg);
                 } catch (error) {
                     let headers = msg.properties.headers || {};

@@ -13,7 +13,7 @@ const apiLogger = async (req, res, next) => {
             req.body instanceof Buffer
                 ? req.body.toString("utf8") // Buffer => String
                 : req.body,
-        ipAddress: req.ip || req.connection.remoteAddress,
+        ipAddress: req.headers["x-forwarded-for"] || req.ip,
         statusCode: null,
     };
 

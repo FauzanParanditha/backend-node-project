@@ -1,11 +1,9 @@
 import mongoose from "mongoose";
 import { connectDB } from "./application/db.js";
+import { serverIsClosing } from "./application/global.js";
 import logger, { flushLogsAndExit } from "./application/logger.js";
 import { web } from "./application/web.js";
 import { wss } from "./application/websocket_server.js";
-
-export let serverIsClosing = false;
-export let activeTask = 0;
 
 web.use((req, res, next) => {
     if (serverIsClosing) {
@@ -26,16 +24,6 @@ const server = web.listen(process.env.PORT, async () => {
     // Retry failed callbacks on startup
     // await retryFailedCallbacks();
 });
-
-export function incrementActiveTask() {
-    activeTask++;
-    logger.debug(`Active task increment. Current count: ${activeTask}`);
-}
-
-export function decrementActiveTask() {
-    activeTask--;
-    logger.debug(`Active task decremented. Current count: ${activeTask}`);
-}
 
 function handleShutdownGracefully(signal) {
     return async () => {

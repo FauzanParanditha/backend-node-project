@@ -1,10 +1,10 @@
 import { connectDB } from "../application/db.js";
 import logger from "../application/logger.js";
-import { callbackPaylabs } from "../service/paymentService.js";
+import { callbackPaylabsVaStatic } from "../service/paymentService.js";
 import { getRabbitMQChannel } from "./connection.js";
 import { publishToQueue } from "./producer.js";
 
-const QUEUE_NAME = "payment_events";
+const QUEUE_NAME = "payment_events_va_static";
 const MAX_RETRY = 5;
 
 const consumeQueue = async () => {
@@ -23,13 +23,12 @@ const consumeQueue = async () => {
                     payload = JSON.parse(msg.content.toString());
                     logger.info("📥 Menerima event pembayaran:", payload);
 
-                    if (!payload || !payload.merchantTradeNo) {
+                    if (!payload || !payload.paymentMethodInfo.vaCode) {
                         logger.error("❌ Payload tidak valid, pesan akan dihapus");
                         return channel.ack(msg);
                     }
-
-                    await callbackPaylabs(payload);
-                    logger.info(`✅ Berhasil memproses event ${payload.merchantTradeNo}`);
+                    await callbackPaylabsVaStatic(payload);
+                    logger.info(`✅ Berhasil memproses event ${payload.paymentMethodInfo.vaCode}`);
 
                     // 🔄 Kirim pesan ke queue forward_events setelah callbackPaylabs sukses
                     await publishToQueue("forward_events", payload);
@@ -42,12 +41,12 @@ const consumeQueue = async () => {
 
                     if (retryCount >= MAX_RETRY) {
                         logger.error(
-                            `❌ Event ${payload?.merchantTradeNo} gagal setelah ${MAX_RETRY} kali retry. Pesan dihapus.`,
+                            `❌ Event ${payload?.trxId} gagal setelah ${MAX_RETRY} kali retry. Pesan dihapus.`,
                         );
                         return channel.ack(msg); // Hapus pesan setelah gagal beberapa kali
                     }
 
-                    logger.warn(`⚠️ Gagal memproses event ${payload?.merchantTradeNo}, retry ke-${retryCount + 1}`);
+                    logger.warn(`⚠️ Gagal memproses event ${payload?.trxId}, retry ke-${retryCount + 1}`);
 
                     // 🔴 **Tambah header sebelum requeue**
                     headers["x-retry-count"] = retryCount + 1;

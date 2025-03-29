@@ -1,9 +1,8 @@
 import logger from "../application/logger.js";
 import Order from "../models/orderModel.js";
+import VirtualAccount from "../models/vaModel.js";
 import { publishToQueue } from "../rabbitmq/producer.js";
-import { forwardCallback } from "../service/forwadCallback.js";
 import { convertToDate, generateHeaders, generateRequestId, verifySignature } from "../service/paylabs.js";
-import * as paymentService from "../service/paymentService.js";
 
 // Handle Paylabs callback notifications
 export const paylabsCallback = async (req, res, next) => {
@@ -80,7 +79,7 @@ export const paylabsCallback = async (req, res, next) => {
 
         res.set(responseHeaders).status(200).json(payloadResponse);
 
-        await forwardCallback({ payload });
+        // await forwardCallback({ payload });
     } catch (error) {
         logger.error(
             `Error handling webhook paylabs: ${error.message}, rawBody: ${
@@ -103,17 +102,57 @@ export const paylabsVaStaticCallback = async (req, res, next) => {
 
         const payloadRaw = req.body.toString("utf8").trim();
         logger.info(`Raw Payload: ${payloadRaw}`);
-        const payload = JSON.parse(payloadRaw);
+
+        let payload;
+        try {
+            payload = JSON.parse(payloadRaw);
+        } catch (err) {
+            logger.error(`Failed to parse JSON payload: ${err.message}`);
+            return res.status(400).json({ error: "Invalid JSON payload" });
+        }
 
         if (!verifySignature(httpMethod, endpointUrl, payloadRaw, timestamp, signature)) {
             return res.status(401).send("Invalid signature");
         }
 
-        const { responseHeaders, responsePayload } = await paymentService.callbackPaylabsVaStatic({ payload });
+        // Validate va code
+        const vaCode = payload.paymentMethodInfo.vaCode;
+        if (typeof vaCode !== "string" || vaCode.trim() === "") {
+            throw new ResponseError(400, "Invalid va code");
+        }
+
+        // Sanitize and query database
+        const sanitizedVaCode = vaCode.trim();
+        const va = await VirtualAccount.findOne({ vaCode: sanitizedVaCode });
+        if (!va) {
+            throw new ResponseError(404, `Virtual account not found for vaCode: ${sanitizedVaCode}`);
+        }
+
+        // Prepare response payload and headers
+        const responsePayload = {
+            merchantId: process.env.PAYLABS_MERCHANT_ID,
+            requestId: generateRequestId(),
+            errCode: payload.errCode,
+        };
+
+        const { responseHeaders } = generateHeaders(
+            "POST",
+            "/api/order/webhook/paylabs/va",
+            responsePayload,
+            generateRequestId(),
+        );
+
+        // const { responseHeaders, responsePayload } = await paymentService.callbackPaylabsVaStatic({ payload });
+
+        try {
+            await publishToQueue("payment_events_va_static", payload);
+        } catch (err) {
+            logger.error(`Failed to publish to queue: ${err.message}`);
+        }
 
         res.set(responseHeaders).status(200).json(responsePayload);
 
-        await forwardCallback({ payload });
+        // await forwardCallback({ payload });
     } catch (error) {
         logger.error(`Error handling webhook va static: ${error.message}`);
         next(error);

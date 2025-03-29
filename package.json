@@ -16,7 +16,9 @@
         "test": "jest --runInBand --detectOpenHandles",
         "start:websocket": "node src/application/websocket_server.js",
         "worker:payment_event": "set WORKER_MODE=true && node src/rabbitmq/consumer.js",
-        "worker:payment_event_va_snap": "set WORKER_MODE=true && node src/rabbitmq/consumerVaSnap.js"
+        "worker:payment_event_va_snap": "set WORKER_MODE=true && node src/rabbitmq/consumerVaSnap.js",
+        "worker:payment_event_va_static": "set WORKER_MODE=true && node src/rabbitmq/consumerVaStatic.js",
+        "worker:forward_event": "set WORKER_MODE=true && node src/rabbitmq/consumerForward.js"
     },
     "type": "module",
     "keywords": [],
