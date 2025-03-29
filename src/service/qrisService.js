@@ -35,6 +35,7 @@ export const createQris = async ({ validatedProduct, partnerId }) => {
             phoneNumber: validatedProduct.phoneNumber,
             paymentStatus: "pending",
             payer: partnerId.name,
+            paymentExpired: validatedProduct.expire || 300,
             paymentMethod: validatedProduct.paymentMethod,
             paymentType: validatedProduct.paymentType,
             clientId: partnerId.clientId,
@@ -54,7 +55,7 @@ export const createQris = async ({ validatedProduct, partnerId }) => {
             amount: requestBodyForm.totalAmount,
             merchantTradeNo,
             notifyUrl: process.env.NOTIFY_URL,
-            expire: 300,
+            expire: requestBodyForm.paymentExpired,
             feeType: "OUR",
             productName: requestBodyForm.items.map((p) => p.name).join(", "),
             productInfo: requestBodyForm.items.map((product) => ({
