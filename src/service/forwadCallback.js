@@ -98,7 +98,13 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                     timeout: 10000,
                 });
 
-                validateResponse(response);
+                try {
+                    validateResponse(response);
+                } catch (validationErr) {
+                    throw new ResponseError(400, `Response validation failed: ${validationErr.message}`);
+                }
+
+
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
             } catch (err) {
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
@@ -229,7 +235,12 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
                     timeout: 10000,
                 });
 
-                validateResponse(response);
+                try {
+                    validateResponse(response);
+                } catch (validationErr) {
+                    throw new ResponseError(400, `Response validation failed: ${validationErr.message}`);
+                }
+
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
             } catch (err) {
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
@@ -372,7 +383,12 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
                     timeout: 10000, // Timeout in milliseconds
                 });
 
-                await validateResponse(response);
+                try {
+                    validateResponse(response);
+                } catch (validationErr) {
+                    throw new ResponseError(400, `Response validation failed: ${validationErr.message}`);
+                }
+                
                 logger.info(`Callback successfully forwarded on attempt ${retryCount + 1}`);
                 return true;
             } catch (err) {
