@@ -399,6 +399,7 @@ export const validatePaymentVASNAP = (data) => {
                 totalTransFee: joi.number().precision(2).optional(),
                 vatFee: joi.number().precision(2).optional(),
                 paymentType: joi.string().max(20).optional(),
+                storeId: joi.string().max(30).optional(),
             })
             .optional(),
     });
