@@ -26,6 +26,7 @@ export const createVASNAP = async (req, res) => {
             totalAmount: response.data.virtualAccountData.totalAmount.value,
             paymentExpired: response.data.virtualAccountData.expiredDate,
             paymentId: response.data.virtualAccountData.trxId,
+            storeId: response.data.virtualAccountData.additionalInfo.storeId,
             orderId: result.orderId,
             id: result._id,
         });

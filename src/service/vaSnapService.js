@@ -73,6 +73,7 @@ export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
             expiredDate: generateTimestampSnap(300), // 300 minutes
             additionalInfo: {
                 paymentType: requestBodyForm.paymentType,
+                ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
             },
         };
 
@@ -123,6 +124,7 @@ export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
             paymentExpired: response.data.virtualAccountData.expiredDate,
             customerNo: response.data.virtualAccountData.customerNo,
             virtualAccountNo: response.data.virtualAccountData.virtualAccountNo,
+            storeId: response.data.virtualAccountData.additionalInfo.storeId,
             vaSnap: response.data,
         });
 
