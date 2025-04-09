@@ -270,7 +270,7 @@ export const validateCreateVASNAP = (data) => {
         additionalInfo: joi
             .object({
                 paymentType: joi.string().max(32).required(),
-                stroreId: joi.string().max(30).optional(),
+                storeId: joi.string().max(30).optional(),
             })
             .optional(),
     });
