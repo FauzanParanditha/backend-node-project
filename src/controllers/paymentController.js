@@ -31,7 +31,7 @@ export const paylabsCallback = async (req, res, next) => {
 
         res.set(responseHeaders).status(200).json(payloadResponse);
 
-        await forwardCallback({ payload });
+        forwardCallback({ payload }).catch((err) => logger.error(err.message));
     } catch (error) {
         logger.error(
             `Error handling webhook paylabs: ${error.message}, rawBody: ${
@@ -64,7 +64,7 @@ export const paylabsVaStaticCallback = async (req, res, next) => {
 
         res.set(responseHeaders).status(200).json(responsePayload);
 
-        await forwardCallback({ payload });
+        forwardCallback({ payload }).catch((err) => logger.error(err.message));
     } catch (error) {
         logger.error(`Error handling webhook va static: ${error.message}`);
         next(error);

@@ -62,7 +62,7 @@ export const cancleQris = async (req, res, next) => {
         res.set(responseHeaders).status(200).json(response.data);
 
         const payload = response.data;
-        await forwardCallback({ payload });
+        forwardCallback({ payload }).catch((err) => logger.error(err.message));
     } catch (error) {
         // Handle unexpected errors
         logger.error(`Error cancel qris: ${error.message}`);

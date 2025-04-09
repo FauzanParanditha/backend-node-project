@@ -93,7 +93,7 @@ export const VaSnapCallback = async (req, res, next) => {
         // Respond
         res.set(responseHeaders).status(200).json(payloadResponse);
 
-        await forwardCallbackSnap({ payload });
+        forwardCallbackSnap({ payload }).catch((err) => logger.error(err.message));
     } catch (error) {
         // Handle unexpected errors
         logger.error(`Error handling webhook va snap: ${error.message}`);
@@ -164,7 +164,7 @@ export const deleteVASNAP = async (req, res) => {
         res.set(responseHeaders).status(200).json(response.data);
 
         const payload = response.data;
-        await forwardCallbackSnapDelete({ payload });
+        forwardCallbackSnapDelete({ payload }).catch((err) => logger.error(err.message));
     } catch (error) {
         // Handle unexpected errors
         logger.error(`Error delete va snap: ${error.message}`);
