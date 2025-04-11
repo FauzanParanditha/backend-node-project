@@ -135,7 +135,7 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
 
     const logFailedCallback = async (payload, callbackUrl, retryCount, errDesc, clientId, delay) => {
         logger.error(`Logging failed callback attempt ${retryCount}: ${JSON.stringify(payload)}`);
-        const merchantTradeNo = String(payload.merchantTradeNo);
+        const merchantTradeNo = String(payload.trxId);
 
         // Validasi format merchantTradeNo
         if (!/^PL-[a-f0-9]{16}$/.test(merchantTradeNo)) {
@@ -143,7 +143,7 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
         }
 
         await FailedCallback.findOneAndUpdate(
-            { "payload.merchantTradeNo": merchantTradeNo },
+            { "payload.trxId": merchantTradeNo },
             {
                 $set: {
                     payload,
