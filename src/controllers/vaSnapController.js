@@ -200,7 +200,7 @@ export const deleteVASNAP = async (req, res) => {
             status: "success",
             payload: response.data,
             response: response.data,
-            requestId,
+            // requestId,
         });
 
         // Send a response with the updated order details
@@ -216,7 +216,7 @@ export const deleteVASNAP = async (req, res) => {
                 status: "failed",
                 payload,
                 errorMessage: err.message,
-                requestId,
+                // requestId,
             });
         });
     } catch (error) {
@@ -229,7 +229,7 @@ export const deleteVASNAP = async (req, res) => {
             status: "error",
             payload: req.body instanceof Buffer ? req.body.toString("utf8") : req.body,
             errorMessage: error.message,
-            requestId,
+            // requestId,
         });
         return res.status(500).json({
             success: false,
