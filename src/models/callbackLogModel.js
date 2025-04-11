@@ -14,7 +14,7 @@ const callbackLogSchema = new mongoose.Schema(
         },
         target: {
             type: String,
-            enum: ["system", "client"],
+            enum: ["system", "client", "internal"],
             required: true,
         },
         status: {
