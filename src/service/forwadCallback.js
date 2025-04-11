@@ -266,9 +266,15 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
 
     const logFailedCallback = async (payload, callbackUrl, retryCount, errDesc, clientId, delay) => {
         logger.error(`Logging failed callback attempt ${retryCount}: ${JSON.stringify(payload)}`);
+        const merchantTradeNo = String(payload.trxId);
+
+        // Validasi format merchantTradeNo
+        if (!/^PL-[a-f0-9]{16}$/.test(merchantTradeNo)) {
+            throw new Error("Invalid merchantTradeNo format");
+        }
 
         await FailedCallback.findOneAndUpdate(
-            { "payload.merchantTradeNo": payload.merchantTradeNo },
+            { "payload.trxId": merchantTradeNo },
             {
                 $set: {
                     payload,
