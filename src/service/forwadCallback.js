@@ -424,12 +424,24 @@ export const retryCallbackById = async (callbackId) => {
             throw new ResponseError(404, `No failed callback found with ID: ${callbackId}`);
         }
 
-        logger.info(`Retrying failed callback with ID: ${callbackId}`);
+        logger.info(`Retrying failed callback with ID: ${callbackId}, Retry Count: ${failedCallback.retryCount}`);
 
-        await forwardCallback({
-            payload: failedCallback.payload,
-            retryCount: failedCallback.retryCount,
-        });
+        if (failedCallback.payload.virtualAccountData) {
+            await forwardCallbackSnapDelete({
+                payload: failedCallback.payload,
+                retryCount: failedCallback.retryCount,
+            });
+        } else if (failedCallback.payload.trxId) {
+            await forwardCallbackSnap({
+                payload: failedCallback.payload,
+                retryCount: failedCallback.retryCount,
+            });
+        } else {
+            await forwardCallback({
+                payload: failedCallback.payload,
+                retryCount: failedCallback.retryCount,
+            });
+        }
 
         await failedCallback.deleteOne();
         logger.info(`Successfully retried and deleted callback with ID: ${callbackId}`);
