@@ -67,7 +67,7 @@ export const cancleQris = async (req, res, next) => {
             status: "success",
             payload: response.data,
             response: response.data,
-            requestId,
+            // requestId,
         });
 
         // Respond with update order details
@@ -83,7 +83,7 @@ export const cancleQris = async (req, res, next) => {
                 status: "failed",
                 payload,
                 errorMessage: err.message,
-                requestId,
+                // requestId,
             });
         });
     } catch (error) {
@@ -96,7 +96,7 @@ export const cancleQris = async (req, res, next) => {
             status: "error",
             payload: req.body instanceof Buffer ? req.body.toString("utf8") : req.body,
             errorMessage: error.message,
-            requestId,
+            // requestId,
         });
         next(error);
     }
