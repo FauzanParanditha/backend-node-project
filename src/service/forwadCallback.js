@@ -5,7 +5,7 @@ import { activeTask, decrementActiveTask, incrementActiveTask, serverIsClosing }
 import Client from "../models/clientModel.js";
 import FailedCallback from "../models/failedForwardModel.js";
 import Order from "../models/orderModel.js";
-import { logCallback } from "../utils/logCallback.js";
+import { logCallback, safeStringify } from "../utils/logCallback.js";
 import { validateCallback, validatePaymentVASNAP, validateSnapDelete } from "../validators/paymentValidator.js";
 import { generateHeadersForward, generateRequestId } from "./paylabs.js";
 
