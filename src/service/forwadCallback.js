@@ -103,7 +103,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
 
                 await logCallback({
-                    type: "outcoming",
+                    type: "outgoing",
                     source: "internal",
                     target: "client",
                     status: "success",
@@ -244,7 +244,7 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
 
                 await logCallback({
-                    type: "outcoming",
+                    type: "outgoing",
                     source: "internal",
                     target: "client",
                     status: "success",
@@ -403,7 +403,7 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
 
                 await logCallback({
-                    type: "outcoming",
+                    type: "outgoing",
                     source: "internal",
                     target: "client",
                     status: "success",
