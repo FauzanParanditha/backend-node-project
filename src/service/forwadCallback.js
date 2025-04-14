@@ -111,6 +111,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                     response: response.data,
                     requestId: response.data.requestId,
                 });
+                return true;
             } catch (err) {
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
                 logger.error(`Stack Trace: ${err.stack}`);
@@ -127,6 +128,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                     await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, 0);
                     sendAlert(`Failed to forward callback after ${retryAttempt + 1} attempts: ${err.message}`);
                 }
+                return false;
             }
         };
 
@@ -252,6 +254,8 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
                     response: response.data,
                     requestId: response.data.requestId,
                 });
+
+                return true;
             } catch (err) {
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
                 logger.error(`Stack Trace: ${err.stack}`);
@@ -268,6 +272,8 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
                     await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, 0);
                     sendAlert(`Failed to forward callback after ${retryAttempt + 1} attempts: ${err.message}`);
                 }
+
+                return false;
             }
         };
 
@@ -411,6 +417,8 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
                     response: response.data,
                     requestId: response.data.requestId,
                 });
+
+                return;
             } catch (err) {
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
                 logger.error(`Stack Trace: ${err.stack}`);
@@ -427,6 +435,8 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
                     await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, 0);
                     sendAlert(`Failed to forward callback after ${retryAttempt + 1} attempts: ${err.message}`);
                 }
+
+                return false;
             }
         };
 
@@ -455,23 +465,27 @@ export const retryCallbackById = async (callbackId) => {
             throw new ResponseError(404, `No failed callback found with ID: ${callbackId}`);
         }
 
-        logger.info(`Retrying failed callback with ID: ${callbackId}, Retry Count: ${failedCallback.retryCount}`);
+        const nextRetryCount = failedCallback.retryCount + 1;
+        logger.info(`Retrying failed callback with ID: ${callbackId}, Retry Count: ${nextRetryCount}`);
+
+        const forwardOptions = {
+            payload: failedCallback.payload,
+            retryCount: nextRetryCount,
+        };
+
+        let success = false;
 
         if (failedCallback.payload.virtualAccountData) {
-            await forwardCallbackSnapDelete({
-                payload: failedCallback.payload,
-                retryCount: failedCallback.retryCount,
-            });
+            await forwardCallbackSnapDelete(forwardOptions);
         } else if (failedCallback.payload.trxId) {
-            await forwardCallbackSnap({
-                payload: failedCallback.payload,
-                retryCount: failedCallback.retryCount,
-            });
+            await forwardCallbackSnap(forwardOptions);
         } else {
-            await forwardCallback({
-                payload: failedCallback.payload,
-                retryCount: failedCallback.retryCount,
-            });
+            await forwardCallback(forwardOptions);
+        }
+
+        if (!success) {
+            logger.warn(`Forward failed on retry. Callback will NOT be deleted. ID: ${callbackId}`);
+            return;
         }
 
         await failedCallback.deleteOne();
