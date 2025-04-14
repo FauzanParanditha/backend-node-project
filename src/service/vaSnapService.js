@@ -266,6 +266,8 @@ export const VaSnapCallback = async ({ payload }) => {
             "X-TIMESTAMP": generateTimestampSnap(),
         };
 
+        existOrder.paymentPaylabsVaSnap = { ...notificationData };
+
         const generateResponsePayload = (existOrder, statusCode, statusMessage) => ({
             responseCode: statusCode || "2002500",
             responseMessage: statusMessage || "Success",
@@ -291,7 +293,6 @@ export const VaSnapCallback = async ({ payload }) => {
         // Update order details in the database
         existOrder.paymentStatus = "paid";
         existOrder.totalAmount = notificationData.paidAmount.value;
-        existOrder.paymentPaylabsVaSnap = { ...notificationData };
         existOrder.vaSnap = undefined; // Clear VA snap data
         await existOrder.save();
 
