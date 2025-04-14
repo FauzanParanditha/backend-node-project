@@ -100,6 +100,16 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
 
                 await validateResponse(response);
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
+
+                await logCallback({
+                    type: "outcoming",
+                    source: "internal",
+                    target: "client",
+                    status: "success",
+                    payload,
+                    response: response,
+                    requestId: response.data.requestId,
+                });
             } catch (err) {
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
                 logger.error(`Stack Trace: ${err.stack}`);
@@ -231,6 +241,16 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
 
                 await validateResponse(response);
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
+
+                await logCallback({
+                    type: "outcoming",
+                    source: "internal",
+                    target: "client",
+                    status: "success",
+                    payload,
+                    response: response,
+                    requestId: response.data.requestId,
+                });
             } catch (err) {
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
                 logger.error(`Stack Trace: ${err.stack}`);
@@ -380,6 +400,16 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
 
                 await validateResponse(response);
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
+
+                await logCallback({
+                    type: "outcoming",
+                    source: "internal",
+                    target: "client",
+                    status: "success",
+                    payload,
+                    response: response,
+                    requestId: response.data.requestId,
+                });
             } catch (err) {
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
                 logger.error(`Stack Trace: ${err.stack}`);
