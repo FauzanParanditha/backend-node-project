@@ -104,7 +104,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
 
                 await logCallback({
                     type: "outgoing",
-                    source: "internal",
+                    source: "system",
                     target: "client",
                     status: "success",
                     payload,
@@ -245,7 +245,7 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
 
                 await logCallback({
                     type: "outgoing",
-                    source: "internal",
+                    source: "system",
                     target: "client",
                     status: "success",
                     payload,
@@ -404,7 +404,7 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
 
                 await logCallback({
                     type: "outgoing",
-                    source: "internal",
+                    source: "system",
                     target: "client",
                     status: "success",
                     payload,
