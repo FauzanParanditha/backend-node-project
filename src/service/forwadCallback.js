@@ -5,7 +5,6 @@ import { activeTask, decrementActiveTask, incrementActiveTask, serverIsClosing }
 import Client from "../models/clientModel.js";
 import FailedCallback from "../models/failedForwardModel.js";
 import Order from "../models/orderModel.js";
-import { logCallback, safeStringify } from "../utils/logCallback.js";
 import { validateCallback, validatePaymentVASNAP, validateSnapDelete } from "../validators/paymentValidator.js";
 import { generateHeadersForward, generateRequestId } from "./paylabs.js";
 
@@ -101,17 +100,6 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
 
                 await validateResponse(response);
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
-
-                const payloadStr = safeStringify(payload);
-                await logCallback({
-                    type: "outgoing",
-                    source: "system",
-                    target: "client",
-                    status: "success",
-                    payload: payloadStr,
-                    response: response,
-                    requestId: response.data.requestId,
-                });
             } catch (err) {
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
                 logger.error(`Stack Trace: ${err.stack}`);
@@ -243,16 +231,6 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
 
                 await validateResponse(response);
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
-
-                await logCallback({
-                    type: "outgoing",
-                    source: "system",
-                    target: "client",
-                    status: "success",
-                    payload,
-                    response: response,
-                    requestId: response.data.requestId,
-                });
             } catch (err) {
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
                 logger.error(`Stack Trace: ${err.stack}`);
@@ -402,16 +380,6 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
 
                 await validateResponse(response);
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
-
-                await logCallback({
-                    type: "outgoing",
-                    source: "system",
-                    target: "client",
-                    status: "success",
-                    payload,
-                    response: response,
-                    requestId: response.data.requestId,
-                });
             } catch (err) {
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
                 logger.error(`Stack Trace: ${err.stack}`);
