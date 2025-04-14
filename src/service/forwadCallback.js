@@ -100,6 +100,16 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
 
                 await validateResponse(response);
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
+
+                await logCallback({
+                    type: "outgoing",
+                    source: "system",
+                    target: "client",
+                    status: "success",
+                    payload: JSON.parse(JSON.stringify(payload)),
+                    response: response.data,
+                    requestId: response.data.requestId,
+                });
             } catch (err) {
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
                 logger.error(`Stack Trace: ${err.stack}`);
