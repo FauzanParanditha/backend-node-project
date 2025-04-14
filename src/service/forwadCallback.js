@@ -108,7 +108,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                     source: "system",
                     target: "client",
                     status: "success",
-                    payloadStr,
+                    payload: payloadStr,
                     response: response,
                     requestId: response.data.requestId,
                 });
