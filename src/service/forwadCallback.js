@@ -102,12 +102,13 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                 await validateResponse(response);
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
 
+                const payloadStr = safeStringify(payload);
                 await logCallback({
                     type: "outgoing",
                     source: "system",
                     target: "client",
                     status: "success",
-                    payload,
+                    payloadStr,
                     response: response,
                     requestId: response.data.requestId,
                 });
