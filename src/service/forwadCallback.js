@@ -457,40 +457,55 @@ const sendAlert = (message) => {
 };
 
 export const retryCallbackById = async (callbackId) => {
+    const failedCallback = await FailedCallback.findById(callbackId);
+
+    if (!failedCallback) {
+        throw new ResponseError(404, `No failed callback found with ID: ${callbackId}`);
+    }
+
+    logger.info(`Retrying failed callback with ID: ${callbackId}, Retry Count: ${failedCallback.retryCount}`);
+
+    let success = false;
+
     try {
-        const failedCallback = await FailedCallback.findById(callbackId);
-
-        if (!failedCallback) {
-            logger.warn(`No failed callback found with ID: ${callbackId}`);
-            throw new ResponseError(404, `No failed callback found with ID: ${callbackId}`);
-        }
-
-        const nextRetryCount = failedCallback.retryCount + 1;
-        logger.info(`Retrying failed callback with ID: ${callbackId}, Retry Count: ${nextRetryCount}`);
-
-        const forwardOptions = {
-            payload: failedCallback.payload,
-            retryCount: nextRetryCount,
-        };
-
-        let success = false;
-
         if (failedCallback.payload.virtualAccountData) {
-            await forwardCallbackSnapDelete(forwardOptions);
+            success = await forwardCallbackSnapDelete({
+                payload: failedCallback.payload,
+                retryCount: failedCallback.retryCount,
+                callbackId, // dikasih supaya bisa update retryCount kalau gagal
+            });
         } else if (failedCallback.payload.trxId) {
-            await forwardCallbackSnap(forwardOptions);
+            success = await forwardCallbackSnap({
+                payload: failedCallback.payload,
+                retryCount: failedCallback.retryCount,
+                callbackId,
+            });
         } else {
-            await forwardCallback(forwardOptions);
+            success = await forwardCallback({
+                payload: failedCallback.payload,
+                retryCount: failedCallback.retryCount,
+                callbackId,
+            });
         }
 
-        if (!success) {
-            logger.warn(`Forward failed on retry. Callback will NOT be deleted. ID: ${callbackId}`);
-            return;
+        if (success) {
+            await failedCallback.deleteOne();
+            logger.info(`Successfully retried and deleted callback with ID: ${callbackId}`);
+        } else {
+            logger.warn(`Forward failed. Callback with ID ${callbackId} NOT deleted.`);
         }
 
-        await failedCallback.deleteOne();
-        logger.info(`Successfully retried and deleted callback with ID: ${callbackId}`);
+        return success;
     } catch (err) {
         logger.error(`Retry for callback ${callbackId} failed: ${err.message}`);
+        // Optional: update retryCount here too just in case
+        // await FailedCallback.updateOne(
+        //     { _id: callbackId },
+        //     {
+        //         $set: { lastError: err.message, lastTriedAt: new Date() },
+        //         $inc: { retryCount: 1 },
+        //     }
+        // );
+        return false;
     }
 };
