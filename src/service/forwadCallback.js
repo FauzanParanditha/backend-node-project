@@ -471,24 +471,25 @@ export const retryCallbackById = async (callbackId) => {
 
     logger.info(`Retrying failed callback with ID: ${callbackId}, Retry Count: ${failedCallback.retryCount}`);
 
+    const { payload } = failedCallback;
     let success = false;
 
     try {
-        if (failedCallback.payload.virtualAccountData) {
+        if (payload.virtualAccountData) {
             success = await forwardCallbackSnapDelete({
-                payload: failedCallback.payload,
+                payload,
                 retryCount: failedCallback.retryCount,
-                callbackId, // dikasih supaya bisa update retryCount kalau gagal
+                callbackId,
             });
-        } else if (failedCallback.payload.trxId) {
+        } else if (payload.trxId) {
             success = await forwardCallbackSnap({
-                payload: failedCallback.payload,
+                payload,
                 retryCount: failedCallback.retryCount,
                 callbackId,
             });
         } else {
             success = await forwardCallback({
-                payload: failedCallback.payload,
+                payload,
                 retryCount: failedCallback.retryCount,
                 callbackId,
             });
@@ -498,22 +499,34 @@ export const retryCallbackById = async (callbackId) => {
             await failedCallback.deleteOne();
             logger.info(`Successfully retried and deleted callback with ID: ${callbackId}`);
         } else {
-            logger.warn(`Forward failed. Callback with ID ${callbackId} NOT deleted.`);
-            failedCallback.retryCount += 1;
-            await failedCallback.save();
+            await FailedCallback.updateOne(
+                { _id: callbackId },
+                {
+                    $inc: { retryCount: 1 },
+                    $set: {
+                        lastTriedAt: new Date(),
+                        lastError: "Retry failed but didn’t throw",
+                        status: "pending",
+                    },
+                },
+            );
+            logger.warn(`⚠️ Callback ID ${callbackId} retry failed. RetryCount incremented.`);
         }
 
         return success;
     } catch (err) {
-        logger.error(`Retry for callback ${callbackId} failed: ${err.message}`);
-        // Optional: update retryCount here too just in case
-        // await FailedCallback.updateOne(
-        //     { _id: callbackId },
-        //     {
-        //         $set: { lastError: err.message, lastTriedAt: new Date() },
-        //         $inc: { retryCount: 1 },
-        //     },
-        // );
+        logger.error(`❌ Error retrying callback ${callbackId}: ${err.message}`);
+        await FailedCallback.updateOne(
+            { _id: callbackId },
+            {
+                $inc: { retryCount: 1 },
+                $set: {
+                    lastTriedAt: new Date(),
+                    lastError: err.message,
+                    status: "pending",
+                },
+            },
+        );
         return false;
     }
 };
