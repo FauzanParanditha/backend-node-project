@@ -493,19 +493,21 @@ export const retryCallbackById = async (callbackId) => {
             logger.info(`Successfully retried and deleted callback with ID: ${callbackId}`);
         } else {
             logger.warn(`Forward failed. Callback with ID ${callbackId} NOT deleted.`);
+            failedCallback.retryCount += 1;
+            await failedCallback.save();
         }
 
         return success;
     } catch (err) {
         logger.error(`Retry for callback ${callbackId} failed: ${err.message}`);
         // Optional: update retryCount here too just in case
-        await FailedCallback.updateOne(
-            { _id: callbackId },
-            {
-                $set: { lastError: err.message, lastTriedAt: new Date() },
-                $inc: { retryCount: 1 },
-            },
-        );
+        // await FailedCallback.updateOne(
+        //     { _id: callbackId },
+        //     {
+        //         $set: { lastError: err.message, lastTriedAt: new Date() },
+        //         $inc: { retryCount: 1 },
+        //     },
+        // );
         return false;
     }
 };
