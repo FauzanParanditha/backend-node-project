@@ -122,17 +122,19 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                     await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, delay);
                     logger.info(`Retrying in ${delay} seconds...`);
 
-                    setTimeout(() => attemptCallback(retryAttempt + 1), delay * 1000);
+                    // setTimeout(() => attemptCallback(retryAttempt + 1), delay * 1000);
+                    await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+                    return await attemptCallback(retryAttempt + 1);
                 } else {
                     logger.error("Exhausted retries.");
                     await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, 0);
                     sendAlert(`Failed to forward callback after ${retryAttempt + 1} attempts: ${err.message}`);
+                    return false;
                 }
-                return false;
             }
         };
 
-        await attemptCallback(retryCount);
+        return await attemptCallback(retryCount);
     } catch (error) {
         logger.error(`Critical error in forwardCallback: ${error.message}`);
         logger.error(error.stack);
@@ -266,7 +268,9 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
                     await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, delay);
                     logger.info(`Retrying in ${delay} seconds...`);
 
-                    setTimeout(() => attemptCallback(retryAttempt + 1), delay * 1000);
+                    // setTimeout(() => attemptCallback(retryAttempt + 1), delay * 1000);
+                    await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+                    return await attemptCallback(retryAttempt + 1);
                 } else {
                     logger.error("Exhausted retries.");
                     await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, 0);
@@ -277,7 +281,7 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
             }
         };
 
-        await attemptCallback(retryCount);
+        return await attemptCallback(retryCount);
     } catch (error) {
         logger.error(`Critical error in forwardCallback: ${error.message}`);
         logger.error(error.stack);
@@ -429,7 +433,9 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
                     await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, delay);
                     logger.info(`Retrying in ${delay} seconds...`);
 
-                    setTimeout(() => attemptCallback(retryAttempt + 1), delay * 1000);
+                    // setTimeout(() => attemptCallback(retryAttempt + 1), delay * 1000);
+                    await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+                    return await attemptCallback(retryAttempt + 1);
                 } else {
                     logger.error("Exhausted retries.");
                     await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, 0);
@@ -440,7 +446,7 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
             }
         };
 
-        await attemptCallback(retryCount);
+        return await attemptCallback(retryCount);
     } catch (error) {
         logger.error(`Critical error in forwardCallback: ${error.message}`);
         logger.error(error.stack);
