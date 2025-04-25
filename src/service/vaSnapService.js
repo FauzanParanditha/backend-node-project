@@ -266,8 +266,6 @@ export const VaSnapCallback = async (payload) => {
         //     "X-TIMESTAMP": generateTimestampSnap(),
         // };
 
-        // existOrder.paymentPaylabsVaSnap = { ...notificationData };
-
         // const generateResponsePayload = (existOrder, statusCode, statusMessage) => ({
         //     responseCode: statusCode || "2002500",
         //     responseMessage: statusMessage || "Success",
@@ -280,24 +278,25 @@ export const VaSnapCallback = async (payload) => {
         //     },
         // });
 
-        const payloadResponse = generateResponsePayload(existOrder, "2002500", "Success");
+        // const payloadResponse = generateResponsePayload(existOrder, "2002500", "Success");
 
-        if (existOrder.paymentStatus === "paid") {
-            logger.info(`Order ${trxId} already paid, skipping processing`);
-            return {
-                responseHeaders,
-                payloadResponse,
-            };
-        }
+        // if (existOrder.paymentStatus === "paid") {
+        //     logger.info(`Order ${trxId} already paid, skipping processing`);
+        //     return {
+        //         responseHeaders,
+        //         payloadResponse,
+        //     };
+        // }
 
         // Update order details in the database
         existOrder.paymentStatus = "paid";
         existOrder.totalAmount = notificationData.paidAmount.value;
+        existOrder.paymentPaylabsVaSnap = { ...notificationData };
         existOrder.vaSnap = undefined; // Clear VA snap data
         await existOrder.save();
 
         // Broadcast the payment update to all connected clients
-        broadcastPaymentUpdate({ paymentId: sanitizedTrxId, status: "paid" });
+        await sendWebSocketMessage({ paymentId: sanitizedTrxId, status: "paid" });
 
         if (currentDateTime > expiredDateTime) {
             existOrder.paymentStatus = "expired";
@@ -306,13 +305,13 @@ export const VaSnapCallback = async (payload) => {
             // Broadcast the payment update to all connected clients
             await sendWebSocketMessage({ paymentId: sanitizedTrxId, status: "expired" });
 
-            const payloadResponseError = generateResponsePayload(existOrder, "4030000", "Expired");
-            return {
-                responseHeaders,
-                currentDateTime,
-                expiredDateTime,
-                payloadResponseError,
-            };
+            // return {
+            //     responseHeaders,
+            //     currentDateTime,
+            //     expiredDateTime,
+            //     payloadResponseError,
+            // };
+            return;
         }
 
         // return { responseHeaders, payloadResponse };
