@@ -2,7 +2,6 @@ import logger from "../application/logger.js";
 import Order from "../models/orderModel.js";
 import VirtualAccount from "../models/vaModel.js";
 import { publishToQueue } from "../rabbitmq/producer.js";
-import { forwardCallback } from "../service/forwadCallback.js";
 import { convertToDate, generateHeaders, generateRequestId, verifySignature } from "../service/paylabs.js";
 import { logCallback } from "../utils/logCallback.js";
 
@@ -96,18 +95,18 @@ export const paylabsCallback = async (req, res, next) => {
 
         res.set(responseHeaders).status(200).json(payloadResponse);
 
-        forwardCallback({ payload }).catch(async (err) => {
-            logger.error(err.message);
-            await logCallback({
-                type: "forward",
-                source: "internal",
-                target: "client",
-                status: "failed",
-                payload,
-                errorMessage: err.message,
-                requestId,
-            });
-        });
+        // forwardCallback({ payload }).catch(async (err) => {
+        //     logger.error(err.message);
+        //     await logCallback({
+        //         type: "forward",
+        //         source: "internal",
+        //         target: "client",
+        //         status: "failed",
+        //         payload,
+        //         errorMessage: err.message,
+        //         requestId,
+        //     });
+        // });
     } catch (error) {
         logger.error(
             `Error handling webhook paylabs: ${error.message}, rawBody: ${
@@ -204,18 +203,18 @@ export const paylabsVaStaticCallback = async (req, res, next) => {
 
         res.set(responseHeaders).status(200).json(responsePayload);
 
-        forwardCallback({ payload }).catch(async (err) => {
-            logger.error(err.message);
-            await logCallback({
-                type: "forward",
-                source: "internal",
-                target: "client",
-                status: "failed",
-                payload,
-                errorMessage: err.message,
-                requestId,
-            });
-        });
+        // forwardCallback({ payload }).catch(async (err) => {
+        //     logger.error(err.message);
+        //     await logCallback({
+        //         type: "forward",
+        //         source: "internal",
+        //         target: "client",
+        //         status: "failed",
+        //         payload,
+        //         errorMessage: err.message,
+        //         requestId,
+        //     });
+        // });
     } catch (error) {
         logger.error(`Error handling webhook va static: ${error.message}`);
         await logCallback({
