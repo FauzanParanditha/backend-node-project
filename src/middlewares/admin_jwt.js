@@ -11,7 +11,7 @@ export const jwtMiddlewareAdmin = async (req, res, next) => {
     if (req.headers.client === "not-browser") {
         token = req.headers.authorization;
     } else {
-        token = req.cookies["dsbTkn"] || req.headers.authorization;
+        token = req.cookies["_aDsbTkn"] || req.headers.authorization;
     }
 
     if (!token) {

@@ -1,13 +1,17 @@
 import logger from "../application/logger.js";
-import Order from "../models/orderModel.js";
-import VirtualAccount from "../models/vaModel.js";
-import { publishToQueue } from "../rabbitmq/producer.js";
-import { convertToDate, generateHeaders, generateRequestId, verifySignature } from "../service/paylabs.js";
+import { forwardCallback } from "../service/forwadCallback.js";
+import { verifySignature } from "../service/paylabs.js";
+import { logCallback } from "../utils/logCallback.js";
 
 // Handle Paylabs callback notifications
 export const paylabsCallback = async (req, res, next) => {
     try {
-        const { "x-partner-id": partnerId, "x-signature": signature, "x-timestamp": timestamp } = req.headers;
+        const {
+            "x-partner-id": partnerId,
+            "x-signature": signature,
+            "x-timestamp": timestamp,
+            "x-request-id": requestId,
+        } = req.headers;
         const { method: httpMethod, originalUrl: endpointUrl } = req;
 
         if (partnerId !== process.env.PAYLABS_MERCHANT_ID) {
@@ -71,28 +75,57 @@ export const paylabsCallback = async (req, res, next) => {
             return res.status(200).json(payloadResponseError);
         }
 
-        try {
-            await publishToQueue("payment_events", payload);
-        } catch (err) {
-            logger.error(`Failed to publish to queue: ${err.message}`);
-        }
+        await logCallback({
+            type: "incoming",
+            source: "paylabs",
+            target: "internal",
+            status: "success",
+            payload,
+            response: payloadResponse,
+            requestId,
+        });
 
         res.set(responseHeaders).status(200).json(payloadResponse);
 
-        // await forwardCallback({ payload });
+        forwardCallback({ payload }).catch(async (err) => {
+            logger.error(err.message);
+            await logCallback({
+                type: "forward",
+                source: "internal",
+                target: "client",
+                status: "failed",
+                payload,
+                errorMessage: err.message,
+                requestId,
+            });
+        });
     } catch (error) {
         logger.error(
             `Error handling webhook paylabs: ${error.message}, rawBody: ${
                 req.body instanceof Buffer ? req.body.toString("utf8") : req.body
             }`,
         );
+        await logCallback({
+            type: "incoming",
+            source: "paylabs",
+            target: "internal",
+            status: "error",
+            payload: req.body instanceof Buffer ? req.body.toString("utf8") : req.body,
+            errorMessage: error.message,
+            requestId,
+        });
         next(error);
     }
 };
 
 export const paylabsVaStaticCallback = async (req, res, next) => {
     try {
-        const { "x-partner-id": partnerId, "x-signature": signature, "x-timestamp": timestamp } = req.headers;
+        const {
+            "x-partner-id": partnerId,
+            "x-signature": signature,
+            "x-timestamp": timestamp,
+            "x-request-id": requestId,
+        } = req.headers;
         const { method: httpMethod, originalUrl: endpointUrl } = req;
 
         const allowedPartnerId = process.env.PAYLABS_MERCHANT_ID;
@@ -150,11 +183,41 @@ export const paylabsVaStaticCallback = async (req, res, next) => {
             logger.error(`Failed to publish to queue: ${err.message}`);
         }
 
+        await logCallback({
+            type: "incoming",
+            source: "paylabs",
+            target: "internal",
+            status: "success",
+            payload,
+            response: responsePayload,
+            requestId,
+        });
+
         res.set(responseHeaders).status(200).json(responsePayload);
 
-        // await forwardCallback({ payload });
+        forwardCallback({ payload }).catch(async (err) => {
+            logger.error(err.message);
+            await logCallback({
+                type: "forward",
+                source: "internal",
+                target: "client",
+                status: "failed",
+                payload,
+                errorMessage: err.message,
+                requestId,
+            });
+        });
     } catch (error) {
         logger.error(`Error handling webhook va static: ${error.message}`);
+        await logCallback({
+            type: "incoming",
+            source: "paylabs",
+            target: "internal",
+            status: "error",
+            payload: req.body instanceof Buffer ? req.body.toString("utf8") : req.body,
+            errorMessage: error.message,
+            requestId,
+        });
         next(error);
     }
 };

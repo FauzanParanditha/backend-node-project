@@ -23,6 +23,7 @@ export const orderSchema = joi.object({
         .required(),
     paymentMethod: joi.string().required(),
     storeId: joi.string().optional(),
+    expire: joi.number().min(1).max(1440).optional(),
     paymentType: joi.string().required(),
 });
 

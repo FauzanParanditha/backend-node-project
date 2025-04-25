@@ -9,6 +9,8 @@ const failedCallbackSchema = new mongoose.Schema(
         clientId: { type: mongoose.Schema.Types.ObjectId, ref: "Client", required: true },
         nextRetryAt: { type: Date, required: true },
         status: { type: String, enum: ["pending", "completed"], default: "pending" },
+        lastTriedAt: { type: Date },
+        lastError: { type: String },
     },
     {
         timestamps: true,

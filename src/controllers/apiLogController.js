@@ -79,11 +79,40 @@ export const getAllCallbackLog = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             message: "All callback logs",
+            data: result.callbackLogs,
+            pagination: result.pagination,
+        });
+    } catch (error) {
+        logger.error(`Error fetching callback logs: ${error.message}`);
+        next(error);
+    }
+};
+
+export const getAllFailedCallbackLog = async (req, res, next) => {
+    const { query = "", limit = 10, page = 1, sort_by = "_id", sort = -1, countOnly = false } = req.query;
+
+    try {
+        const result = await apiLogService.getAllFailedCallbackLogs({
+            query,
+            limit,
+            page,
+            sort_by,
+            sort,
+            countOnly,
+        });
+
+        if (countOnly) {
+            return res.status(200).json({ count: result.count });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "All failed callback logs",
             data: result.failedCallbackLogs,
             pagination: result.pagination,
         });
     } catch (error) {
-        logger.error(`Error fetching email logs: ${error.message}`);
+        logger.error(`Error fetching failed callback logs: ${error.message}`);
         next(error);
     }
 };

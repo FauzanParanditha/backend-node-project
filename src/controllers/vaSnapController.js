@@ -1,9 +1,8 @@
 import logger from "../application/logger.js";
-import Order from "../models/orderModel.js";
-import { publishToQueue } from "../rabbitmq/producer.js";
-import { forwardCallbackSnapDelete } from "../service/forwadCallback.js";
-import { generateRequestId, generateTimestampSnap, verifySignature } from "../service/paylabs.js";
+import { forwardCallbackSnap, forwardCallbackSnapDelete } from "../service/forwadCallback.js";
+import { verifySignature } from "../service/paylabs.js";
 import * as vaSnapService from "../service/vaSnapService.js";
+import { logCallback } from "../utils/logCallback.js";
 import { orderSchema } from "../validators/orderValidator.js";
 
 export const createVASNAP = async (req, res) => {
@@ -28,6 +27,7 @@ export const createVASNAP = async (req, res) => {
             totalAmount: response.data.virtualAccountData.totalAmount.value,
             paymentExpired: response.data.virtualAccountData.expiredDate,
             paymentId: response.data.virtualAccountData.trxId,
+            storeId: response.data.virtualAccountData.additionalInfo.storeId,
             orderId: result.orderId,
             id: result._id,
         });
@@ -136,19 +136,43 @@ export const VaSnapCallback = async (req, res, next) => {
             res.set(responseHeaders).status(403).json(payloadResponseError);
         }
 
-        try {
-            await publishToQueue("payment_events_va_snap", payload);
-        } catch (err) {
-            logger.error(`Failed to publish to queue: ${err.message}`);
-        }
+        await logCallback({
+            type: "incoming",
+            source: "paylabs",
+            target: "internal",
+            status: "success",
+            payload,
+            response: payloadResponse,
+            requestId: payload.paymentRequestId,
+        });
 
         // Respond
         res.set(responseHeaders).status(200).json(payloadResponse);
 
-        // await forwardCallbackSnap({ payload });
+        forwardCallbackSnap({ payload }).catch(async (err) => {
+            logger.error(err.message);
+            await logCallback({
+                type: "forward",
+                source: "internal",
+                target: "client",
+                status: "failed",
+                payload,
+                errorMessage: err.message,
+                requestId: payload.paymentRequestId,
+            });
+        });
     } catch (error) {
         // Handle unexpected errors
         logger.error(`Error handling webhook va snap: ${error.message}`);
+        await logCallback({
+            type: "incoming",
+            source: "paylabs",
+            target: "internal",
+            status: "error",
+            payload: req.body instanceof Buffer ? req.body.toString("utf8") : req.body,
+            errorMessage: error.message,
+            requestId: payload.paymentRequestId,
+        });
         next(error);
     }
 };
@@ -212,14 +236,45 @@ export const deleteVASNAP = async (req, res) => {
                 message: "payment expired",
             });
         }
+
+        await logCallback({
+            type: "incoming",
+            source: "paylabs",
+            target: "internal",
+            status: "success",
+            payload: response.data,
+            response: response.data,
+            // requestId,
+        });
+
         // Send a response with the updated order details
         res.set(responseHeaders).status(200).json(response.data);
 
         const payload = response.data;
-        await forwardCallbackSnapDelete({ payload });
+        forwardCallbackSnapDelete({ payload }).catch(async (err) => {
+            logger.error(err.message);
+            await logCallback({
+                type: "forward",
+                source: "internal",
+                target: "client",
+                status: "failed",
+                payload,
+                errorMessage: err.message,
+                // requestId,
+            });
+        });
     } catch (error) {
         // Handle unexpected errors
         logger.error(`Error delete va snap: ${error.message}`);
+        await logCallback({
+            type: "incoming",
+            source: "paylabs",
+            target: "internal",
+            status: "error",
+            payload: req.body instanceof Buffer ? req.body.toString("utf8") : req.body,
+            errorMessage: error.message,
+            // requestId,
+        });
         return res.status(500).json({
             success: false,
             status: error.status,

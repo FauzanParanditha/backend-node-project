@@ -87,13 +87,32 @@ export const callbackPaylabs = async (payload) => {
             throw new ResponseError(404, `Order not found for orderID: ${sanitizedPaymentId}`);
         }
 
-        // if (order.paymentStatus === "paid") {
-        //     throw new ResponseError(409, "Payment already processed!");
-        // }
-
         const currentDateTime = new Date();
         const expiredDateTime = convertToDate(order.paymentExpired);
 
+        // Prepare response payload and headers
+        const responsePayload = (errorCode, errCodeDes) => ({
+            merchantId: process.env.PAYLABS_MERCHANT_ID,
+            requestId: generateRequestId(),
+            errCode: errorCode || notificationData.errCode,
+            ...(errCodeDes && { errCodeDes }),
+        });
+
+        const payloadResponse = responsePayload(0, "");
+
+        const { responseHeaders } = generateHeaders(
+            "POST",
+            "/api/order/webhook/paylabs",
+            payloadResponse,
+            generateRequestId(),
+        );
+
+        if (order.paymentStatus === "paid") {
+            logger.info(`Order ${paymentId} already paid, skipping processing`);
+            return { responseHeaders, payloadResponse };
+        }
+
+        const payloadResponseError = responsePayload("orderExpired", "order expired");
         if (currentDateTime > expiredDateTime && expiredDateTime != null) {
             order.paymentStatus = "expired";
 
