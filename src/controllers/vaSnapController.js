@@ -1,7 +1,7 @@
 import logger from "../application/logger.js";
 import Order from "../models/orderModel.js";
 import { publishToQueue } from "../rabbitmq/producer.js";
-import { forwardCallbackSnap, forwardCallbackSnapDelete } from "../service/forwadCallback.js";
+import { forwardCallbackSnapDelete } from "../service/forwadCallback.js";
 import { generateRequestId, generateTimestampSnap, verifySignature } from "../service/paylabs.js";
 import * as vaSnapService from "../service/vaSnapService.js";
 import { logCallback } from "../utils/logCallback.js";
@@ -111,6 +111,8 @@ export const VaSnapCallback = async (req, res, next) => {
         const currentDateTime = new Date();
         const expiredDateTime = new Date(existOrder.paymentExpired);
 
+        existOrder.paymentPaylabsVaSnap = { ...payload };
+
         const generateResponsePayload = (existOrder, statusCode, statusMessage) => ({
             responseCode: statusCode || "2002500",
             responseMessage: statusMessage || "Success",
@@ -157,18 +159,18 @@ export const VaSnapCallback = async (req, res, next) => {
         // Respond
         res.set(responseHeaders).status(200).json(payloadResponse);
 
-        forwardCallbackSnap({ payload }).catch(async (err) => {
-            logger.error(err.message);
-            await logCallback({
-                type: "forward",
-                source: "internal",
-                target: "client",
-                status: "failed",
-                payload,
-                errorMessage: err.message,
-                requestId: payload.paymentRequestId,
-            });
-        });
+        // forwardCallbackSnap({ payload }).catch(async (err) => {
+        //     logger.error(err.message);
+        //     await logCallback({
+        //         type: "forward",
+        //         source: "internal",
+        //         target: "client",
+        //         status: "failed",
+        //         payload,
+        //         errorMessage: err.message,
+        //         requestId: payload.paymentRequestId,
+        //     });
+        // });
     } catch (error) {
         // Handle unexpected errors
         logger.error(`Error handling webhook va snap: ${error.message}`);
