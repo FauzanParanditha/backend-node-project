@@ -74,7 +74,7 @@ export const cancleQris = async (req, res, next) => {
         res.set(responseHeaders).status(200).json(response.data);
 
         const payload = response.data;
-        forwardCallback({ payload }).catch(async (err) => {
+        forwardCallback(payload).catch(async (err) => {
             logger.error(err.message);
             await logCallback({
                 type: "forward",

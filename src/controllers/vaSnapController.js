@@ -261,7 +261,7 @@ export const deleteVASNAP = async (req, res) => {
         res.set(responseHeaders).status(200).json(response.data);
 
         const payload = response.data;
-        forwardCallbackSnapDelete({ payload }).catch(async (err) => {
+        forwardCallbackSnapDelete(payload).catch(async (err) => {
             logger.error(err.message);
             await logCallback({
                 type: "forward",
