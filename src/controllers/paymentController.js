@@ -1,4 +1,5 @@
 import logger from "../application/logger.js";
+import Order from "../models/orderModel.js";
 import { publishToQueue } from "../rabbitmq/producer.js";
 import { forwardCallback } from "../service/forwadCallback.js";
 import { verifySignature } from "../service/paylabs.js";
