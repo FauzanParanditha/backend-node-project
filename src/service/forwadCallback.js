@@ -5,6 +5,7 @@ import { activeTask, decrementActiveTask, incrementActiveTask, serverIsClosing }
 import Client from "../models/clientModel.js";
 import FailedCallback from "../models/failedForwardModel.js";
 import Order from "../models/orderModel.js";
+import { logCallback } from "../utils/logCallback.js";
 import { validateCallback, validatePaymentVASNAP, validateSnapDelete } from "../validators/paymentValidator.js";
 import { generateHeadersForward, generateRequestId } from "./paylabs.js";
 
@@ -36,7 +37,7 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         ).catch((err) => logger.error(`Failed to log callback: ${err.message}`));
     };
 
-    const validateResponse = (response) => {
+    const validateResponse = async (response) => {
         const {
             "content-type": contentType,
             "x-timestamp": timestamp,
@@ -98,8 +99,19 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                     timeout: 10000,
                 });
 
-                validateResponse(response);
+                await validateResponse(response);
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
+
+                await logCallback({
+                    type: "outgoing",
+                    source: "system",
+                    target: "client",
+                    status: "success",
+                    payload: JSON.parse(JSON.stringify(payload)),
+                    response: response.data,
+                    requestId: response.data.requestId,
+                });
+                return true;
             } catch (err) {
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
                 logger.error(`Stack Trace: ${err.stack}`);
@@ -110,16 +122,19 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                     await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, delay);
                     logger.info(`Retrying in ${delay} seconds...`);
 
-                    setTimeout(() => attemptCallback(retryAttempt + 1), delay * 1000);
+                    // setTimeout(() => attemptCallback(retryAttempt + 1), delay * 1000);
+                    await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+                    return await attemptCallback(retryAttempt + 1);
                 } else {
                     logger.error("Exhausted retries.");
                     await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, 0);
                     sendAlert(`Failed to forward callback after ${retryAttempt + 1} attempts: ${err.message}`);
+                    return false;
                 }
             }
         };
 
-        attemptCallback(retryCount);
+        return await attemptCallback(retryCount);
     } catch (error) {
         logger.error(`Critical error in forwardCallback: ${error.message}`);
         logger.error(error.stack);
@@ -135,7 +150,7 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
 
     const logFailedCallback = async (payload, callbackUrl, retryCount, errDesc, clientId, delay) => {
         logger.error(`Logging failed callback attempt ${retryCount}: ${JSON.stringify(payload)}`);
-        const merchantTradeNo = String(payload.merchantTradeNo);
+        const merchantTradeNo = String(payload.trxId);
 
         // Validasi format merchantTradeNo
         if (!/^PL-[a-f0-9]{16}$/.test(merchantTradeNo)) {
@@ -143,7 +158,7 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
         }
 
         await FailedCallback.findOneAndUpdate(
-            { "payload.merchantTradeNo": merchantTradeNo },
+            { "payload.trxId": merchantTradeNo },
             {
                 $set: {
                     payload,
@@ -229,8 +244,20 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
                     timeout: 10000,
                 });
 
-                validateResponse(response);
+                await validateResponse(response);
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
+
+                await logCallback({
+                    type: "outgoing",
+                    source: "system",
+                    target: "client",
+                    status: "success",
+                    payload: JSON.parse(JSON.stringify(payload)),
+                    response: response.data,
+                    requestId: response.data.requestId,
+                });
+
+                return true;
             } catch (err) {
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
                 logger.error(`Stack Trace: ${err.stack}`);
@@ -241,16 +268,20 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
                     await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, delay);
                     logger.info(`Retrying in ${delay} seconds...`);
 
-                    setTimeout(() => attemptCallback(retryAttempt + 1), delay * 1000);
+                    // setTimeout(() => attemptCallback(retryAttempt + 1), delay * 1000);
+                    await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+                    return await attemptCallback(retryAttempt + 1);
                 } else {
                     logger.error("Exhausted retries.");
                     await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, 0);
                     sendAlert(`Failed to forward callback after ${retryAttempt + 1} attempts: ${err.message}`);
                 }
+
+                return false;
             }
         };
 
-        attemptCallback(retryCount);
+        return await attemptCallback(retryCount);
     } catch (error) {
         logger.error(`Critical error in forwardCallback: ${error.message}`);
         logger.error(error.stack);
@@ -266,9 +297,15 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
 
     const logFailedCallback = async (payload, callbackUrl, retryCount, errDesc, clientId, delay) => {
         logger.error(`Logging failed callback attempt ${retryCount}: ${JSON.stringify(payload)}`);
+        const merchantTradeNo = String(payload.virtualAccountData.trxId);
+
+        // Validasi format merchantTradeNo
+        if (!/^PL-[a-f0-9]{16}$/.test(merchantTradeNo)) {
+            throw new Error("Invalid merchantTradeNo format");
+        }
 
         await FailedCallback.findOneAndUpdate(
-            { "payload.merchantTradeNo": payload.merchantTradeNo },
+            { "payload.virtualAccountData.trxId": merchantTradeNo },
             {
                 $set: {
                     payload,
@@ -345,21 +382,21 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
         const parsedUrl = new URL(callbackUrl);
         const path = parsedUrl.pathname;
 
-        while (retryCount < retryIntervals.length) {
-            if (serverIsClosing) {
-                logger.warn("Server shutting down. Aborting retries.");
-                await logFailedCallback(
-                    payload,
-                    callbackUrl,
-                    retryCount,
-                    "Server shutting down. Aborting retries.",
-                    client._id,
-                    retryIntervals[retryCount - 1],
-                );
-                return; // Stop retries during shutdown
-            }
-
+        const attemptCallback = async (retryAttempt) => {
             try {
+                if (serverIsClosing) {
+                    logger.warn("Server shutting down. Aborting retries.");
+                    await logFailedCallback(
+                        notificationData,
+                        callbackUrl,
+                        retryAttempt,
+                        "Server shutting down.",
+                        client._id,
+                        0,
+                    );
+                    return;
+                }
+
                 const { headers: responseHeaders } = generateHeadersForward(
                     "POST",
                     path,
@@ -369,32 +406,50 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
 
                 const response = await axios.post(callbackUrl, notificationData, {
                     headers: responseHeaders,
-                    timeout: 10000, // Timeout in milliseconds
+                    timeout: 10000,
                 });
 
                 await validateResponse(response);
-                logger.info(`Callback successfully forwarded on attempt ${retryCount + 1}`);
-                return true;
+                logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
+
+                await logCallback({
+                    type: "outgoing",
+                    source: "system",
+                    target: "client",
+                    status: "success",
+                    payload: JSON.parse(JSON.stringify(payload)),
+                    response: response.data,
+                    requestId: response.data.requestId,
+                });
+
+                return;
             } catch (err) {
-                logger.error(`Attempt ${retryCount + 1} failed: ${err.message}`);
+                logger.error(`Attempt ${retryAttempt + 1} failed: ${err.message}`);
+                logger.error(`Stack Trace: ${err.stack}`);
 
-                retryCount++;
-                if (retryCount < retryIntervals.length) {
-                    const delay = retryIntervals[retryCount - 1];
+                if (retryAttempt < retryIntervals.length) {
+                    const delay = retryIntervals[retryAttempt];
 
-                    await logFailedCallback(payload, callbackUrl, retryCount, err.message, client._id, delay);
+                    await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, delay);
                     logger.info(`Retrying in ${delay} seconds...`);
 
+                    // setTimeout(() => attemptCallback(retryAttempt + 1), delay * 1000);
                     await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+                    return await attemptCallback(retryAttempt + 1);
                 } else {
                     logger.error("Exhausted retries.");
-                    await logFailedCallback(payload, callbackUrl, retryCount, err.message, client._id, 0);
-                    sendAlert(`Failed to forward callback after ${retryCount} attempts: ${err.message}`);
+                    await logFailedCallback(payload, callbackUrl, retryAttempt, err.message, client._id, 0);
+                    sendAlert(`Failed to forward callback after ${retryAttempt + 1} attempts: ${err.message}`);
                 }
+
+                return false;
             }
-        }
+        };
+
+        return await attemptCallback(retryCount);
     } catch (error) {
         logger.error(`Critical error in forwardCallback: ${error.message}`);
+        logger.error(error.stack);
         throw error;
     } finally {
         decrementActiveTask();
@@ -408,24 +463,70 @@ const sendAlert = (message) => {
 };
 
 export const retryCallbackById = async (callbackId) => {
-    try {
-        const failedCallback = await FailedCallback.findById(callbackId);
+    const failedCallback = await FailedCallback.findById(callbackId);
 
-        if (!failedCallback) {
-            logger.warn(`No failed callback found with ID: ${callbackId}`);
-            throw new ResponseError(404, `No failed callback found with ID: ${callbackId}`);
+    if (!failedCallback) {
+        throw new ResponseError(404, `No failed callback found with ID: ${callbackId}`);
+    }
+
+    logger.info(`Retrying failed callback with ID: ${callbackId}, Retry Count: ${failedCallback.retryCount}`);
+
+    const { payload } = failedCallback;
+    let success = false;
+
+    try {
+        if (payload.virtualAccountData) {
+            success = await forwardCallbackSnapDelete({
+                payload,
+                retryCount: failedCallback.retryCount,
+                callbackId,
+            });
+        } else if (payload.trxId) {
+            success = await forwardCallbackSnap({
+                payload,
+                retryCount: failedCallback.retryCount,
+                callbackId,
+            });
+        } else {
+            success = await forwardCallback({
+                payload,
+                retryCount: failedCallback.retryCount,
+                callbackId,
+            });
         }
 
-        logger.info(`Retrying failed callback with ID: ${callbackId}`);
+        if (success) {
+            await failedCallback.deleteOne();
+            logger.info(`Successfully retried and deleted callback with ID: ${callbackId}`);
+        } else {
+            await FailedCallback.updateOne(
+                { _id: callbackId },
+                {
+                    $inc: { retryCount: 1 },
+                    $set: {
+                        lastTriedAt: new Date(),
+                        lastError: "Retry failed but didn’t throw",
+                        status: "pending",
+                    },
+                },
+            );
+            logger.warn(`⚠️ Callback ID ${callbackId} retry failed. RetryCount incremented.`);
+        }
 
-        await forwardCallback({
-            payload: failedCallback.payload,
-            retryCount: failedCallback.retryCount,
-        });
-
-        await failedCallback.deleteOne();
-        logger.info(`Successfully retried and deleted callback with ID: ${callbackId}`);
+        return success;
     } catch (err) {
-        logger.error(`Retry for callback ${callbackId} failed: ${err.message}`);
+        logger.error(`❌ Error retrying callback ${callbackId}: ${err.message}`);
+        await FailedCallback.updateOne(
+            { _id: callbackId },
+            {
+                $inc: { retryCount: 1 },
+                $set: {
+                    lastTriedAt: new Date(),
+                    lastError: err.message,
+                    status: "pending",
+                },
+            },
+        );
+        return false;
     }
 };

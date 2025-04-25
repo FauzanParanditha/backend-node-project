@@ -1,4 +1,5 @@
 import ApiLog from "../models/apiLogModel.js";
+import CallbackLog from "../models/callbackLogModel.js";
 import EmailLog from "../models/emailLogModel.js";
 import FailedCallback from "../models/failedForwardModel.js";
 import { escapeRegExp } from "../utils/helper.js";
@@ -90,6 +91,49 @@ export const getAllEmailLogs = async ({ query, limit, page, sort_by, sort, count
 };
 
 export const getAllCallbackLogs = async ({ query, limit, page, sort_by, sort, countOnly }) => {
+    const filter = {};
+
+    // Apply search term if provided
+    if (query && query.trim()) {
+        const searchTerm = escapeRegExp(query.trim());
+        filter["$or"] = [
+            { type: { $regex: searchTerm, $options: "i" } },
+            { status: { $regex: searchTerm, $options: "i" } },
+            { source: { $regex: searchTerm, $options: "i" } },
+        ];
+    }
+
+    const sortField = sort_by || "_id";
+    const sortValue = Number(sort) || -1;
+    const limitNum = Number(limit);
+    const skip = (Number(page) - 1) * limitNum;
+
+    if (countOnly) {
+        return { count: await CallbackLog.countDocuments(filter) };
+    }
+
+    const callbackLogs = await CallbackLog.find(filter)
+        .sort({ [sortField]: sortValue })
+        .limit(limitNum)
+        .skip(skip)
+        .exec();
+
+    const total = await CallbackLog.countDocuments(filter);
+    const totalPages = Math.ceil(total / limitNum);
+
+    return {
+        callbackLogs,
+        pagination: {
+            totalRecords: total,
+            totalPages,
+            currentPage: Number(page),
+            perPage: limitNum,
+            recordsOnPage: callbackLogs.length,
+        },
+    };
+};
+
+export const getAllFailedCallbackLogs = async ({ query, limit, page, sort_by, sort, countOnly }) => {
     try {
         const limitNum = Math.max(1, Number(limit) || 10);
         const pageNum = Math.max(1, Number(page) || 1);

@@ -87,10 +87,6 @@ export const callbackPaylabs = async ({ payload }) => {
             throw new ResponseError(404, `Order not found for orderID: ${sanitizedPaymentId}`);
         }
 
-        // if (order.paymentStatus === "paid") {
-        //     throw new ResponseError(409, "Payment already processed!");
-        // }
-
         const currentDateTime = new Date();
         const expiredDateTime = convertToDate(order.paymentExpired);
 
@@ -110,6 +106,11 @@ export const callbackPaylabs = async ({ payload }) => {
             payloadResponse,
             generateRequestId(),
         );
+
+        if (order.paymentStatus === "paid") {
+            logger.info(`Order ${paymentId} already paid, skipping processing`);
+            return { responseHeaders, payloadResponse };
+        }
 
         const payloadResponseError = responsePayload("orderExpired", "order expired");
         if (currentDateTime > expiredDateTime && expiredDateTime != null) {

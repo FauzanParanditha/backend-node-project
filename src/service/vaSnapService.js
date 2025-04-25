@@ -73,6 +73,7 @@ export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
             expiredDate: generateTimestampSnap(300), // 300 minutes
             additionalInfo: {
                 paymentType: requestBodyForm.paymentType,
+                ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
             },
         };
 
@@ -123,6 +124,7 @@ export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
             paymentExpired: response.data.virtualAccountData.expiredDate,
             customerNo: response.data.virtualAccountData.customerNo,
             virtualAccountNo: response.data.virtualAccountData.virtualAccountNo,
+            storeId: response.data.virtualAccountData.additionalInfo.storeId,
             vaSnap: response.data,
         });
 
@@ -255,29 +257,16 @@ export const VaSnapCallback = async ({ payload }) => {
             throw new ResponseError(404, `Order not found for orderID: ${notificationData.trxId}`);
         }
 
-        // if (existOrder.paymentStatus === "paid") {
-        //     logger.error("Payment already processed for order: ", notificationData.trxId);
-        //     throw new ResponseError(409, "Payment already processed!");
-        // }
-
         const currentDateTime = new Date();
         const expiredDateTime = new Date(existOrder.vaSnap.virtualAccountData.expiredDate);
-
-        // Update order details in the database
-        existOrder.paymentStatus = "paid";
-        existOrder.totalAmount = notificationData.paidAmount.value;
-        existOrder.paymentPaylabsVaSnap = { ...notificationData };
-        existOrder.vaSnap = undefined; // Clear VA snap data
-        await existOrder.save();
-
-        // Broadcast the payment update to all connected clients
-        broadcastPaymentUpdate({ paymentId: sanitizedTrxId, status: "paid" });
 
         // Prepare response payload and headers
         const responseHeaders = {
             "Content-Type": "application/json;charset=utf-8",
             "X-TIMESTAMP": generateTimestampSnap(),
         };
+
+        existOrder.paymentPaylabsVaSnap = { ...notificationData };
 
         const generateResponsePayload = (existOrder, statusCode, statusMessage) => ({
             responseCode: statusCode || "2002500",
@@ -290,6 +279,25 @@ export const VaSnapCallback = async ({ payload }) => {
                 paymentRequestId: generateRequestId(),
             },
         });
+
+        const payloadResponse = generateResponsePayload(existOrder, "2002500", "Success");
+
+        if (existOrder.paymentStatus === "paid") {
+            logger.info(`Order ${trxId} already paid, skipping processing`);
+            return {
+                responseHeaders,
+                payloadResponse,
+            };
+        }
+
+        // Update order details in the database
+        existOrder.paymentStatus = "paid";
+        existOrder.totalAmount = notificationData.paidAmount.value;
+        existOrder.vaSnap = undefined; // Clear VA snap data
+        await existOrder.save();
+
+        // Broadcast the payment update to all connected clients
+        broadcastPaymentUpdate({ paymentId: sanitizedTrxId, status: "paid" });
 
         if (currentDateTime > expiredDateTime) {
             existOrder.paymentStatus = "expired";
@@ -307,7 +315,6 @@ export const VaSnapCallback = async ({ payload }) => {
             };
         }
 
-        const payloadResponse = generateResponsePayload(existOrder, "2002500", "Success");
         return { responseHeaders, payloadResponse };
     } catch (error) {
         logger.error("Error in VaSnapCallback: ", error);

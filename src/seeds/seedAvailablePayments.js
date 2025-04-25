@@ -1,9 +1,9 @@
+import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { connectDB } from "../application/db.js";
-import AvailablePayment from "../models/availablePaymentModel.js";
 import logger from "../application/logger.js";
 import Admin from "../models/adminModel.js";
-import dotenv from "dotenv";
+import AvailablePayment from "../models/availablePaymentModel.js";
 
 dotenv.config();
 
@@ -25,7 +25,7 @@ const seedAvailablePayments = async () => {
         // Seed available payment data
         const seedData = [
             {
-                name: "Qris",
+                name: "QRIS",
                 active: true,
                 image: "public/payment/qris.svg",
                 category: "QRIS",

@@ -1,6 +1,11 @@
 import express from "express";
 import { admin, dashboard, deleteAdmin, getAllAdmin, register, updateAdmin } from "../controllers/adminController.js";
-import { getAllApiLog, getAllCallbackLog, getAllEmailLog } from "../controllers/apiLogController.js";
+import {
+    getAllApiLog,
+    getAllCallbackLog,
+    getAllEmailLog,
+    getAllFailedCallbackLog,
+} from "../controllers/apiLogController.js";
 import { retryCallback } from "../controllers/retryCallbackController.js";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
 
@@ -15,6 +20,7 @@ router.delete("/admin/:id", jwtMiddlewareAdmin, deleteAdmin);
 router.get("/apilogs", jwtMiddlewareAdmin, getAllApiLog);
 router.get("/emaillogs", jwtMiddlewareAdmin, getAllEmailLog);
 router.get("/callbacklogs", jwtMiddlewareAdmin, getAllCallbackLog);
+router.get("/failed-callbacklogs", jwtMiddlewareAdmin, getAllFailedCallbackLog);
 
 router.post("/retry/callback/:id", jwtMiddlewareAdmin, retryCallback);
 
