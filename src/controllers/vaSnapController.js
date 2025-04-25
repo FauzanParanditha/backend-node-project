@@ -1,4 +1,5 @@
 import logger from "../application/logger.js";
+import { publishToQueue } from "../rabbitmq/producer.js";
 import { forwardCallbackSnap, forwardCallbackSnapDelete } from "../service/forwadCallback.js";
 import { verifySignature } from "../service/paylabs.js";
 import * as vaSnapService from "../service/vaSnapService.js";
@@ -145,6 +146,12 @@ export const VaSnapCallback = async (req, res, next) => {
             response: payloadResponse,
             requestId: payload.paymentRequestId,
         });
+
+        try {
+            await publishToQueue("payment_events_va_snap", payload);
+        } catch (error) {
+            logger.error(`Failed to publish to queue: ${err.message}`);
+        }
 
         // Respond
         res.set(responseHeaders).status(200).json(payloadResponse);

@@ -1,4 +1,5 @@
 import logger from "../application/logger.js";
+import { publishToQueue } from "../rabbitmq/producer.js";
 import { forwardCallback } from "../service/forwadCallback.js";
 import { verifySignature } from "../service/paylabs.js";
 import { logCallback } from "../utils/logCallback.js";
@@ -84,6 +85,12 @@ export const paylabsCallback = async (req, res, next) => {
             response: payloadResponse,
             requestId,
         });
+
+        try {
+            await publishToQueue("payment_events", payload);
+        } catch (error) {
+            logger.error(`Failed to publish to queue: ${err.message}`);
+        }
 
         res.set(responseHeaders).status(200).json(payloadResponse);
 

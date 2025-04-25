@@ -260,25 +260,25 @@ export const VaSnapCallback = async (payload) => {
         const currentDateTime = new Date();
         const expiredDateTime = new Date(existOrder.vaSnap.virtualAccountData.expiredDate);
 
-        // Prepare response payload and headers
-        const responseHeaders = {
-            "Content-Type": "application/json;charset=utf-8",
-            "X-TIMESTAMP": generateTimestampSnap(),
-        };
+        // // Prepare response payload and headers
+        // const responseHeaders = {
+        //     "Content-Type": "application/json;charset=utf-8",
+        //     "X-TIMESTAMP": generateTimestampSnap(),
+        // };
 
-        existOrder.paymentPaylabsVaSnap = { ...notificationData };
+        // existOrder.paymentPaylabsVaSnap = { ...notificationData };
 
-        const generateResponsePayload = (existOrder, statusCode, statusMessage) => ({
-            responseCode: statusCode || "2002500",
-            responseMessage: statusMessage || "Success",
-            virtualAccountData: {
-                partnerServiceId: existOrder.partnerServiceId,
-                customerNo: existOrder.paymentPaylabsVaSnap.customerNo,
-                virtualAccountNo: existOrder.paymentPaylabsVaSnap.virtualAccountNo,
-                virtualAccountName: existOrder.paymentPaylabsVaSnap.virtualAccountName,
-                paymentRequestId: generateRequestId(),
-            },
-        });
+        // const generateResponsePayload = (existOrder, statusCode, statusMessage) => ({
+        //     responseCode: statusCode || "2002500",
+        //     responseMessage: statusMessage || "Success",
+        //     virtualAccountData: {
+        //         partnerServiceId: existOrder.partnerServiceId,
+        //         customerNo: existOrder.paymentPaylabsVaSnap.customerNo,
+        //         virtualAccountNo: existOrder.paymentPaylabsVaSnap.virtualAccountNo,
+        //         virtualAccountName: existOrder.paymentPaylabsVaSnap.virtualAccountName,
+        //         paymentRequestId: generateRequestId(),
+        //     },
+        // });
 
         const payloadResponse = generateResponsePayload(existOrder, "2002500", "Success");
 
@@ -315,7 +315,8 @@ export const VaSnapCallback = async (payload) => {
             };
         }
 
-        return { responseHeaders, payloadResponse };
+        // return { responseHeaders, payloadResponse };
+        return;
     } catch (error) {
         logger.error("Error in VaSnapCallback: ", error);
         throw error; // Re-throw the error for further handling
