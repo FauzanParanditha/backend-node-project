@@ -49,19 +49,16 @@ export const forwardCallback = async (payload, retryCount = 0) => {
             "x-request-id": requestId,
         } = response.headers;
 
-            if (!contentType?.toLowerCase().includes("application/json")) {
-                throw new ResponseError(400, "Invalid Content-Type header");
-            }
-            if (!timestamp || !signature || !requestId) {
-                throw new ResponseError(400, "Missing required headers");
-            }
-
-            const { requestId: bodyRequestId, errCode } = response.data;
-            if (!bodyRequestId) throw new ResponseError(400, "Missing requestId in response body");
-            if (errCode !== "0") throw new ResponseError(400, `Error code received: ${errCode}`);
-        } catch (error) {
-            throw new ResponseError(400, `Response validation failed: ${error.message}`);
+        if (!contentType?.toLowerCase().includes("application/json")) {
+            throw new ResponseError(400, "Invalid Content-Type header");
         }
+        if (!timestamp || !signature || !requestId) {
+            throw new ResponseError(400, "Missing required headers");
+        }
+
+        const { requestId: bodyRequestId, errCode } = response.data;
+        if (!bodyRequestId) throw new ResponseError(400, "Missing requestId in response body");
+        if (errCode !== "0") throw new ResponseError(400, `Error code received: ${errCode}`);
     };
 
     incrementActiveTask();
