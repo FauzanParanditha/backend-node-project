@@ -5,7 +5,7 @@ import Client from "../models/clientModel.js";
 import { escapeRegExp } from "../utils/helper.js";
 
 export async function getClientPublicKey(clientId) {
-    const clientKey = await ClientKeyModel.findOne({ clientId, active: true }).lean();
+    const clientKey = await ClientKeyModel.findOne({ clientId, active: true }).lean().select("+publicKey");
     if (!clientKey) {
         throw new Error("Client public key not found or inactive");
     }
