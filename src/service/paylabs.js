@@ -201,7 +201,7 @@ export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, t
     verify.update(stringContent);
     verify.end();
 
-    const isVerified = verifier.verify(publicKeyPem, Buffer.from(signature, "base64"));
+    const isVerified = verify.verify(publicKeyPem, Buffer.from(signature, "base64"));
     logger.info(`verify result: ${isVerified}`);
 
     return isVerified;
