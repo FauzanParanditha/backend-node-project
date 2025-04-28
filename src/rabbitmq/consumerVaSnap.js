@@ -32,7 +32,7 @@ const consumeQueue = async () => {
 
                     // 🔄 Kirim pesan ke queue forward_events setelah callbackPaylabs sukses
                     await publishToQueue("forward_events", payload);
-                    logger.info(`📡 Forward event dikirim untuk ${payload.merchantTradeNo}`);
+                    logger.info(`📡 Forward event dikirim untuk ${payload.trxId}`);
 
                     channel.ack(msg);
                 } catch (error) {
