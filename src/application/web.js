@@ -19,13 +19,14 @@ import authRouter from "../routers/authRouter.js";
 import authRouterUser from "../routers/authRouterUser.js";
 import availablePaymentRouter from "../routers/availablePaymentRoute.js";
 import categoryRouter from "../routers/categoryRouter.js";
+import clientKeyRouter from "../routers/clientKeyRouter.js";
 import clientRouter from "../routers/clientRouter.js";
 import ipWhitelistRouter from "../routers/ipWhitelistRouter.js";
 import orderRouter from "../routers/orderRouter.js";
 import paymentRouter from "../routers/paymentRouter.js";
 import productRouter from "../routers/productRouter.js";
 import userRouter from "../routers/userRouter.js";
-import { generateHeadersForward, generateRequestId, verifySignatureForward } from "../service/paylabs.js";
+import { generateHeadersForward, generateRequestId, verifySignatureMiddleware } from "../service/paylabs.js";
 import swaggerSpec from "../swagger.js";
 import { ensureUploadsDirExists } from "../utils/helper.js";
 
@@ -123,6 +124,7 @@ web.use("/api/v1", availablePaymentRouter);
 web.use("/api/v1", categoryRouter);
 web.use("/api/v1", productRouter);
 web.use("/api/v1", clientRouter);
+web.use("/api/v1", clientKeyRouter);
 web.use("/api/v1", orderRouter);
 web.use("/api/v1", paymentRouter);
 web.use("/api/v1", userRouter);
@@ -138,10 +140,10 @@ web.get("/", (req, res) => {
 // test purpose only
 web.post("/callback", express.raw({ type: "application/json" }), (req, res) => {
     // Extract and verify signature
-    const { "x-signature": signature, "x-timestamp": timestamp } = req.headers;
+    const { "x-signature": signature, "x-timestamp": timestamp, "x-client-id": clientId } = req.headers;
     const { body: payload, method: httpMethod, originalUrl: endpointUrl } = req;
 
-    if (!verifySignatureForward(httpMethod, endpointUrl, payload, timestamp, signature)) {
+    if (!verifySignatureMiddleware(httpMethod, endpointUrl, payload, timestamp, signature, clientId)) {
         return res.status(401).send("Invalid signature");
     }
 
@@ -168,6 +170,8 @@ web.post("/callback", express.raw({ type: "application/json" }), (req, res) => {
         "/callback",
         payloadResponse,
         generateRequestId(),
+        0,
+        "CLNT-12345",
     );
 
     return res.set(responseHeaders).status(200).json(payloadResponse);

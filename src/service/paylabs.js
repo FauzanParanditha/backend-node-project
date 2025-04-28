@@ -9,6 +9,7 @@ import logger from "../application/logger.js";
 import { createXenditPaymentLink } from "../controllers/xenditController.js";
 import { ResponseError } from "../error/responseError.js";
 import { createPaymentLink } from "../service/paymentService.js";
+import { getClientPublicKey } from "./clientKeyService.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -179,6 +180,33 @@ export const verifySignatureForward = (httpMethod, endpointUrl, body, timestamp,
     return isVerified;
 };
 
+export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, timestamp, signature, clientId) => {
+    if (!httpMethod || !endpointUrl || !body || !timestamp || !signature) {
+        logger.error("Invalid parameters provided for signature verification");
+        return false;
+    }
+
+    const publicKeyPem = await getClientPublicKey(clientId);
+
+    const minifiedBody = minifyJson(body);
+    logger.info(`verify minifiedBody (length): ${minifiedBody.length}`);
+    logger.info(`verify timestamp: ${timestamp}`);
+
+    const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
+
+    const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
+    logger.info(`verify stringContent (hashed): ${crypto.createHash("sha256").update(stringContent).digest("hex")}`);
+
+    const verify = crypto.createVerify("RSA-SHA256");
+    verify.update(stringContent);
+    verifier.end();
+
+    const isVerified = verifier.verify(publicKeyPem, Buffer.from(signature, "base64"));
+    logger.info(`verify result: ${isVerified}`);
+
+    return isVerified;
+};
+
 export const generateCustomerNumber = () => {
     const date = new Date();
 
@@ -221,9 +249,9 @@ export const generateHeaders = (method, endpoint, requestBody, requestId, offset
     };
 };
 
-export const generateHeadersForward = (method, endpoint, requestBody, requestId, offsetMs = 0) => {
+export const generateHeadersForward = (method, endpoint, requestBody, requestId, offsetMs = 0, clientId) => {
     const timestamp = generateTimestamp(offsetMs);
-    const signature = createSignatureForward(method, endpoint, requestBody, timestamp);
+    const signature = createSignature(method, endpoint, requestBody, timestamp);
 
     return {
         headers: {
@@ -231,6 +259,7 @@ export const generateHeadersForward = (method, endpoint, requestBody, requestId,
             "X-TIMESTAMP": timestamp,
             "X-SIGNATURE": signature,
             "X-REQUEST-ID": requestId,
+            "X-CLIENT-ID": clientId,
         },
         timestamp,
     };

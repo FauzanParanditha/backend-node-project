@@ -1,7 +1,7 @@
 import logger from "../application/logger.js";
 import Client from "../models/clientModel.js";
 import IPWhitelist from "../models/ipWhitelistModel.js";
-import { verifySignatureForward } from "../service/paylabs.js";
+import { verifySignatureMiddleware } from "../service/paylabs.js";
 
 export const jwtMiddlewareVerify = async (req, res, next) => {
     const clientIP = req.headers["x-forwarded-for"] || req.ip;
@@ -26,7 +26,7 @@ export const jwtMiddlewareVerify = async (req, res, next) => {
         }
 
         // Verify the signature
-        if (!verifySignatureForward(httpMethod, endpointUrl, payload, timestamp, signature)) {
+        if (!verifySignatureMiddleware(httpMethod, endpointUrl, payload, timestamp, signature)) {
             return res.status(401).send("Invalid signature");
         }
         req.partnerId = allowedPartnerId;
