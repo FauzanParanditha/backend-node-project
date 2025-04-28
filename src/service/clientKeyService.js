@@ -70,7 +70,6 @@ export const createClient = async ({ value }) => {
         throw new ResponseError(400, `Admin is not verified`);
     }
 
-    console.log(existClientId, value.adminId);
     const newClient = new ClientKeyModel({
         clientId: existClientId.clientId,
         publicKey: value.publicKey,
