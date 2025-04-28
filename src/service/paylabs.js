@@ -199,7 +199,7 @@ export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, t
 
     const verify = crypto.createVerify("RSA-SHA256");
     verify.update(stringContent);
-    verifier.end();
+    verify.end();
 
     const isVerified = verifier.verify(publicKeyPem, Buffer.from(signature, "base64"));
     logger.info(`verify result: ${isVerified}`);
