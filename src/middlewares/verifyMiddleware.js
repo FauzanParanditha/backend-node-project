@@ -1,7 +1,7 @@
 import logger from "../application/logger.js";
 import Client from "../models/clientModel.js";
 import IPWhitelist from "../models/ipWhitelistModel.js";
-import { verifySignatureMiddleware } from "../service/paylabs.js";
+import { verifySignatureFrontend, verifySignatureMiddleware } from "../service/paylabs.js";
 
 export const jwtMiddlewareVerify = async (req, res, next) => {
     const clientIP = req.headers["x-forwarded-for"] || req.ip;
@@ -24,18 +24,33 @@ export const jwtMiddlewareVerify = async (req, res, next) => {
             return res.status(401).send("Invalid partner ID");
         }
 
-        // 🛠 Tambahkan await di sini!
-        const isSignatureValid = await verifySignatureMiddleware(
-            httpMethod,
-            endpointUrl,
-            payload,
-            timestamp,
-            signature,
-            allowedPartnerId.clientId,
-        );
+        if (whitelistedIP.ipAddress === "::ffff:127.0.0.1") {
+            // 🛠 Tambahkan await di sini!
+            const isSignatureValid = verifySignatureFrontend(
+                httpMethod,
+                endpointUrl,
+                payload,
+                timestamp,
+                signature,
+                "frontend",
+            );
 
-        if (!isSignatureValid) {
-            return res.status(401).send("Invalid signature");
+            if (!isSignatureValid) {
+                return res.status(401).send("Invalid signature");
+            }
+        } else {
+            const isSignatureValid = await verifySignatureMiddleware(
+                httpMethod,
+                endpointUrl,
+                payload,
+                timestamp,
+                signature,
+                allowedPartnerId.clientId,
+            );
+
+            if (!isSignatureValid) {
+                return res.status(401).send("Invalid signature");
+            }
         }
 
         req.partnerId = allowedPartnerId;
