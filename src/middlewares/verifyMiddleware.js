@@ -1,18 +1,12 @@
-import logger from "../application/logger.js";
-import Client from "../models/clientModel.js";
-import IPWhitelist from "../models/ipWhitelistModel.js";
-import { verifySignatureMiddleware } from "../service/paylabs.js";
-
 export const jwtMiddlewareVerify = async (req, res, next) => {
     const clientIP = req.headers["x-forwarded-for"] || req.ip;
-    // console.log(clientIP);
 
     try {
         const whitelistedIP = await IPWhitelist.findOne({ ipAddress: clientIP });
         if (!whitelistedIP) {
             return res.status(403).json({
                 success: false,
-                message: "Access forbidden: Your IP address does not whitelisted.",
+                message: "Access forbidden: Your IP address is not whitelisted.",
             });
         }
 
@@ -25,19 +19,20 @@ export const jwtMiddlewareVerify = async (req, res, next) => {
             return res.status(401).send("Invalid partner ID");
         }
 
-        // Verify the signature
-        if (
-            !verifySignatureMiddleware(
-                httpMethod,
-                endpointUrl,
-                payload,
-                timestamp,
-                signature,
-                allowedPartnerId.clientId,
-            )
-        ) {
+        // 🛠 Tambahkan await di sini!
+        const isSignatureValid = await verifySignatureMiddleware(
+            httpMethod,
+            endpointUrl,
+            payload,
+            timestamp,
+            signature,
+            allowedPartnerId.clientId,
+        );
+
+        if (!isSignatureValid) {
             return res.status(401).send("Invalid signature");
         }
+
         req.partnerId = allowedPartnerId;
         next();
     } catch (error) {
