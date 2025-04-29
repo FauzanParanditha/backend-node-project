@@ -1,3 +1,5 @@
+import logger from "../application/logger";
+
 export const jwtMiddlewareVerify = async (req, res, next) => {
     const clientIP = req.headers["x-forwarded-for"] || req.ip;
 
