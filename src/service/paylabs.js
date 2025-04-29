@@ -180,31 +180,74 @@ export const verifySignatureForward = (httpMethod, endpointUrl, body, timestamp,
     return isVerified;
 };
 
+const MAX_REQUEST_AGE_MINUTES = 5; // ⏰ Toleransi maksimal 5 menit
+
 export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, timestamp, signature, clientId) => {
     if (!httpMethod || !endpointUrl || !body || !timestamp || !signature) {
-        logger.error("Invalid parameters provided for signature verification");
+        logger.error("Missing parameters for signature verification");
         return false;
     }
 
-    const publicKeyPem = await getClientPublicKey(clientId);
+    try {
+        const publicKeyPem = await getClientPublicKey(clientId);
 
-    const minifiedBody = minifyJson(body);
-    logger.info(`verify minifiedBody (length): ${minifiedBody.length}`);
-    logger.info(`verify timestamp: ${timestamp}`);
+        // Normalize HTTP Method
+        const normalizedMethod = httpMethod.toUpperCase();
 
-    const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
+        // Remove query params from URL
+        const normalizedUrl = endpointUrl.split("?")[0];
 
-    const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
-    logger.info(`verify stringContent (hashed): ${crypto.createHash("sha256").update(stringContent).digest("hex")}`);
+        // Minify and hash the body
+        const minifiedBody = minifyJson(body);
+        logger.info(`verify minifiedBody (length): ${minifiedBody.length}`);
+        logger.info(`minifiedBody: ${minifiedBody}`);
+        const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
 
-    const verify = crypto.createVerify("RSA-SHA256");
-    verify.update(stringContent);
-    verify.end();
+        // Check timestamp freshness
+        const requestTime = new Date(timestamp);
+        const currentTime = new Date();
+        const ageInMinutes = Math.abs((currentTime - requestTime) / (1000 * 60));
 
-    const isVerified = verify.verify(publicKeyPem, Buffer.from(signature, "base64"));
-    logger.info(`verify result: ${isVerified}`);
+        if (isNaN(requestTime.getTime())) {
+            logger.error("Invalid timestamp format");
+            return false;
+        }
 
-    return isVerified;
+        if (ageInMinutes > MAX_REQUEST_AGE_MINUTES) {
+            logger.error(`Timestamp too old: ${ageInMinutes.toFixed(2)} minutes`);
+            return false;
+        }
+
+        logger.info(`Raw data for signing:`, {
+            method: normalizedMethod,
+            url: normalizedUrl,
+            hashedBody,
+            timestamp,
+        });
+
+        const stringContent = `${normalizedMethod}:${normalizedUrl}:${hashedBody}:${timestamp}`;
+
+        logger.info(`String content for signature verification: ${stringContent}`);
+        // logger.info(`Hashed content: ${crypto.createHash("sha256").update(stringContent).digest("hex")}`);
+
+        // Verify signature
+        const verify = crypto.createVerify("RSA-SHA256");
+        verify.update(stringContent);
+        verify.end();
+
+        const isVerified = verify.verify(publicKeyPem, Buffer.from(signature, "base64"));
+
+        logger.info(`Signature verification result: ${isVerified}`);
+
+        if (!isVerified) {
+            logger.error(`Signature mismatch for clientId: ${clientId}`);
+        }
+
+        return isVerified;
+    } catch (error) {
+        logger.error(`Error during signature verification: ${error.message}`);
+        return false;
+    }
 };
 
 export const generateCustomerNumber = () => {
