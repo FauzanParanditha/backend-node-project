@@ -1,4 +1,7 @@
-import logger from "../application/logger";
+import logger from "../application/logger.js";
+import Client from "../models/clientModel.js";
+import IPWhitelist from "../models/ipWhitelistModel.js";
+import { verifySignatureMiddleware } from "../service/paylabs.js";
 
 export const jwtMiddlewareVerify = async (req, res, next) => {
     const clientIP = req.headers["x-forwarded-for"] || req.ip;
