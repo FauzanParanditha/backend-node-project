@@ -99,6 +99,8 @@ export const createCC = async ({ validatedProduct, partnerId }) => {
             paymentExpired: response.data.expiredTime,
             storeId: response.data.storeId,
             cc: response.data,
+            transFeeRate: response.data.transFeeRate,
+            transFeeAmount: response.data.transFeeAmount,
         });
 
         logger.info("Order created successfully");

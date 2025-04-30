@@ -104,6 +104,8 @@ export const createQris = async ({ validatedProduct, partnerId }) => {
             paymentExpired: response.data.expiredTime,
             storeId: response.data.storeId,
             qris: response.data,
+            transFeeRate: response.data.transFeeRate,
+            transFeeAmount: response.data.transFeeAmount,
         });
 
         logger.info("QRIS payment created successfully");
