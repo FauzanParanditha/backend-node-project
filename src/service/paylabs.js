@@ -250,59 +250,6 @@ export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, t
     }
 };
 
-export const verifySignatureFrontend = async (httpMethod, endpointUrl, body, timestamp, signature, clientId) => {
-    if (!httpMethod || !endpointUrl || !body || !timestamp || !signature) {
-        logger.error("Missing parameters for signature verification");
-        return false;
-    }
-
-    try {
-        const publicKeyPem = await getClientPublicKey(clientId);
-
-        // Normalize HTTP Method
-        const normalizedMethod = httpMethod.toUpperCase();
-
-        // Remove query params from URL
-        const normalizedUrl = endpointUrl.split("?")[0];
-
-        // Minify and hash the body
-        const minifiedBody = minifyJson(body);
-        logger.info(`verify minifiedBody (length): ${minifiedBody.length}`);
-        logger.info(`minifiedBody: ${minifiedBody}`);
-        const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
-
-        logger.info(`Raw data for signing:`, {
-            method: normalizedMethod,
-            url: normalizedUrl,
-            hashedBody,
-            timestamp,
-        });
-
-        const stringContent = `${normalizedMethod}:${normalizedUrl}:${hashedBody}:${timestamp}`;
-
-        logger.info(`String content for signature verification: ${stringContent}`);
-        // logger.info(`Hashed content: ${crypto.createHash("sha256").update(stringContent).digest("hex")}`);
-
-        // Verify signature
-        const verify = crypto.createVerify("RSA-SHA256");
-        verify.update(stringContent);
-        verify.end();
-
-        const isVerified = verify.verify(publicKeyPem, Buffer.from(signature, "base64"));
-
-        logger.info(`Signature verification result: ${isVerified}`);
-
-        if (!isVerified) {
-            logger.error(`Signature mismatch for clientId: ${clientId}`);
-        }
-
-        return isVerified;
-    } catch (error) {
-        logger.error(`Error during signature verification: ${error.message}`);
-        return false;
-    }
-};
-
 export const generateCustomerNumber = () => {
     const date = new Date();
 

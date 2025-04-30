@@ -1,7 +1,7 @@
 import logger from "../application/logger.js";
 import Client from "../models/clientModel.js";
 import IPWhitelist from "../models/ipWhitelistModel.js";
-import { verifySignatureFrontend, verifySignatureMiddleware } from "../service/paylabs.js";
+import { verifySignatureMiddleware } from "../service/paylabs.js";
 
 export const jwtMiddlewareVerify = async (req, res, next) => {
     const clientIP = req.headers["x-forwarded-for"] || req.ip;
@@ -26,7 +26,7 @@ export const jwtMiddlewareVerify = async (req, res, next) => {
 
         if (whitelistedIP.ipAddress === "::ffff:127.0.0.1") {
             // 🛠 Tambahkan await di sini!
-            const isSignatureValid = verifySignatureFrontend(
+            const isSignatureValid = await verifySignatureMiddleware(
                 httpMethod,
                 endpointUrl,
                 payload,
