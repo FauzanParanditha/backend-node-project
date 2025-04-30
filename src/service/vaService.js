@@ -97,8 +97,6 @@ export const createVa = async ({ validatedProduct, partnerId }) => {
             paymentExpired: response.data.expiredTime,
             storeId: response.data.storeId,
             va: response.data,
-            transFeeRate: response.data.transFeeRate,
-            transFeeAmount: response.data.transFeeAmount,
         });
 
         logger.info("VA created successfully");

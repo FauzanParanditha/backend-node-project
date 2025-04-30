@@ -24,6 +24,8 @@ export const createQris = async (req, res, next) => {
             paymentId: response.data.merchantTradeNo,
             totalAmount: response.data.amount,
             storeId: response.data.storeId,
+            transFeeRate: response.data.transFeeRate,
+            transFeeAmount: response.data.transFeeAmount,
             orderId: result.orderId,
             id: result._id,
         });

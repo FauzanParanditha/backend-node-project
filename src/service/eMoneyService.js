@@ -102,8 +102,6 @@ export const createEMoney = async ({ validatedProduct, partnerId }) => {
             paymentExpired: response.data.expiredTime,
             storeId: response.data.storeId,
             eMoney: response.data,
-            transFeeRate: response.data.transFeeRate,
-            transFeeAmount: response.data.transFeeAmount,
         });
 
         logger.info("E-Money order created successfully");
