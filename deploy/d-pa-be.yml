@@ -20,11 +20,14 @@ spec:
     spec:
       containers:
         - name: d-payhub-be
-          image: 'images.247.or.id/pandi/payment-aggregator-frontend:latest'
+          image: 'images.247.or.id/pandi/payment-aggregator-backend:latest'
           ports:
             - name: http
               containerPort: 80
               protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: d-payhub-be-env
         #  volumeMounts:
      #       - name: d-payhubndimeeting-frontendenv
       #        mountPath: /usr/share/nginx/html/.env
