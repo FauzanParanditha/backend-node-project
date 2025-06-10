@@ -1,0 +1,52 @@
+stages:
+  - build
+  # - test
+  # - tag
+  - deploy
+
+############################ FOR BRANCH dev ###############################
+#build
+build-pa-fe:
+  image: docker:stable
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  services:
+    - docker:dind
+  stage: build
+  script:
+    - ls
+    - docker login -u $DOCKER_USER_K8S -p $DOCKER_PASSWORD_K8S $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:latest
+  only:
+    - dev
+  tags:
+    - bogor
+    
+####unit test
+#unit_test:
+#  image: $CI_REGISTRY_IMAGE:latest
+#  stage: test
+#  script:
+#    - cp .env.example .env
+#    - composer install
+#    - php artisan key:generate
+#    - php /var/www/html/vendor/bin/phpunit
+#  only:
+#    - master
+#  tags:
+#    - batam
+ 
+#deploy
+deploy-pa-fe:
+  image: images.247.or.id/pandi/kubectl:bogor
+  stage: deploy
+  script:
+    - sed -i "s/payment-aggregator-backend:latest/payment-aggregator-backend:$CI_COMMIT_SHORT_SHA/g" "deploy/d-pa-be.yml"
+    - kubectl apply -f deploy/d-pa-be.yml
+  only:
+    - dev
+  tags:
+    - bogor

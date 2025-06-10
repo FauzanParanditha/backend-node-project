@@ -1,0 +1,35 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: d-payhub-be
+  namespace: dev
+  labels:
+    app: proxy-payhub-be
+    env: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: d-payhub-be
+      env: dev
+  template:
+    metadata:
+      labels:
+        app: d-payhub-be
+        env: dev
+    spec:
+      containers:
+        - name: d-payhub-be
+          image: 'images.247.or.id/pandi/payment-aggregator-frontend:latest'
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+        #  volumeMounts:
+     #       - name: d-payhubndimeeting-frontendenv
+      #        mountPath: /usr/share/nginx/html/.env
+       #       subPath: .env
+          imagePullPolicy: Always
+      restartPolicy: Always
+      imagePullSecrets:
+        - name: secret-dev
