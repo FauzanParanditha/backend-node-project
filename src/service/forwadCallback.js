@@ -92,7 +92,14 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
                     return;
                 }
 
-                const { headers: responseHeaders } = generateHeadersForward("POST", path, payload, generateRequestId());
+                const { headers: responseHeaders } = generateHeadersForward(
+                    "POST",
+                    path,
+                    payload,
+                    generateRequestId(),
+                    0,
+                    client.clientId,
+                );
 
                 const response = await axios.post(callbackUrl, payload, {
                     headers: responseHeaders,
@@ -237,7 +244,14 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
                     return;
                 }
 
-                const { headers: responseHeaders } = generateHeadersForward("POST", path, payload, generateRequestId());
+                const { headers: responseHeaders } = generateHeadersForward(
+                    "POST",
+                    path,
+                    payload,
+                    generateRequestId(),
+                    0,
+                    client.clientId,
+                );
 
                 const response = await axios.post(callbackUrl, payload, {
                     headers: responseHeaders,
@@ -402,6 +416,8 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
                     path,
                     notificationData,
                     generateRequestId(),
+                    0,
+                    client.clientId,
                 );
 
                 const response = await axios.post(callbackUrl, notificationData, {
