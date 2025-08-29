@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { convertToDate } from "../service/paylabs.js";
 
 const paymentXenditSchema = new mongoose.Schema(
     {
@@ -425,6 +426,7 @@ const orderSchema = new mongoose.Schema(
         paymentExpired: {
             type: String,
         },
+        paymentExpiredAt: { type: Date },
         paymentActions: {
             type: Object,
         },
@@ -458,6 +460,15 @@ const orderSchema = new mongoose.Schema(
     },
     { timestamps: true },
 );
+
+orderSchema.index({ paymentStatus: 1, paymentExpiredAt: 1 });
+
+orderSchema.pre("save", function (next) {
+    if (this.isModified("paymentExpired")) {
+        this.paymentExpiredAt = convertToDate(this.paymentExpired);
+    }
+    next();
+});
 
 const Order = mongoose.model("Order", orderSchema);
 export default Order;
