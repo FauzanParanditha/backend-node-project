@@ -69,26 +69,28 @@ export const minifyJson = (body) => {
 // Function to create signature
 export const createSignature = (httpMethod, endpointUrl, body, timestamp) => {
     if (!httpMethod || !endpointUrl || !body || !timestamp) {
-        logger.error("Invalid parameters provided for signature verification");
+        logger.error("Invalid parameters provided for signature verification Asimetris");
         return false;
     }
 
     const minifiedBody = minifyJson(body);
-    logger.info(`create minifiedBody (length): ${minifiedBody.length}`);
-    logger.info(`create timestamp: ${timestamp}`);
+    logger.info(`create minifiedBody (length) Asimetris: ${minifiedBody.length}`);
+    logger.info(`create timestamp Asimetris: ${timestamp}`);
 
     let privateKey;
     try {
         privateKey = fs.readFileSync("private-key.pem", "utf8");
     } catch (err) {
-        logger.error(`Failed to read private key: ${err.message}`);
+        logger.error(`Failed to read private key Asimetris: ${err.message}`);
         return null;
     }
 
     const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
 
     const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
-    logger.info(`create stringContent (hashed): ${crypto.createHash("sha256").update(stringContent).digest("hex")}`);
+    logger.info(
+        `create stringContent (hashed) Asimetris: ${crypto.createHash("sha256").update(stringContent).digest("hex")}`,
+    );
 
     const sign = crypto.createSign("RSA-SHA256");
     sign.update(stringContent);
@@ -132,19 +134,21 @@ export const verifySignature = (httpMethod, endpointUrl, rawBody, timestamp, sig
 export const createSignatureForward = (httpMethod, endpointUrl, body, timestamp) => {
     const secret = process.env.SECRET_KEY;
     if (!httpMethod || !endpointUrl || !body || !timestamp) {
-        logger.error("Invalid parameters provided for signature verification");
+        logger.error("Invalid parameters provided for signature verification Forward");
         return false;
     }
 
     const minifiedBody = minifyJson(body);
-    logger.info(`create minifiedBody (length): ${minifiedBody.length}`);
-    logger.info(`create timestamp: ${timestamp}`);
+    logger.info(`create minifiedBody (length) Forward: ${minifiedBody.length}`);
+    logger.info(`create timestamp Forward: ${timestamp}`);
     // const privateKey = fs.readFileSync("private-key.pem", "utf8");
 
     const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
 
     const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
-    logger.info(`create stringContent (hashed): ${crypto.createHash("sha256").update(stringContent).digest("hex")}`);
+    logger.info(
+        `create stringContent (hashed) Forward: ${crypto.createHash("sha256").update(stringContent).digest("hex")}`,
+    );
 
     const sign = crypto.createHmac("sha256", secret);
     sign.update(stringContent);
@@ -156,18 +160,20 @@ export const createSignatureForward = (httpMethod, endpointUrl, body, timestamp)
 export const verifySignatureForward = (httpMethod, endpointUrl, body, timestamp, signature) => {
     const secret = process.env.SECRET_KEY;
     if (!httpMethod || !endpointUrl || !body || !timestamp || !signature) {
-        logger.error("Invalid parameters provided for signature verification");
+        logger.error("Invalid parameters provided for signature verification Forward");
         return false;
     }
 
     const minifiedBody = minifyJson(body);
-    logger.info(`verify minifiedBody (length): ${minifiedBody.length}`);
-    logger.info(`verify timestamp: ${timestamp}`);
+    logger.info(`verify minifiedBody (length) Forward: ${minifiedBody.length}`);
+    logger.info(`verify timestamp Forward: ${timestamp}`);
 
     const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
 
     const stringContent = `${httpMethod}:${endpointUrl}:${hashedBody}:${timestamp}`;
-    logger.info(`verify stringContent (hashed): ${crypto.createHash("sha256").update(stringContent).digest("hex")}`);
+    logger.info(
+        `verify stringContent (hashed) Forward: ${crypto.createHash("sha256").update(stringContent).digest("hex")}`,
+    );
 
     const verify = crypto.createHmac("sha256", secret);
     verify.update(stringContent);
@@ -175,7 +181,7 @@ export const verifySignatureForward = (httpMethod, endpointUrl, body, timestamp,
     const expectedSignature = verify.digest("base64");
 
     const isVerified = signature === expectedSignature;
-    logger.info(`verify result: ${isVerified}`);
+    logger.info(`verify result Forward: ${isVerified}`);
 
     return isVerified;
 };
