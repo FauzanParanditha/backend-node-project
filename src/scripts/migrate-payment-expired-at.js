@@ -1,6 +1,9 @@
+import dotenv from "dotenv";
 import mongoose from "mongoose";
 import Order from "../models/orderModel.js";
 import { convertToDate } from "../service/paylabs.js";
+
+dotenv.config();
 
 const MONGO_URI = process.env.MONGO_URI;
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || "1000", 10);
