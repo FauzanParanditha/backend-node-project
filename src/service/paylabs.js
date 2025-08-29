@@ -277,6 +277,7 @@ export const generateCustomerNumber = () => {
 };
 
 export const generateHeaders = (method, endpoint, requestBody, requestId, offsetMs = 0) => {
+    logger.info("Create Header");
     const timestamp = generateTimestamp(offsetMs);
     let signature;
     try {
@@ -299,6 +300,7 @@ export const generateHeaders = (method, endpoint, requestBody, requestId, offset
 };
 
 export const generateHeadersForward = (method, endpoint, requestBody, requestId, offsetMs = 0, clientId) => {
+    logger.info("Create Header Forward");
     const timestamp = generateTimestamp(offsetMs);
     const signature = createSignature(method, endpoint, requestBody, timestamp);
 
