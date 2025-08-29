@@ -5,7 +5,7 @@ import { convertToDate } from "../service/paylabs.js";
 
 dotenv.config();
 
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGODB_URI;
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || "1000", 10);
 
 // resume pointer lewat env (opsional): MIGRATE_FROM_ID=66d...
