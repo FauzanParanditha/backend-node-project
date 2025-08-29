@@ -184,7 +184,7 @@ const MAX_REQUEST_AGE_MINUTES = 5; // ⏰ Toleransi maksimal 5 menit
 
 export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, timestamp, signature, clientId) => {
     if (!httpMethod || !endpointUrl || !body || !timestamp || !signature) {
-        logger.error("Missing parameters for signature verification");
+        logger.error("Missing parameters for signature verification Asimetris");
         return false;
     }
 
@@ -199,8 +199,8 @@ export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, t
 
         // Minify and hash the body
         const minifiedBody = minifyJson(body);
-        logger.info(`verify minifiedBody (length): ${minifiedBody.length}`);
-        logger.info(`minifiedBody: ${minifiedBody}`);
+        logger.info(`verify minifiedBody (length) Asimetris: ${minifiedBody.length}`);
+        logger.info(`minifiedBody Asimetris: ${minifiedBody}`);
         const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
 
         // Check timestamp freshness
@@ -209,16 +209,16 @@ export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, t
         const ageInMinutes = Math.abs((currentTime - requestTime) / (1000 * 60));
 
         if (isNaN(requestTime.getTime())) {
-            logger.error("Invalid timestamp format");
+            logger.error("Invalid timestamp format Asimetris");
             return false;
         }
 
         if (ageInMinutes > MAX_REQUEST_AGE_MINUTES) {
-            logger.error(`Timestamp too old: ${ageInMinutes.toFixed(2)} minutes`);
+            logger.error(`Timestamp too old Asimetris: ${ageInMinutes.toFixed(2)} minutes`);
             return false;
         }
 
-        logger.info(`Raw data for signing:`, {
+        logger.info(`Raw data for signing Asimetris:`, {
             method: normalizedMethod,
             url: normalizedUrl,
             hashedBody,
@@ -227,7 +227,7 @@ export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, t
 
         const stringContent = `${normalizedMethod}:${normalizedUrl}:${hashedBody}:${timestamp}`;
 
-        logger.info(`String content for signature verification: ${stringContent}`);
+        logger.info(`String content for signature verification Asimetris: ${stringContent}`);
         // logger.info(`Hashed content: ${crypto.createHash("sha256").update(stringContent).digest("hex")}`);
 
         // Verify signature
@@ -237,15 +237,15 @@ export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, t
 
         const isVerified = verify.verify(publicKeyPem, Buffer.from(signature, "base64"));
 
-        logger.info(`Signature verification result: ${isVerified}`);
+        logger.info(`Signature verification result Asimetris: ${isVerified}`);
 
         if (!isVerified) {
-            logger.error(`Signature mismatch for clientId: ${clientId}`);
+            logger.error(`Signature mismatch for clientId Asimetris: ${clientId}`);
         }
 
         return isVerified;
     } catch (error) {
-        logger.error(`Error during signature verification: ${error.message}`);
+        logger.error(`Error during signature verification Asimetris: ${error.message}`);
         return false;
     }
 };
