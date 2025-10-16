@@ -5,6 +5,7 @@ import multer from "multer";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 import { ResponseError } from "../error/responseError.js";
+import counterModel from "../models/counterModel.js";
 const { hash, compare } = pkg;
 
 // Define transaction limits
@@ -152,12 +153,38 @@ export const validateOrderProducts = async (products, paymentType = "DEFAULT", t
     return { validProducts, totalAmount };
 };
 
-export function generateOrderId(clientId) {
-    const randomXXX = Math.floor(100 + Math.random() * 900);
-    const formattedClientId = clientId.replace("-", "");
-    const date = new Date();
-    const datePart =
-        date.getFullYear() + String(date.getMonth() + 1).padStart(2, "0") + String(date.getDate()).padStart(2, "0");
+function sanitizeClientId(clientId) {
+    if (!clientId || typeof clientId !== "string" || clientId.trim() === "") {
+        return "GEN"; // fallback: Generic Client
+    }
 
-    return `${formattedClientId}${datePart}${randomXXX}`;
+    return clientId.trim(); // Jika clientId ada, kembalikan apa adanya
+}
+
+export async function getNextSequence(clientId, dateString) {
+    const _id = `${clientId}${dateString}`;
+
+    const result = await counterModel.findOneAndUpdate(
+        { _id },
+        { $inc: { seq: 1 } },
+        { upsert: true, new: true }, // `new: true` = return document after update
+    );
+
+    return result.seq;
+}
+
+export async function generateOrderId(clientId) {
+    const sanitizedClientId = sanitizeClientId(clientId);
+    const formattedClientId = sanitizedClientId.replace("-", "").toUpperCase();
+
+    const now = new Date();
+    const datePart =
+        now.getFullYear().toString() +
+        String(now.getMonth() + 1).padStart(2, "0") +
+        String(now.getDate()).padStart(2, "0");
+
+    const seq = await getNextSequence(formattedClientId, datePart);
+    const paddedSeq = String(seq).padStart(4, "0"); // misal: 0001
+
+    return `${formattedClientId}${datePart}${paddedSeq}`;
 }

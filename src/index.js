@@ -1,8 +1,11 @@
+import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { connectDB } from "./application/db.js";
 import logger, { flushLogsAndExit } from "./application/logger.js";
 import { web } from "./application/web.js";
 import { wss } from "./application/websocket_server.js";
+
+dotenv.config();
 
 export let serverIsClosing = false;
 export let activeTask = 0;
@@ -19,10 +22,20 @@ web.use((req, res, next) => {
 });
 
 const server = web.listen(process.env.PORT, async () => {
-    connectDB();
+    await connectDB();
     logger.info(`App running on port: ${process.env.PORT}`);
     logger.info(`Running in ${process.env.NODE_ENV} mode`);
 
+    if (process.env.ENABLE_CRON === "true") {
+        try {
+            await import("./cron/cron.js"); // ⬅️ pastikan path benar
+            logger.info("✅ Cron loaded (pre-check + expire)");
+        } catch (e) {
+            logger.error("❌ Failed to load cron:", e);
+        }
+    } else {
+        logger.info("ℹ️ Cron disabled (ENABLE_CRON != true)");
+    }
     // Retry failed callbacks on startup
     // await retryFailedCallbacks();
 });

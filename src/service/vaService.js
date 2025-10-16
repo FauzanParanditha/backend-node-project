@@ -22,7 +22,7 @@ export const createVa = async ({ validatedProduct, partnerId }) => {
 
         // Construct order data
         const requestBodyForm = {
-            orderId: generateOrderId(partnerId.clientId),
+            orderId: await generateOrderId(partnerId.clientId),
             userId: validatedProduct.userId,
             items: validProducts,
             totalAmount,
@@ -183,7 +183,7 @@ export const createVaStatic = async ({ validatedProduct, partnerId }) => {
     try {
         // Construct order data
         const requestBodyForm = {
-            orderId: generateOrderId(partnerId.clientId),
+            orderId: await generateOrderId(partnerId.clientId),
             payer: partnerId.name,
             totalAmount: 0,
             phoneNumber: validatedProduct.phoneNumber,

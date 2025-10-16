@@ -42,7 +42,11 @@ web.set("trust proxy", ["loopback", "10.10.200.1"]);
 web.use(
     cors({
         origin: (origin, callback) => {
-            const allowedOrigins = [process.env.FRONTEND_URL, process.env.FRONTEND_URL_APPS_2];
+            const allowedOrigins = [
+                process.env.FRONTEND_URL,
+                process.env.FRONTEND_URL_APPS_2,
+                process.env.FRONTEND_URL_APPS_3,
+            ];
             if (!origin || allowedOrigins.includes(origin)) {
                 callback(null, true);
             } else {

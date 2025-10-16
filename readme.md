@@ -57,7 +57,7 @@ Before running the project, ensure you have the following installed:
 
     ```env
     PORT=5000
-    MONGO_URI=mongodb://localhost:27017/your-database
+    MONGODB_URI=mongodb://localhost:27017/your-database
     PAYLABS_API_URL=https://paylabs-provide
     PAYLABS_MERCHANT_ID=your_merchant_id
     NOTIFY_URL=https://your-domain.com/callback/paylabs

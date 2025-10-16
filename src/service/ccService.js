@@ -22,7 +22,7 @@ export const createCC = async ({ validatedProduct, partnerId }) => {
 
         // Construct order data
         const requestBodyForm = {
-            orderId: generateOrderId(partnerId.clientId),
+            orderId: await generateOrderId(partnerId.clientId),
             userId: validatedProduct.userId,
             items: validProducts,
             totalAmount,

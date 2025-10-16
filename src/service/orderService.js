@@ -106,7 +106,7 @@ export const createOrder = async ({ validatedOrder, partnerId }) => {
 
         // Construct order data
         const orderData = {
-            orderId: generateOrderId(partnerId.clientId),
+            orderId: await generateOrderId(partnerId.clientId),
             items: validProducts,
             totalAmount,
             phoneNumber: validatedOrder.phoneNumber,
