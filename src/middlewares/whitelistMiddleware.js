@@ -4,7 +4,7 @@ import IPWhitelist from "../models/ipWhitelistModel.js";
 export const whitelistMiddlewareVerify = async (req, res, next) => {
     const clientIP = req.headers["x-forwarded-for"] || req.ip;
     // console.log(clientIP);
-    logger.info(`Client IP: ${clientIP}`);
+    // logger.info(`Client IP: ${clientIP}`);
 
     try {
         const whitelistedIP = await IPWhitelist.findOne({ ipAddress: clientIP });
