@@ -36,10 +36,13 @@ export const jwtMiddlewareVerify = async (req, res, next) => {
                 return res.status(401).send("Invalid signature");
             }
         } else {
+            const rawBodyText =
+                typeof req.rawBody === "string" ? req.rawBody : req.body ? JSON.stringify(req.body) : "";
+
             const isSignatureValid = await verifySignatureMiddleware(
                 httpMethod,
                 endpointUrl,
-                payload,
+                rawBodyText,
                 timestamp,
                 signature,
                 allowedPartnerId.clientId,
