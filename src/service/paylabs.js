@@ -188,15 +188,24 @@ export const verifySignatureForward = (httpMethod, endpointUrl, body, timestamp,
 
 const MAX_REQUEST_AGE_MINUTES = 5; // ⏰ Toleransi maksimal 5 menit
 
-export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, timestamp, signature, clientId) => {
-    if (!httpMethod || !endpointUrl || !body || !timestamp || !signature) {
+export const verifySignatureMiddleware = async (
+    httpMethod,
+    endpointUrl,
+    rawBodyText,
+    timestamp,
+    signature,
+    clientId,
+) => {
+    if (!httpMethod || !endpointUrl || !rawBodyText || !timestamp || !signature) {
         logger.error("Missing parameters for signature verification Asimetris");
         return false;
     }
 
     try {
         const publicKeyPem = await getClientPublicKey(clientId);
-        logger.info(`PublicKeyPem: ${publicKeyPem}`);
+        // log fingerprint saja, bukan key penuh
+        const pubFp = crypto.createHash("sha256").update(publicKeyPem).digest("hex").slice(0, 16);
+        logger.info(`Using public key fp (sha256/hex, first16) Asimetris: ${pubFp}`);
 
         // Normalize HTTP Method
         const normalizedMethod = httpMethod.toUpperCase();
@@ -205,11 +214,11 @@ export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, t
         const normalizedUrl = endpointUrl.split("?")[0];
 
         // Minify and hash the body
-        logger.info(`Raw body client Asimetris: ${body}`);
-        const minifiedBody = minifyJson(body);
-        logger.info(`verify minifiedBody (length) Asimetris: ${minifiedBody.length}`);
-        logger.info(`minifiedBody Asimetris: ${minifiedBody}`);
-        const hashedBody = crypto.createHash("sha256").update(minifiedBody, "utf8").digest("hex").toLowerCase();
+        // const minifiedBody = typeof body === "string" ? body.trim() : "";
+        logger.info(`verify minifiedBody (length) Asimetris: ${rawBodyText.length}`);
+        logger.info(`rawBodyText Asimetris: ${rawBodyText}`);
+
+        const hashedBody = crypto.createHash("sha256").update(rawBodyText, "utf8").digest("hex").toLowerCase();
 
         // Check timestamp freshness
         const requestTime = new Date(timestamp);
@@ -237,6 +246,7 @@ export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, t
 
         logger.info(`String content for signature verification Asimetris: ${stringContent}`);
         // logger.info(`Hashed content: ${crypto.createHash("sha256").update(stringContent).digest("hex")}`);
+        logger.info(`HashedBody Asimetris: ${hashedBody} (len=${rawBodyText.length})`);
 
         // Verify signature
         const verify = crypto.createVerify("RSA-SHA256");
