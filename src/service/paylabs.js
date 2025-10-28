@@ -196,6 +196,7 @@ export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, t
 
     try {
         const publicKeyPem = await getClientPublicKey(clientId);
+        logger.info(`PublicKeyPem: ${publicKeyPem}`);
 
         // Normalize HTTP Method
         const normalizedMethod = httpMethod.toUpperCase();
@@ -204,6 +205,7 @@ export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, t
         const normalizedUrl = endpointUrl.split("?")[0];
 
         // Minify and hash the body
+        logger.info(`Raw body client Asimetris: ${body}`);
         const minifiedBody = minifyJson(body);
         logger.info(`verify minifiedBody (length) Asimetris: ${minifiedBody.length}`);
         logger.info(`minifiedBody Asimetris: ${minifiedBody}`);
