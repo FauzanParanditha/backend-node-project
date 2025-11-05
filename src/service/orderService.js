@@ -93,7 +93,7 @@ export const getOrders = async ({ query, sort_by, sort, countOnly }) => {
 export const createOrder = async ({ validatedOrder, partnerId }) => {
     try {
         // Validate products in the order
-        const { validProducts, totalAmount } = await validateOrderProducts(
+        const { validProducts, itemsForDb, totalAmount } = await validateOrderProducts(
             validatedOrder.items,
             validatedOrder.paymentType || undefined,
             validatedOrder.totalAmount,
@@ -107,7 +107,7 @@ export const createOrder = async ({ validatedOrder, partnerId }) => {
         // Construct order data
         const orderData = {
             orderId: await generateOrderId(partnerId.clientId),
-            items: validProducts,
+            items: itemsForDb,
             totalAmount,
             phoneNumber: validatedOrder.phoneNumber,
             paymentStatus: "pending",
@@ -142,7 +142,7 @@ export const createOrder = async ({ validatedOrder, partnerId }) => {
 export const createOrderLink = async ({ validatedOrder, partnerId }) => {
     try {
         // Validate products in the order
-        const { validProducts, totalAmount } = await validateOrderProducts(
+        const { validProducts, itemsForDb, totalAmount } = await validateOrderProducts(
             validatedOrder.items,
             validatedOrder.paymentType || undefined,
             validatedOrder.totalAmount,
@@ -155,7 +155,7 @@ export const createOrderLink = async ({ validatedOrder, partnerId }) => {
 
         // Construct order data
         const orderData = {
-            items: validProducts,
+            items: itemsForDb,
             totalAmount,
             phoneNumber: validatedOrder.phoneNumber,
             payer: partnerId.name,

@@ -113,6 +113,7 @@ export const calculateTotal = (products) => {
 
 export const validateOrderProducts = async (products, paymentType = "DEFAULT", totalAmount) => {
     const validProducts = [];
+    const itemsForDb = [];
     let totalAmountProduct = 0;
 
     // Ensure the payment type has defined transaction limits
@@ -128,6 +129,8 @@ export const validateOrderProducts = async (products, paymentType = "DEFAULT", t
     for (const product of products) {
         const productTotal = product.price * product.quantity;
         totalAmountProduct += productTotal;
+
+        itemsForDb.push({ ...product });
 
         validProducts.push({
             id: product.id,
@@ -150,7 +153,7 @@ export const validateOrderProducts = async (products, paymentType = "DEFAULT", t
         );
     }
 
-    return { validProducts, totalAmount };
+    return { itemsForDb, validProducts, totalAmount };
 };
 
 function sanitizeClientId(clientId) {
