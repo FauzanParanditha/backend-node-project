@@ -392,6 +392,9 @@ const orderSchema = new mongoose.Schema(
                     type: String,
                     required: true,
                 },
+                domain: {
+                    type: String,
+                },
                 _id: false,
             },
         ],
