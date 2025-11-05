@@ -27,7 +27,7 @@ import {
 export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
     try {
         // Validate products in the order
-        const { validProducts, totalAmount } = await validateOrderProducts(
+        const { validProducts, itemsForDb, totalAmount } = await validateOrderProducts(
             validatedProduct.items,
             validatedProduct.paymentType,
             validatedProduct.totalAmount,
@@ -41,7 +41,7 @@ export const createVASNAP = async ({ req, validatedProduct, partnerId }) => {
         const requestBodyForm = {
             orderId: await generateOrderId(partnerId.clientId),
             userId: validatedProduct.userId,
-            items: validProducts,
+            items: itemsForDb,
             totalAmount,
             phoneNumber: validatedProduct.phoneNumber,
             paymentStatus: "pending",
@@ -359,7 +359,7 @@ export const updateVASNAP = async ({ id, validatedUpdateData, req }) => {
         }
 
         // Validate products in the order
-        const { validProducts, totalAmount } = await validateOrderProducts(
+        const { validProducts, itemsForDb, totalAmount } = await validateOrderProducts(
             validatedUpdateData.items,
             validatedUpdateData.paymentType || undefined,
             validatedUpdateData.totalAmount,
@@ -439,7 +439,7 @@ export const updateVASNAP = async ({ id, validatedUpdateData, req }) => {
         }
 
         // Update validatedUpdateData with validProducts
-        updatedOrderData.items = validProducts;
+        updatedOrderData.items = itemsForDb;
         updatedOrderData.vaSnap = response.data;
         updatedOrderData.partnerServiceId = response.data.virtualAccountData.partnerServiceId;
         updatedOrderData.paymentId = response.data.virtualAccountData.trxId;
