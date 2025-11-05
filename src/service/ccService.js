@@ -9,7 +9,7 @@ import { generateHeaders, generateMerchantTradeNo, generateRequestId, merchantId
 export const createCC = async ({ validatedProduct, partnerId }) => {
     try {
         // Validate products in the order
-        const { validProducts, totalAmount } = await validateOrderProducts(
+        const { validProducts, itemsForDb, totalAmount } = await validateOrderProducts(
             validatedProduct.items,
             validatedProduct.paymentType,
             validatedProduct.totalAmount,
@@ -24,7 +24,7 @@ export const createCC = async ({ validatedProduct, partnerId }) => {
         const requestBodyForm = {
             orderId: await generateOrderId(partnerId.clientId),
             userId: validatedProduct.userId,
-            items: validProducts,
+            items: itemsForDb,
             totalAmount,
             phoneNumber: validatedProduct.phoneNumber,
             paymentStatus: "pending",

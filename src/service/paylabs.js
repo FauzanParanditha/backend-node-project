@@ -339,7 +339,71 @@ export const handlePaymentLink = async (orderData) => {
     return responsePayload;
 };
 
+const ISO_WITH_TZ = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+\-]\d{2}:\d{2})$/;
+const ISO_NO_TZ = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
+const SPACE_FMT = /^\d{4}[-/]\d{2}[-/]\d{2}[ T]\d{2}:\d{2}:\d{2}$/; // "YYYY-MM-DD HH:mm:ss" atau "YYYY/MM/DD HH:mm:ss"
+const COMPACT_14 = /^\d{14}$/; // YYYYMMDDHHmmss
+const EPOCH_S = /^\d{10}$/; // detik
+const EPOCH_MS = /^\d{13}$/; // milidetik
+
 export const convertToDate = (paymentExpired) => {
+    if (typeof paymentExpired !== "string" && typeof paymentExpired !== "number") return null;
+
+    const s = String(paymentExpired).trim();
+
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[+\-]\d{2}:\d{2}$/.test(s)) {
+        const norm = s.replace(" ", "T");
+        const d = new Date(norm);
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    // 1) ISO + timezone
+    if (ISO_WITH_TZ.test(s)) {
+        const d = new Date(s);
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    // 2) ISO tanpa timezone -> asumsikan WIB (+07:00)
+    if (ISO_NO_TZ.test(s)) {
+        const d = new Date(`${s}+07:00`);
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    // 3) "YYYY-MM-DD HH:mm:ss" / "YYYY/MM/DD HH:mm:ss" / juga "YYYY-MM-DDTHH:mm:ss" tanpa tz
+    if (SPACE_FMT.test(s)) {
+        // normalisasi ke ISO dan tambahkan +07:00
+        const norm = s.replace(" ", "T");
+        const d = new Date(`${norm}+07:00`);
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    // 4) Compact 14 (WIB)
+    if (COMPACT_14.test(s)) {
+        const yyyy = s.slice(0, 4),
+            mm = s.slice(4, 6),
+            dd = s.slice(6, 8);
+        const HH = s.slice(8, 10),
+            MM = s.slice(10, 12),
+            SS = s.slice(12);
+        const iso = `${yyyy}-${mm}-${dd}T${HH}:${MM}:${SS}+07:00`;
+        const d = new Date(iso);
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    // 5) Epoch detik / milidetik
+    if (EPOCH_S.test(s)) {
+        const d = new Date(parseInt(s, 10) * 1000);
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+    if (EPOCH_MS.test(s)) {
+        const d = new Date(parseInt(s, 10));
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    return null;
+};
+
+export const convertToDateOld = (paymentExpired) => {
     if (typeof paymentExpired === "string" && paymentExpired.length === 19 && paymentExpired.includes("T")) {
         // ISO 8601 format: 2024-11-08T11:20:45+07:00
         return new Date(paymentExpired);
