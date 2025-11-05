@@ -10,6 +10,7 @@ export const orderSchema = joi.object({
                 quantity: joi.number().min(1).required(),
                 name: joi.string().required().max(32),
                 type: joi.string().required().max(20),
+                domain: joi.string().max(64).optional(),
             }),
         )
         .min(1)
@@ -49,6 +50,7 @@ export const orderLinkSchema = joi.object({
                 quantity: joi.number().min(1).required(),
                 name: joi.string().required().max(32),
                 type: joi.string().required().max(20),
+                domain: joi.string().max(64).optional(),
             }),
         )
         .min(1)
