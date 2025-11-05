@@ -487,7 +487,7 @@ export const retryCallbackById = async (callbackId) => {
 
     logger.info(`Retrying failed callback with ID: ${callbackId}, Retry Count: ${failedCallback.retryCount}`);
 
-    const { payload } = failedCallback;
+    const { payload } = failedCallback.payload;
     let success = false;
 
     try {
