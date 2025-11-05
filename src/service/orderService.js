@@ -184,7 +184,7 @@ export const createOrderLink = async ({ validatedOrder, partnerId }) => {
 };
 
 export const order = async ({ id }) => {
-    const result = await Order.findOne({ _id: id }).populate({
+    const result = await Order.findOne({ orderId: id }).populate({
         path: "clientId",
         model: "Client",
         select: "name active notifyUrl",
