@@ -1,19 +1,18 @@
 import logger from "../application/logger.js";
 import Client from "../models/clientModel.js";
-import IPWhitelist from "../models/ipWhitelistModel.js";
 import { verifySignatureForward, verifySignatureMiddleware } from "../service/paylabs.js";
 
 export const jwtMiddlewareVerify = async (req, res, next) => {
     const clientIP = req.headers["x-forwarded-for"] || req.ip;
 
     try {
-        const whitelistedIP = await IPWhitelist.findOne({ ipAddress: clientIP });
-        if (!whitelistedIP) {
-            return res.status(403).json({
-                success: false,
-                message: "Access forbidden: Your IP address is not whitelisted.",
-            });
-        }
+        // const whitelistedIP = await IPWhitelist.findOne({ ipAddress: clientIP });
+        // if (!whitelistedIP) {
+        //     return res.status(403).json({
+        //         success: false,
+        //         message: "Access forbidden: Your IP address is not whitelisted.",
+        //     });
+        // }
 
         const {
             "x-partner-id": partnerId,
