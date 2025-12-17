@@ -5,27 +5,42 @@ import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
 import { generateForgotPasswordLink, sendForgotPasswordEmail, sendVerifiedEmail } from "./sendMail.js";
 
 export const loginAdmin = async ({ email, password }) => {
-    const sanitizedEmail = email.trim();
+    const sanitizedEmail = email.trim().toLowerCase();
 
     const existAdmin = await Admin.findOne({
-        email: { $eq: sanitizedEmail },
+        email: sanitizedEmail,
     }).select("+password");
-    if (!existAdmin) throw new ResponseError(400, "Invalid username or password");
+
+    if (!existAdmin) {
+        throw new ResponseError(400, "Invalid email or password");
+    }
 
     const isValidPassword = await compareDoHash(password, existAdmin.password);
-    if (!isValidPassword) throw new ResponseError(400, "Invalid username or password");
+
+    if (!isValidPassword) {
+        throw new ResponseError(400, "Invalid email or password");
+    }
 
     const token = jwt.sign(
         {
-            adminId: existAdmin._id,
+            adminId: existAdmin._id.toString(),
             email: existAdmin.email,
             verified: existAdmin.verified,
+            role: "admin",
         },
         process.env.ACCESS_TOKEN_ADMIN_PRIVATE_KEY,
-        { expiresIn: "1h" },
+        {
+            expiresIn: "1h",
+            issuer: "dashboard.payhub.id",
+            audience: "admin",
+        },
     );
 
-    return { token, adminId: existAdmin._id, email: existAdmin.email };
+    return {
+        token,
+        adminId: existAdmin._id,
+        email: existAdmin.email,
+    };
 };
 
 export const sendVerificationCodeService = async (email) => {
