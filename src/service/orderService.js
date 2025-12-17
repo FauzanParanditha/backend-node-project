@@ -17,6 +17,7 @@ export const getAllOrders = async ({ query, limit, page, sort_by, sort, countOnl
         filter["$or"] = [
             { orderId: { $regex: searchTerm, $options: "i" } },
             { status: { $regex: searchTerm, $options: "i" } },
+            { "items.domain": { $regex: searchTerm, $options: "i" } },
         ];
     }
 
