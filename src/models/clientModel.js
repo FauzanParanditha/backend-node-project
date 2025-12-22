@@ -18,7 +18,7 @@ const clientSchema = new mongoose.Schema(
         },
         notifyUrl: {
             type: String,
-            required: true,
+            // required: true,
         },
         userId: {
             type: mongoose.Schema.Types.ObjectId,

@@ -82,7 +82,21 @@ export const forwardCallback = async (payload, retryCount = 0) => {
         if (!order) throw new ResponseError(404, `Order not found for ID: ${paymentId}`);
 
         const client = await Client.findOne({ clientId: order.clientId }).select("+clientId");
-        if (!client || !client.notifyUrl) throw new ResponseError(400, "Missing callback URL");
+        if (!client || !client.notifyUrl) {
+            logger.warn(`Callback skipped: client ${order.clientId} has no notifyUrl`);
+
+            await logCallback({
+                type: "outgoing",
+                source: "system",
+                target: "client",
+                status: "skipped",
+                payload,
+                response: { message: "Client has no notifyUrl" },
+                requestId: generateRequestId(),
+            });
+
+            return true; // dianggap selesai dengan sukses
+        }
 
         const callbackUrl = client.notifyUrl;
         const parsedUrl = new URL(callbackUrl);
@@ -239,7 +253,21 @@ export const forwardCallbackSnap = async (payload, retryCount = 0) => {
         }
 
         const client = await Client.findOne({ clientId: existOrder.clientId }).select("+clientId");
-        if (!client || !client.notifyUrl) throw new ResponseError(400, "Missing callback URL");
+        if (!client || !client.notifyUrl) {
+            logger.warn(`Callback skipped: client ${order.clientId} has no notifyUrl`);
+
+            await logCallback({
+                type: "outgoing",
+                source: "system",
+                target: "client",
+                status: "skipped",
+                payload,
+                response: { message: "Client has no notifyUrl" },
+                requestId: generateRequestId(),
+            });
+
+            return true; // dianggap selesai dengan sukses
+        }
 
         const callbackUrl = client.notifyUrl;
         const parsedUrl = new URL(callbackUrl);
@@ -399,7 +427,21 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
         }
 
         const client = await Client.findOne({ clientId: existOrder.clientId }).select("+clientId");
-        if (!client || !client.notifyUrl) throw new ResponseError(400, "Missing callback URL");
+        if (!client || !client.notifyUrl) {
+            logger.warn(`Callback skipped: client ${order.clientId} has no notifyUrl`);
+
+            await logCallback({
+                type: "outgoing",
+                source: "system",
+                target: "client",
+                status: "skipped",
+                payload,
+                response: { message: "Client has no notifyUrl" },
+                requestId: generateRequestId(),
+            });
+
+            return true; // dianggap selesai dengan sukses
+        }
 
         const callbackUrl = client.notifyUrl;
         const parsedUrl = new URL(callbackUrl);
@@ -488,70 +530,45 @@ const sendAlert = (message) => {
 };
 
 export const retryCallbackById = async (callbackId) => {
-    const failedCallback = await FailedCallback.findById(callbackId);
+    const failedCallback = await FailedCallback.findOneAndUpdate(
+        { _id: callbackId, status: { $ne: "processing" } },
+        { $set: { status: "processing" } },
+        { new: true },
+    );
 
     if (!failedCallback) {
-        throw new ResponseError(404, `No failed callback found with ID: ${callbackId}`);
+        throw new ResponseError(404, `Callback not found or already processing`);
     }
 
-    logger.info(`Retrying failed callback with ID: ${callbackId}, Retry Count: ${failedCallback.retryCount}`);
+    if (failedCallback.retryCount >= 5) {
+        await FailedCallback.updateOne({ _id: callbackId }, { $set: { status: "dead" } });
+        throw new ResponseError(410, "Max retry exceeded");
+    }
 
-    const { payload } = failedCallback.payload;
+    logger.debug("FAILED CALLBACK PAYLOAD:", failedCallback.payload);
+    const payload = failedCallback.payload;
     let success = false;
 
     try {
         if (payload.virtualAccountData) {
-            success = await forwardCallbackSnapDelete({
-                payload,
-                retryCount: failedCallback.retryCount,
-                callbackId,
-            });
+            success = await forwardCallbackSnapDelete({ payload, callbackId });
         } else if (payload.trxId) {
-            success = await forwardCallbackSnap({
-                payload,
-                retryCount: failedCallback.retryCount,
-                callbackId,
-            });
+            success = await forwardCallbackSnap({ payload, callbackId });
         } else {
-            success = await forwardCallback({
-                payload,
-                retryCount: failedCallback.retryCount,
-                callbackId,
-            });
+            success = await forwardCallback({ payload, callbackId });
         }
 
         if (success) {
             await failedCallback.deleteOne();
-            logger.info(`Successfully retried and deleted callback with ID: ${callbackId}`);
-        } else {
-            await FailedCallback.updateOne(
-                { _id: callbackId },
-                {
-                    $inc: { retryCount: 1 },
-                    $set: {
-                        lastTriedAt: new Date(),
-                        lastError: "Retry failed but didn’t throw",
-                        status: "pending",
-                    },
-                },
-            );
-            logger.warn(`⚠️ Callback ID ${callbackId} retry failed. RetryCount incremented.`);
+            logger.info(`✅ Callback ${callbackId} retried successfully`);
+            return true;
         }
 
-        return success;
+        await markRetryFailed(callbackId, "Callback returned false");
+        return false;
     } catch (err) {
-        logger.error(`❌ Error retrying callback ${callbackId}: ${err.message}`);
-        await FailedCallback.updateOne(
-            { _id: callbackId },
-            {
-                $inc: { retryCount: 1 },
-                $set: {
-                    lastTriedAt: new Date(),
-                    lastError: err.message,
-                    status: "pending",
-                },
-            },
-        );
+        logger.error(`❌ Retry error ${callbackId}: ${err.message}`);
+        await markRetryFailed(callbackId, err.message);
         return false;
     }
 };
