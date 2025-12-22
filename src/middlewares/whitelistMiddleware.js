@@ -4,7 +4,7 @@ import { normalizeIP } from "../utils/helper.js";
 
 export const whitelistMiddlewareVerify = async (req, res, next) => {
     try {
-        const clientIP = req.ip; // 🔥 sudah aman
+        let clientIP = req.ip; // 🔥 sudah aman
 
         clientIP = normalizeIP(clientIP);
 
