@@ -78,7 +78,21 @@ export const forwardCallback = async ({ payload, retryCount = 0 }) => {
         if (!order) throw new ResponseError(404, `Order not found for ID: ${paymentId}`);
 
         const client = await Client.findOne({ clientId: order.clientId }).select("+clientId");
-        if (!client || !client.notifyUrl) throw new ResponseError(400, "Missing callback URL");
+        if (!client || !client.notifyUrl) {
+            logger.warn(`Callback skipped: client ${order.clientId} has no notifyUrl`);
+
+            await logCallback({
+                type: "outgoing",
+                source: "system",
+                target: "client",
+                status: "skipped",
+                payload,
+                response: { message: "Client has no notifyUrl" },
+                requestId: generateRequestId(),
+            });
+
+            return true; // dianggap selesai dengan sukses
+        }
 
         const callbackUrl = client.notifyUrl;
         const parsedUrl = new URL(callbackUrl);
@@ -230,7 +244,21 @@ export const forwardCallbackSnap = async ({ payload, retryCount = 0 }) => {
         }
 
         const client = await Client.findOne({ clientId: existOrder.clientId }).select("+clientId");
-        if (!client || !client.notifyUrl) throw new ResponseError(400, "Missing callback URL");
+        if (!client || !client.notifyUrl) {
+            logger.warn(`Callback skipped: client ${order.clientId} has no notifyUrl`);
+
+            await logCallback({
+                type: "outgoing",
+                source: "system",
+                target: "client",
+                status: "skipped",
+                payload,
+                response: { message: "Client has no notifyUrl" },
+                requestId: generateRequestId(),
+            });
+
+            return true; // dianggap selesai dengan sukses
+        }
 
         const callbackUrl = client.notifyUrl;
         const parsedUrl = new URL(callbackUrl);
@@ -390,7 +418,21 @@ export const forwardCallbackSnapDelete = async ({ payload, retryCount = 0 }) => 
         }
 
         const client = await Client.findOne({ clientId: existOrder.clientId }).select("+clientId");
-        if (!client || !client.notifyUrl) throw new ResponseError(400, "Missing callback URL");
+        if (!client || !client.notifyUrl) {
+            logger.warn(`Callback skipped: client ${order.clientId} has no notifyUrl`);
+
+            await logCallback({
+                type: "outgoing",
+                source: "system",
+                target: "client",
+                status: "skipped",
+                payload,
+                response: { message: "Client has no notifyUrl" },
+                requestId: generateRequestId(),
+            });
+
+            return true; // dianggap selesai dengan sukses
+        }
 
         const callbackUrl = client.notifyUrl;
         const parsedUrl = new URL(callbackUrl);
