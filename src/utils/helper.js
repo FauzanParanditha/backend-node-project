@@ -191,3 +191,10 @@ export async function generateOrderId(clientId) {
 
     return `${formattedClientId}${datePart}${paddedSeq}`;
 }
+
+export const normalizeIP = (ip) => {
+    if (ip.startsWith("::ffff:")) {
+        return ip.replace("::ffff:", "");
+    }
+    return ip;
+};
