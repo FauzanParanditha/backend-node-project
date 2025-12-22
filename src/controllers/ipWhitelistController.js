@@ -37,7 +37,7 @@ export const create = async (req, res, next) => {
     try {
         const { error, value } = ipWhitelistSchema.validate({ ipAddress, adminId });
         if (error) {
-            return res.status(401).json({
+            return res.status(400).json({
                 success: false,
                 message: error.details[0].message,
             });
@@ -82,7 +82,7 @@ export const updateIpWhitelist = async (req, res, next) => {
     try {
         const { error, value } = ipWhitelistSchema.validate({ ipAddress, adminId });
         if (error) {
-            return res.status(401).json({
+            return res.status(400).json({
                 success: false,
                 message: error.details[0].message,
             });

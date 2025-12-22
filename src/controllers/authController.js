@@ -64,7 +64,7 @@ export const verifyVerificationCode = async (req, res, next) => {
             provided_code,
         });
         if (error) {
-            return res.status(401).json({
+            return res.status(400).json({
                 success: false,
                 message: error.details[0].message,
             });
@@ -131,7 +131,7 @@ export const verifyForgotPasswordCode = async (req, res, next) => {
             new_password,
         });
         if (error) {
-            return res.status(401).json({
+            return res.status(400).json({
                 success: false,
                 message: error.details[0].message,
             });

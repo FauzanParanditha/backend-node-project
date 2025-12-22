@@ -37,7 +37,7 @@ export const createClient = async (req, res, next) => {
 
     try {
         const { error, value } = clientSchema.validate({ name, notifyUrl, userId, active, adminId });
-        if (error) return res.status(401).json({ success: false, message: error.details[0].message });
+        if (error) return res.status(400).json({ success: false, message: error.details[0].message });
 
         await clientService.createClient({
             value,
@@ -74,7 +74,7 @@ export const updateClient = async (req, res, next) => {
     try {
         const { error, value } = clientSchema.validate({ name, notifyUrl, userId, active, adminId });
         if (error) {
-            return res.status(401).json({
+            return res.status(400).json({
                 success: false,
                 message: error.details[0].message,
             });
