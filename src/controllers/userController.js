@@ -37,7 +37,7 @@ export const register = async (req, res, next) => {
 
     try {
         const { error } = registerSchema.validate({ email, password, fullName });
-        if (error) return res.status(401).json({ success: false, message: error.details[0].message });
+        if (error) return res.status(400).json({ success: false, message: error.details[0].message });
 
         await userService.registerUser({
             email,
@@ -77,7 +77,7 @@ export const updateUser = async (req, res, next) => {
     try {
         const { error, value } = updateUserSchema.validate({ fullName });
         if (error) {
-            return res.status(401).json({
+            return res.status(400).json({
                 success: false,
                 message: error.details[0].message,
             });

@@ -13,17 +13,24 @@ export const login = async (req, res, next) => {
     try {
         const { error } = loginSchema.validate({ email, password });
         if (error) {
-            return res.status(400).json({ success: false, message: error.details[0].message });
+            return res.status(400).json({
+                success: false,
+                message: error.details[0].message,
+            });
         }
 
-        const { token } = await authService.loginAdmin({ email, password });
-        res.cookie("_aDsbTkn", "Bearer " + token, {
-            expires: new Date(Date.now() + 2 * 3600000),
-            httpOnly: process.env.NODE_ENV === "production",
-            secure: process.env.NODE_ENV === "production",
-        })
-            .status(200)
-            .json({ success: true, message: "Login successful", token });
+        const { token, adminId, email: adminEmail } = await authService.loginAdmin({ email, password });
+
+        return res.status(200).json({
+            success: true,
+            message: "Login successful",
+            data: {
+                token,
+                adminId,
+                email: adminEmail,
+                expiresIn: 3600, // seconds (opsional, bagus untuk FE)
+            },
+        });
     } catch (error) {
         logger.error(`Error login: ${error.message}`);
         next(error);
@@ -57,7 +64,7 @@ export const verifyVerificationCode = async (req, res, next) => {
             provided_code,
         });
         if (error) {
-            return res.status(401).json({
+            return res.status(400).json({
                 success: false,
                 message: error.details[0].message,
             });
@@ -124,7 +131,7 @@ export const verifyForgotPasswordCode = async (req, res, next) => {
             new_password,
         });
         if (error) {
-            return res.status(401).json({
+            return res.status(400).json({
                 success: false,
                 message: error.details[0].message,
             });

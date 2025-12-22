@@ -2,21 +2,24 @@ import logger from "../application/logger.js";
 import IPWhitelist from "../models/ipWhitelistModel.js";
 
 export const whitelistMiddlewareVerify = async (req, res, next) => {
-    const clientIP = req.headers["x-forwarded-for"] || req.ip;
-    // console.log(clientIP);
-    // logger.info(`Client IP: ${clientIP}`);
-
     try {
-        const whitelistedIP = await IPWhitelist.findOne({ ipAddress: clientIP });
+        const clientIP = req.ip; // 🔥 sudah aman
+
+        const whitelistedIP = await IPWhitelist.findOne({
+            ipAddress: clientIP,
+        });
+
         if (!whitelistedIP) {
+            logger.warn(`Blocked login from IP: ${clientIP}`);
             return res.status(403).json({
                 success: false,
-                message: "Access forbidden: Your IP address does not whitelisted.",
+                message: "Access forbidden",
             });
         }
+
         next();
     } catch (error) {
-        logger.error(`Error jwtMiddleware: ${error.message}`);
+        logger.error(`Whitelist middleware error: ${error.message}`);
         next(error);
     }
 };
