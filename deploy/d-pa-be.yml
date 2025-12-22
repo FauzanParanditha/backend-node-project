@@ -18,6 +18,13 @@ spec:
         app: d-payhub-be
         env: dev
     spec:
+      volumes:
+        - name: payhub-be-env
+          configMap:
+            name: d-payhub-be-env
+            items:
+              - key: .env
+                path: .env
       containers:
         - name: d-payhub-be
           image: 'images.247.or.id/pandi/payment-aggregator-backend:latest'
@@ -25,13 +32,10 @@ spec:
             - name: http
               containerPort: 80
               protocol: TCP
-          envFrom:
-            - configMapRef:
-                name: d-payhub-be-env
-        #  volumeMounts:
-     #       - name: d-payhubndimeeting-frontendenv
-      #        mountPath: /usr/share/nginx/html/.env
-       #       subPath: .env
+          volumeMounts:
+            - name: payhub-be-env
+              mountPath: /app/.env
+              subPath: .env
           imagePullPolicy: Always
       restartPolicy: Always
       imagePullSecrets:
