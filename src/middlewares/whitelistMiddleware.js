@@ -14,11 +14,14 @@ export const whitelistMiddlewareVerify = async (req, res, next) => {
 
         if (!whitelistedIP) {
             logger.warn(`Blocked login from IP: ${clientIP}`);
-            logger.info({
-                ip: req.ip,
-                ips: req.ips,
-                headers: req.headers["x-forwarded-for"],
-            });
+            logger.info(
+                JSON.stringify({
+                    ip: req.ip,
+                    ips: req.ips,
+                    forwarded: req.headers["x-forwarded-for"],
+                }),
+            );
+
             return res.status(403).json({
                 success: false,
                 message: "Access forbidden",
