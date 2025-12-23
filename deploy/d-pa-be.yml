@@ -25,6 +25,9 @@ spec:
             items:
               - key: .env
                 path: .env
+        - name: payhub-cert
+          persistentVolumeClaim:
+            claimName: pvc-payhub-cert
       containers:
         - name: d-payhub-be
           image: 'images.247.or.id/pandi/payment-aggregator-backend:latest'
@@ -36,6 +39,15 @@ spec:
             - name: payhub-be-env
               mountPath: /app/.env
               subPath: .env
+            - name: payhub-cert
+              mountPath: /app/public-key.pem
+              subPath: payhub-cert/public-key.pem
+            - name: payhub-cert
+              mountPath: /app/private-key.pem
+              subPath: payhub-cert/private-key.pem
+            - name: payhub-cert
+              mountPath: /app/public.pem
+              subPath: payhub-cert/public.pem
           imagePullPolicy: Always
       restartPolicy: Always
       imagePullSecrets:
