@@ -27,7 +27,7 @@ import productRouter from "../routers/productRouter.js";
 import userRouter from "../routers/userRouter.js";
 import { generateHeadersForward, generateRequestId, verifySignatureMiddleware } from "../service/paylabs.js";
 import swaggerSpec from "../swagger.js";
-import { ensureUploadsDirExists } from "../utils/helper.js";
+import { ensureUploadsDirExists, normalizeIP } from "../utils/helper.js";
 
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
