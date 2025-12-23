@@ -27,7 +27,7 @@ import productRouter from "../routers/productRouter.js";
 import userRouter from "../routers/userRouter.js";
 import { generateHeadersForward, generateRequestId, verifySignatureMiddleware } from "../service/paylabs.js";
 import swaggerSpec from "../swagger.js";
-import { ensureUploadsDirExists, normalizeIP } from "../utils/helper.js";
+import { ensureUploadsDirExists } from "../utils/helper.js";
 
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
@@ -36,19 +36,8 @@ const __dirname = dirname(__filename);
 ensureUploadsDirExists();
 export const web = express();
 
-logger.info(`TRUSTED_PROXY_IP=${process.env.TRUSTED_PROXY_IP}`);
-
-const trustedProxySet = new Set(
-    ["127.0.0.1", "::1"]
-        .concat(process.env.TRUSTED_PROXY_IP || [])
-        .map(normalizeIP)
-        .filter(Boolean),
-);
-
-web.set("trust proxy", (ip) => {
-    if (!ip) return false;
-    return trustedProxySet.has(normalizeIP(ip));
-});
+// K8s: trust 1 hop proxy (Ingress) - paling umum & aman
+web.set("trust proxy", 1);
 
 web.use(
     cors({
