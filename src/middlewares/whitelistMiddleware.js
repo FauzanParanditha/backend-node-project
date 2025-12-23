@@ -16,6 +16,7 @@ export const whitelistMiddlewareVerify = async (req, res, next) => {
             logger.warn(`Blocked login from IP: ${clientIP}`);
             logger.info(
                 JSON.stringify({
+                    remote: req.socket.remoteAddress,
                     ip: req.ip,
                     ips: req.ips,
                     forwarded: req.headers["x-forwarded-for"],
