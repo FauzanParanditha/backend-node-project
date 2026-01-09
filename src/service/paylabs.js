@@ -191,6 +191,10 @@ export const verifySignatureMiddleware = async (httpMethod, endpointUrl, body, t
     try {
         const publicKeyPem = await getClientPublicKey(clientId);
 
+        const pubDer = crypto.createPublicKey(publicKeyPem).export({ type: "spki", format: "der" });
+        const pubFp = crypto.createHash("sha256").update(pubDer).digest("hex");
+        logger.info(`pubKeyFingerprint(sha256 hex): ${pubFp}`);
+
         // Normalize HTTP Method
         const normalizedMethod = httpMethod.toUpperCase();
 
