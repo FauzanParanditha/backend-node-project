@@ -41,7 +41,7 @@ const transactionLimits = {
     BSIVA: { min: 10000, max: 100000000 },
     CIMBVA: { min: 15000, max: 100000000 },
     QRIS: { min: 1000, max: 10000000 },
-    DEFAULT: { min: 10000, max: 100000000 },
+    DEFAULT: { min: 10000, max: 1000000000 }, // up to 1 billion
 };
 
 export const doHash = (value, saltValue) => {
