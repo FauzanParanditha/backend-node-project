@@ -60,6 +60,8 @@ export const createVa = async ({ validatedProduct, partnerId }) => {
             feeType: "OUR",
         };
 
+        logger.info("Request Body for VA Creation: ", requestBody);
+
         // Validate requestBody
         const { error } = validateGenerateVA(requestBody);
         if (error) {
