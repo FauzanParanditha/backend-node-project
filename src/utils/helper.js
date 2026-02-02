@@ -30,12 +30,12 @@ const transactionLimits = {
     BTNVA: { min: 10000, max: 100000000 },
     OCBCVA: { min: 10000, max: 100000000 },
     SinarmasVA: { min: 10000, max: 100000000 },
-    MandiriVA: { min: 10000, max: 100000000 },
+    MandiriVA: { min: 10000, max: 1000000000 }, // up to 1 billion
     INAVA: { min: 10000, max: 100000000 },
-    PermataVA: { min: 10000, max: 100000000 },
+    PermataVA: { min: 10000, max: 1000000000 }, // up to 1 billion
     MaybankVA: { min: 10000, max: 100000000 },
     DanamonVA: { min: 10000, max: 100000000 },
-    BRIVA: { min: 10000, max: 100000000 },
+    BRIVA: { min: 10000, max: 1000000000 }, // up to 1 billion
     BCAVA: { min: 10000, max: 100000000 },
     MuamalatVA: { min: 10000, max: 100000000 },
     BSIVA: { min: 10000, max: 100000000 },
