@@ -10,9 +10,11 @@ import { fileURLToPath } from "url";
 import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
+import { jwtUnifiedMiddleware } from "../middlewares/jwtUnified.js";
 import apiLogger from "../middlewares/apiLog.js";
 import { errorMiddleware } from "../middlewares/errorMiddleware.js";
 import Admin from "../models/adminModel.js";
+import User from "../models/userModel.js";
 import adminRouter from "../routers/adminRouter.js";
 import authRouter from "../routers/authRouter.js";
 import authRouterUser from "../routers/authRouterUser.js";
@@ -120,8 +122,8 @@ web.get("/redoc", (req, res) => {
 });
 
 //route
-web.use("/adm/auth", authRouter);
 web.use("/api/v1/auth", authRouterUser);
+web.use("/adm/auth", authRouter);
 web.use("/api/v1/adm", adminRouter);
 web.use("/api/v1", ipWhitelistRouter);
 web.use("/api/v1", availablePaymentRouter);
@@ -181,19 +183,39 @@ web.post("/callback", express.raw({ type: "application/json" }), (req, res) => {
     return res.set(responseHeaders).status(200).json(payloadResponse);
 });
 
-web.get("/me", jwtMiddlewareAdmin, async (req, res, next) => {
+web.get("/me", jwtUnifiedMiddleware, async (req, res, next) => {
     try {
-        const { adminId } = req.admin;
-        if (!adminId) throw new ResponseError(400, "Admin ID not provided");
+        const { role, adminId, userId } = req.auth ?? {};
 
-        const existAdmin = await Admin.findById(adminId);
-        if (!existAdmin) throw new ResponseError(400, "Admin does not exist");
+        if (role === "admin") {
+            if (!adminId) throw new ResponseError(400, "Admin ID not provided");
 
-        res.status(200).json({
-            success: true,
-            message: "Admin data retrieved successfully",
-            data: existAdmin,
-        });
+            const existAdmin = await Admin.findById(adminId);
+            if (!existAdmin) throw new ResponseError(400, "Admin does not exist");
+
+            return res.status(200).json({
+                success: true,
+                message: "Admin data retrieved successfully",
+                role: "admin",
+                data: existAdmin,
+            });
+        }
+
+        if (role === "user") {
+            if (!userId) throw new ResponseError(400, "User ID not provided");
+
+            const existUser = await User.findById(userId);
+            if (!existUser) throw new ResponseError(400, "User does not exist");
+
+            return res.status(200).json({
+                success: true,
+                message: "User data retrieved successfully",
+                role: "user",
+                data: existUser,
+            });
+        }
+
+        throw new ResponseError(400, "Role not provided");
     } catch (error) {
         logger.error(error.message);
         next(error);

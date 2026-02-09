@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import logger from "../application/logger.js";
 import IPWhitelist from "../models/ipWhitelistModel.js";
+import { normalizeIP } from "../utils/helper.js";
 
 export const jwtMiddlewareAdmin = async (req, res, next) => {
     try {
@@ -20,7 +21,9 @@ export const jwtMiddlewareAdmin = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_ADMIN_PRIVATE_KEY);
 
         // 🌐 Ambil IP client (AMAN karena trust proxy sudah diset)
-        const clientIP = req.ip;
+        let clientIP = req.ip;
+
+        clientIP = normalizeIP(clientIP);
 
         // 🔒 IP Whitelist check
         const whitelistedIP = await IPWhitelist.findOne({

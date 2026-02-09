@@ -1,5 +1,7 @@
 import logger from "../application/logger.js";
+import { ResponseError } from "../error/responseError.js";
 import * as adminService from "../service/adminService.js";
+import User from "../models/userModel.js";
 import { registerSchema, updateAdminSchema } from "../validators/authValidator.js";
 
 export const getAllAdmin = async (req, res, next) => {
@@ -56,13 +58,36 @@ export const admin = async (req, res, next) => {
     const { id } = req.params;
 
     try {
-        const admin = await adminService.admin({ id });
+        const { role, adminId, userId } = req.auth ?? {};
 
-        return res.status(200).json({
-            success: true,
-            message: "admin",
-            data: admin,
-        });
+        if (role === "admin") {
+            const admin = await adminService.admin({ id });
+
+            return res.status(200).json({
+                success: true,
+                message: "admin",
+                data: admin,
+            });
+        }
+
+        if (role === "user") {
+            if (!userId) throw new ResponseError(400, "User ID not provided");
+
+            if (id !== userId.toString()) {
+                throw new ResponseError(403, "Access forbidden");
+            }
+
+            const user = await User.findById(userId);
+            if (!user) throw new ResponseError(404, "User does not exist!");
+
+            return res.status(200).json({
+                success: true,
+                message: "user",
+                data: user,
+            });
+        }
+
+        throw new ResponseError(400, "Role not provided");
     } catch (error) {
         logger.error(`Error fetching admin: ${error.message}`);
         next(error);
@@ -117,13 +142,31 @@ export const deleteAdmin = async (req, res, next) => {
 
 export const dashboard = async (req, res, next) => {
     try {
-        const dashboard = await adminService.dashboard();
+        const { role, userId } = req.auth ?? {};
 
-        return res.status(200).json({
-            success: true,
-            message: "admin",
-            data: dashboard,
-        });
+        if (role === "admin") {
+            const dashboard = await adminService.dashboard();
+
+            return res.status(200).json({
+                success: true,
+                message: "admin",
+                data: dashboard,
+            });
+        }
+
+        if (role === "user") {
+            if (!userId) throw new ResponseError(400, "User ID not provided");
+
+            const dashboard = await adminService.dashboardForUser({ userId });
+
+            return res.status(200).json({
+                success: true,
+                message: "user",
+                data: dashboard,
+            });
+        }
+
+        throw new ResponseError(400, "Role not provided");
     } catch (error) {
         logger.error(`Error fetching dashboard: ${error.message}`);
         next(error);

@@ -1,7 +1,9 @@
 import jwt from "jsonwebtoken";
 import { ResponseError } from "../error/responseError.js";
 import Admin from "../models/adminModel.js";
-import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
+import IPWhitelist from "../models/ipWhitelistModel.js";
+import User from "../models/userModel.js";
+import { compareDoHash, doHash, hmacProcess, normalizeIP } from "../utils/helper.js";
 import { generateForgotPasswordLink, sendForgotPasswordEmail, sendVerifiedEmail } from "./sendMail.js";
 
 export const loginAdmin = async ({ email, password }) => {
@@ -40,6 +42,84 @@ export const loginAdmin = async ({ email, password }) => {
         token,
         adminId: existAdmin._id,
         email: existAdmin.email,
+    };
+};
+
+export const loginUnified = async ({ email, password, clientIP }) => {
+    const sanitizedEmail = email.trim().toLowerCase();
+
+    const existAdmin = await Admin.findOne({
+        email: sanitizedEmail,
+    }).select("+password");
+
+    if (existAdmin) {
+        if (!clientIP) throw new ResponseError(400, "Client IP not provided");
+
+        const normalizedIP = normalizeIP(clientIP);
+        const whitelistedIP = await IPWhitelist.findOne({
+            ipAddress: normalizedIP,
+        });
+
+        if (!whitelistedIP) {
+            throw new ResponseError(403, "Access forbidden");
+        }
+
+        const isValidPassword = await compareDoHash(password, existAdmin.password);
+
+        if (!isValidPassword) {
+            throw new ResponseError(400, "Invalid email or password");
+        }
+
+        const token = jwt.sign(
+            {
+                adminId: existAdmin._id.toString(),
+                email: existAdmin.email,
+                verified: existAdmin.verified,
+                role: "admin",
+            },
+            process.env.ACCESS_TOKEN_ADMIN_PRIVATE_KEY,
+            {
+                expiresIn: "1h",
+                issuer: "dashboard.payhub.id",
+                audience: "admin",
+            },
+        );
+
+        return {
+            role: "admin",
+            token,
+            adminId: existAdmin._id,
+            email: existAdmin.email,
+            expiresIn: 3600,
+        };
+    }
+
+    const existUser = await User.findOne({
+        email: { $eq: sanitizedEmail },
+    }).select("+password");
+
+    if (!existUser) throw new ResponseError(400, "Invalid email or password");
+
+    const isValidPassword = await compareDoHash(password, existUser.password);
+    if (!isValidPassword) throw new ResponseError(400, "Invalid email or password");
+
+    const token = jwt.sign(
+        {
+            userId: existUser._id,
+            email: existUser.email,
+            verified: existUser.verified,
+            role: "user",
+        },
+        process.env.ACCESS_TOKEN_PRIVATE_KEY,
+        { expiresIn: "2h" },
+    );
+
+    return {
+        role: "user",
+        token,
+        userId: existUser._id,
+        email: existUser.email,
+        expiresIn: 7200,
     };
 };
 

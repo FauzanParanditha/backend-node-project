@@ -14,6 +14,67 @@ import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * /api/v1/auth/login:
+ *   post:
+ *     summary: Unified login for admin or user
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: admin@example.com
+ *               password:
+ *                 type: string
+ *                 example: P@ssw0rd!
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Login successful
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                       enum: [admin, user]
+ *                     adminId:
+ *                       type: string
+ *                       nullable: true
+ *                     userId:
+ *                       type: string
+ *                       nullable: true
+ *                     email:
+ *                       type: string
+ *                     expiresIn:
+ *                       type: number
+ *                       description: Token expiry in seconds
+ *       400:
+ *         description: Validation error or invalid credentials
+ *       403:
+ *         description: Access forbidden (admin login requires whitelisted IP)
+ */
 router.post("/login", login);
 router.post("/logout", jwtMiddleware, logout);
 

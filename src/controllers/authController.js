@@ -1,11 +1,13 @@
 import logger from "../application/logger.js";
 import * as authService from "../service/authService.js";
+import * as authServiceUser from "../service/authServiceUser.js";
 import {
     acceptCodeSchema,
     acceptFPCodeSchema,
     changePasswordSchema,
     loginSchema,
 } from "../validators/authValidator.js";
+import { ResponseError } from "../error/responseError.js";
 
 export const login = async (req, res, next) => {
     const { email, password } = req.body;
@@ -19,16 +21,30 @@ export const login = async (req, res, next) => {
             });
         }
 
-        const { token, adminId, email: adminEmail } = await authService.loginAdmin({ email, password });
+        const { role, token, adminId, userId, email: loginEmail, expiresIn } = await authService.loginUnified({
+            email,
+            password,
+            clientIP: req.ip,
+        });
+
+        if (role === "user") {
+            res.cookie("Authorization", "Bearer " + token, {
+                expires: new Date(Date.now() + expiresIn * 1000),
+                httpOnly: process.env.NODE_ENV === "production",
+                secure: process.env.NODE_ENV === "production",
+            });
+        }
 
         return res.status(200).json({
             success: true,
             message: "Login successful",
             data: {
                 token,
-                adminId,
-                email: adminEmail,
-                expiresIn: 3600, // seconds (opsional, bagus untuk FE)
+                role,
+                ...(adminId && { adminId }),
+                ...(userId && { userId }),
+                email: loginEmail,
+                expiresIn,
             },
         });
     } catch (error) {
@@ -48,7 +64,17 @@ export const sendVerificationCode = async (req, res, next) => {
     const { email } = req.body;
 
     try {
-        const message = await authService.sendVerificationCodeService(email);
+        const { role } = req.auth ?? {};
+
+        let message;
+        if (role === "admin") {
+            message = await authService.sendVerificationCodeService(email);
+        } else if (role === "user") {
+            message = await authServiceUser.sendVerificationCodeService(email);
+        } else {
+            throw new ResponseError(400, "Role not provided");
+        }
+
         res.status(200).json({ success: true, message });
     } catch (error) {
         logger.error(`Error send verification code: ${error.message}`);
@@ -69,7 +95,17 @@ export const verifyVerificationCode = async (req, res, next) => {
                 message: error.details[0].message,
             });
         }
-        const message = await authService.verifyVerificationCodeService({ value });
+        const { role } = req.auth ?? {};
+
+        let message;
+        if (role === "admin") {
+            message = await authService.verifyVerificationCodeService({ value });
+        } else if (role === "user") {
+            message = await authServiceUser.verifyVerificationCodeService({ value });
+        } else {
+            throw new ResponseError(400, "Role not provided");
+        }
+
         return res.status(200).json({
             success: true,
             message,
@@ -81,14 +117,19 @@ export const verifyVerificationCode = async (req, res, next) => {
 };
 
 export const changePassword = async (req, res, next) => {
-    const { adminId, verified } = req.admin;
+    const { role, adminId, userId, verified } = req.auth ?? {};
     const { old_password, new_password } = req.body;
 
     try {
+        if (!role) throw new ResponseError(400, "Role not provided");
+
+        const identityId = role === "admin" ? adminId : userId;
+        const identityKey = role === "admin" ? "adminId" : "userId";
+
         const { error, value } = changePasswordSchema.validate({
             old_password,
             new_password,
-            adminId,
+            [identityKey]: identityId,
             verified,
         });
         if (error) {
@@ -97,7 +138,16 @@ export const changePassword = async (req, res, next) => {
                 message: error.details[0].message,
             });
         }
-        const message = await authService.changePasswordService({ value });
+
+        let message;
+        if (role === "admin") {
+            message = await authService.changePasswordService({ value });
+        } else if (role === "user") {
+            message = await authServiceUser.changePasswordService({ value });
+        } else {
+            throw new ResponseError(400, "Role not provided");
+        }
+
         return res.status(200).json({
             success: true,
             message,

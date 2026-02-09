@@ -7,6 +7,9 @@ export const orders = async (req, res, next) => {
     const { query = "", limit = 10, page = 1, sort_by = "_id", sort = -1, countOnly = false } = req.query;
 
     try {
+        const { role, userId } = req.auth ?? {};
+        const scopedUserId = role === "user" ? userId : null;
+
         const order = await orderService.getAllOrders({
             query,
             limit,
@@ -14,6 +17,7 @@ export const orders = async (req, res, next) => {
             sort_by,
             sort,
             countOnly,
+            userId: scopedUserId,
         });
 
         if (countOnly) {
@@ -36,11 +40,15 @@ export const orderNoLimit = async (req, res, next) => {
     const { query = "", sort_by = "createdAt", sort = 1, countOnly = false } = req.query;
 
     try {
+        const { role, userId } = req.auth ?? {};
+        const scopedUserId = role === "user" ? userId : null;
+
         const order = await orderService.getOrders({
             query,
             sort_by,
             sort,
             countOnly,
+            userId: scopedUserId,
         });
 
         if (countOnly) {
@@ -113,7 +121,10 @@ export const order = async (req, res, next) => {
     const { id } = req.params;
 
     try {
-        const order = await orderService.order({ id });
+        const { role, userId } = req.auth ?? {};
+        const scopedUserId = role === "user" ? userId : null;
+
+        const order = await orderService.order({ id, userId: scopedUserId });
         return res.status(200).json({ success: true, message: "Order", data: order });
     } catch (error) {
         logger.error(`Error fetching order ${error.message}`);

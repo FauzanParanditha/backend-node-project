@@ -21,6 +21,7 @@ import {
 } from "../controllers/vaSnapController.js";
 import { balance, xenditCallback } from "../controllers/xenditController.js";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
+import { jwtUnifiedMiddleware } from "../middlewares/jwtUnified.js";
 import { jwtMiddlewareVerify } from "../middlewares/verifyMiddleware.js";
 
 const router = express.Router();
@@ -46,8 +47,37 @@ const router = express.Router();
  *         5. **Encode the signature**: The final signature is encoded in Base64.
  */
 
-router.get("/orders", jwtMiddlewareAdmin, orders);
-router.get("/order", jwtMiddlewareAdmin, orderNoLimit);
+/**
+ * @swagger
+ * /api/v1/orders:
+ *   get:
+ *     summary: Get orders (admin all, user scoped)
+ *     tags: [Orders]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Orders list
+ *       401:
+ *         description: Unauthorized
+ */
+router.get("/orders", jwtUnifiedMiddleware, orders);
+
+/**
+ * @swagger
+ * /api/v1/order:
+ *   get:
+ *     summary: Get orders without pagination (admin all, user scoped)
+ *     tags: [Orders]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Orders list
+ *       401:
+ *         description: Unauthorized
+ */
+router.get("/order", jwtUnifiedMiddleware, orderNoLimit);
 
 /**
  * @swagger
@@ -247,7 +277,31 @@ router.post("/order/webhook/xendit", xenditCallback);
  *         description: Unauthorized
  */
 router.get("/order/:id", jwtMiddlewareVerify, order);
-router.get("/order/status/:id", jwtMiddlewareAdmin, order);
+
+/**
+ * @swagger
+ * /api/v1/order/status/{id}:
+ *   get:
+ *     summary: Get order status by ID (admin or user scoped)
+ *     tags: [Orders]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: The ID of the order
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Order status
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access forbidden
+ */
+router.get("/order/status/:id", jwtUnifiedMiddleware, order);
 
 router.put("/order/:id", jwtMiddlewareAdmin, editOrder);
 router.get("/xendit/balance", jwtMiddlewareAdmin, balance);

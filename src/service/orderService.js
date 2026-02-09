@@ -1,14 +1,22 @@
 import dayjs from "dayjs";
+import mongoose from "mongoose";
 import logger from "../application/logger.js";
 import { expiredXendit } from "../controllers/xenditController.js";
 import { ResponseError } from "../error/responseError.js";
+import Client from "../models/clientModel.js";
 import Order from "../models/orderModel.js";
 import User from "../models/userModel.js";
 import { encryptData } from "../utils/encryption.js";
 import { calculateTotal, escapeRegExp, generateOrderId, validateOrderProducts } from "../utils/helper.js";
 import { handlePaymentLink } from "./paylabs.js";
 
-export const getAllOrders = async ({ query, limit, page, sort_by, sort, countOnly }) => {
+const getClientIdsByUserId = async (userId) => {
+    const normalizedUserId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
+    const clients = await Client.find({ userId: normalizedUserId }).select("+clientId");
+    return clients.map((item) => item.clientId);
+};
+
+export const getAllOrders = async ({ query, limit, page, sort_by, sort, countOnly, userId }) => {
     const filter = {};
 
     // Apply search term if provided
@@ -26,10 +34,14 @@ export const getAllOrders = async ({ query, limit, page, sort_by, sort, countOnl
     const limitNum = Number(limit);
     const skip = (Number(page) - 1) * limitNum;
 
+    if (userId) {
+        const clientIds = await getClientIdsByUserId(userId);
+        filter.clientId = { $in: clientIds.length ? clientIds : ["__none__"] };
+    }
+
     if (countOnly) {
         return { count: await Order.countDocuments(filter) };
     }
-
     const orders = await Order.find(filter)
         .sort({ [sortField]: sortValue })
         .limit(limitNum)
@@ -57,7 +69,7 @@ export const getAllOrders = async ({ query, limit, page, sort_by, sort, countOnl
     };
 };
 
-export const getOrders = async ({ query, sort_by, sort, countOnly }) => {
+export const getOrders = async ({ query, sort_by, sort, countOnly, userId }) => {
     const filter = {};
 
     // Apply search term if provided
@@ -71,6 +83,11 @@ export const getOrders = async ({ query, sort_by, sort, countOnly }) => {
 
     const sortField = sort_by || "_id";
     const sortValue = Number(sort) || -1;
+
+    if (userId) {
+        const clientIds = await getClientIdsByUserId(userId);
+        filter.clientId = { $in: clientIds.length ? clientIds : ["__none__"] };
+    }
 
     if (countOnly) {
         return { count: await Order.countDocuments(filter) };
@@ -184,7 +201,7 @@ export const createOrderLink = async ({ validatedOrder, partnerId }) => {
     }
 };
 
-export const order = async ({ id }) => {
+export const order = async ({ id, userId }) => {
     const result = await Order.findOne({ _id: id }).populate({
         path: "clientId",
         model: "Client",
@@ -192,6 +209,11 @@ export const order = async ({ id }) => {
         foreignField: "clientId",
     });
     if (!result) throw new ResponseError(404, "Order does not exist!");
+
+    if (userId) {
+        const client = await Client.findOne({ clientId: result.clientId.clientId });
+        if (!client) throw new ResponseError(403, "Access forbidden");
+    }
 
     return result;
 };

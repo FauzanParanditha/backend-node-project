@@ -1,4 +1,5 @@
 import logger from "../application/logger.js";
+import * as authService from "../service/authService.js";
 import * as authServiceUser from "../service/authServiceUser.js";
 import {
     acceptCodeSchema,
@@ -16,14 +17,32 @@ export const login = async (req, res, next) => {
             return res.status(400).json({ success: false, message: error.details[0].message });
         }
 
-        const { token } = await authServiceUser.loginUser({ email, password });
-        res.cookie("Authorization", "Bearer " + token, {
-            expires: new Date(Date.now() + 2 * 3600000),
-            httpOnly: process.env.NODE_ENV === "production",
-            secure: process.env.NODE_ENV === "production",
-        })
-            .status(200)
-            .json({ success: true, message: "Login successful", token });
+        const { role, token, adminId, userId, email: loginEmail, expiresIn } = await authService.loginUnified({
+            email,
+            password,
+            clientIP: req.ip,
+        });
+
+        if (role === "user") {
+            res.cookie("Authorization", "Bearer " + token, {
+                expires: new Date(Date.now() + expiresIn * 1000),
+                httpOnly: process.env.NODE_ENV === "production",
+                secure: process.env.NODE_ENV === "production",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Login successful",
+            data: {
+                token,
+                role,
+                ...(adminId && { adminId }),
+                ...(userId && { userId }),
+                email: loginEmail,
+                expiresIn,
+            },
+        });
     } catch (error) {
         logger.error(`Error login: ${error.message}`);
         next(error);

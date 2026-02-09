@@ -114,3 +114,14 @@ export const dashboard = async () => {
     const order = await Order.countDocuments();
     return { success: true, client, user, order };
 };
+
+export const dashboardForUser = async ({ userId }) => {
+    const clients = await Client.find({ userId }).select("+clientId");
+    const clientIds = clients.map((item) => item.clientId);
+
+    const client = clients.length;
+    const user = 1;
+    const order = clientIds.length ? await Order.countDocuments({ clientId: { $in: clientIds } }) : 0;
+
+    return { success: true, client, user, order };
+};
