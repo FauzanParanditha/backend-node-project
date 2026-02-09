@@ -85,10 +85,7 @@ export const getAllOrders = async ({
         const scopedClientIds = clientIds.length ? clientIds : ["__none__"];
 
         if (filter.clientId) {
-            const allowedRegex = new RegExp(
-                scopedClientIds.map((id) => escapeRegExp(id)).join("|"),
-                "i",
-            );
+            const allowedRegex = new RegExp(scopedClientIds.map((id) => escapeRegExp(id)).join("|"), "i");
             filter.clientId = { $regex: allowedRegex };
         } else {
             filter.clientId = { $in: scopedClientIds };
@@ -143,7 +140,6 @@ export const getAllOrders = async ({
     if (countOnly) {
         return { count: await Order.countDocuments(filter) };
     }
-    console.log(filter);
     const orders = await Order.find(filter)
         .sort({ [sortField]: sortValue })
         .limit(limitNum)
