@@ -16,7 +16,29 @@ const getClientIdsByUserId = async (userId) => {
     return clients.map((item) => item.clientId);
 };
 
-export const getAllOrders = async ({ query, limit, page, sort_by, sort, countOnly, userId }) => {
+const parseDate = (value) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        throw new ResponseError(400, "Invalid date format");
+    }
+    return date;
+};
+
+export const getAllOrders = async ({
+    query,
+    limit,
+    page,
+    sort_by,
+    sort,
+    countOnly,
+    userId,
+    clientId,
+    domain,
+    paymentStatus,
+    dateFrom,
+    dateTo,
+    groupBy,
+}) => {
     const filter = {};
 
     // Apply search term if provided
@@ -34,14 +56,94 @@ export const getAllOrders = async ({ query, limit, page, sort_by, sort, countOnl
     const limitNum = Number(limit);
     const skip = (Number(page) - 1) * limitNum;
 
+    if (clientId) {
+        const clientTerm = escapeRegExp(String(clientId).trim());
+        filter.clientId = { $regex: clientTerm, $options: "i" };
+    }
+
+    if (domain) {
+        const domainTerm = escapeRegExp(String(domain).trim());
+        filter["items.domain"] = { $regex: domainTerm, $options: "i" };
+    }
+
+    if (paymentStatus) {
+        const values = String(paymentStatus)
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+        filter.paymentStatus = values.length > 1 ? { $in: values } : values[0];
+    }
+
+    if (dateFrom || dateTo) {
+        filter.createdAt = {};
+        if (dateFrom) filter.createdAt.$gte = parseDate(dateFrom);
+        if (dateTo) filter.createdAt.$lte = parseDate(dateTo);
+    }
+
     if (userId) {
         const clientIds = await getClientIdsByUserId(userId);
-        filter.clientId = { $in: clientIds.length ? clientIds : ["__none__"] };
+        const scopedClientIds = clientIds.length ? clientIds : ["__none__"];
+
+        if (filter.clientId) {
+            const allowedRegex = new RegExp(
+                scopedClientIds.map((id) => escapeRegExp(id)).join("|"),
+                "i",
+            );
+            filter.clientId = { $regex: allowedRegex };
+        } else {
+            filter.clientId = { $in: scopedClientIds };
+        }
+    }
+
+    if (groupBy === "client") {
+        const pipeline = [
+            { $match: filter },
+            {
+                $group: {
+                    _id: "$clientId",
+                    orderCount: { $sum: 1 },
+                    totalAmount: { $sum: "$totalAmount" },
+                    paidCount: {
+                        $sum: {
+                            $cond: [{ $eq: ["$paymentStatus", "paid"] }, 1, 0],
+                        },
+                    },
+                },
+            },
+            {
+                $lookup: {
+                    from: "clients",
+                    localField: "_id",
+                    foreignField: "clientId",
+                    as: "client",
+                },
+            },
+            { $unwind: { path: "$client", preserveNullAndEmptyArrays: true } },
+            {
+                $project: {
+                    _id: 0,
+                    clientId: "$_id",
+                    orderCount: 1,
+                    totalAmount: 1,
+                    paidCount: 1,
+                    client: {
+                        name: "$client.name",
+                        active: "$client.active",
+                        notifyUrl: "$client.notifyUrl",
+                    },
+                },
+            },
+            { $sort: { totalAmount: -1 } },
+        ];
+
+        const grouped = await Order.aggregate(pipeline);
+        return { grouped };
     }
 
     if (countOnly) {
         return { count: await Order.countDocuments(filter) };
     }
+    console.log(filter);
     const orders = await Order.find(filter)
         .sort({ [sortField]: sortValue })
         .limit(limitNum)

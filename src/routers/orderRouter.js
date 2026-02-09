@@ -55,6 +55,40 @@ const router = express.Router();
  *     tags: [Orders]
  *     security:
  *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: clientId
+ *         schema:
+ *           type: string
+ *         description: Filter by clientId (exact)
+ *       - in: query
+ *         name: domain
+ *         schema:
+ *           type: string
+ *         description: Filter by domain (items.domain)
+ *       - in: query
+ *         name: paymentStatus
+ *         schema:
+ *           type: string
+ *         description: Filter by payment status (comma-separated supported)
+ *       - in: query
+ *         name: dateFrom
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter orders created at or after this date
+ *       - in: query
+ *         name: dateTo
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter orders created at or before this date
+ *       - in: query
+ *         name: group_by
+ *         schema:
+ *           type: string
+ *           enum: [client]
+ *         description: Group result by client
  *     responses:
  *       200:
  *         description: Orders list

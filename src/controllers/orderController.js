@@ -4,7 +4,20 @@ import { orderLinkSchema } from "../validators/orderValidator.js";
 
 // Orders Listing with Pagination and Sorting
 export const orders = async (req, res, next) => {
-    const { query = "", limit = 10, page = 1, sort_by = "_id", sort = -1, countOnly = false } = req.query;
+    const {
+        query = "",
+        limit = 10,
+        page = 1,
+        sort_by = "_id",
+        sort = -1,
+        countOnly = false,
+        clientId,
+        domain,
+        paymentStatus,
+        dateFrom,
+        dateTo,
+        group_by,
+    } = req.query;
 
     try {
         const { role, userId } = req.auth ?? {};
@@ -18,6 +31,12 @@ export const orders = async (req, res, next) => {
             sort,
             countOnly,
             userId: scopedUserId,
+            clientId,
+            domain,
+            paymentStatus,
+            dateFrom,
+            dateTo,
+            groupBy: group_by,
         });
 
         if (countOnly) {
@@ -27,8 +46,8 @@ export const orders = async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: "All orders",
-            data: order.orders,
-            pagination: order.pagination,
+            data: order.orders ?? order.grouped,
+            ...(order.pagination && { pagination: order.pagination }),
         });
     } catch (error) {
         logger.error(`Error fetching order ${error.message}`);
