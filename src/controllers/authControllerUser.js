@@ -1,6 +1,7 @@
 import logger from "../application/logger.js";
 import * as authService from "../service/authService.js";
 import * as authServiceUser from "../service/authServiceUser.js";
+import Admin from "../models/adminModel.js";
 import {
     acceptCodeSchema,
     acceptFPCodeSchema,
@@ -149,7 +150,12 @@ export const changePasswordByAdmin = async (req, res, next) => {
 export const sendForgotPassword = async (req, res, next) => {
     const { email } = req.body;
     try {
-        const message = await authServiceUser.sendForgotPasswordService(email);
+        const sanitizedEmail = email.trim();
+        const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
+
+        const message = existAdmin
+            ? await authService.sendForgotPasswordService(email)
+            : await authServiceUser.sendForgotPasswordService(email);
         return res.status(200).json({
             success: true,
             message,
@@ -175,7 +181,12 @@ export const verifyForgotPasswordCode = async (req, res, next) => {
             });
         }
 
-        const message = await authServiceUser.verifyForgotPasswordCodeService({ value });
+        const sanitizedEmail = email.trim();
+        const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
+
+        const message = existAdmin
+            ? await authService.verifyForgotPasswordCodeService({ value })
+            : await authServiceUser.verifyForgotPasswordCodeService({ value });
 
         return res.status(200).json({
             success: true,

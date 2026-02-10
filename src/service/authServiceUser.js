@@ -3,6 +3,7 @@ import { ResponseError } from "../error/responseError.js";
 import transport from "../middlewares/sendMail.js";
 import User from "../models/userModel.js";
 import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
+import { generateForgotPasswordLink, sendForgotPasswordEmail } from "./sendMail.js";
 
 export const loginUser = async ({ email, password }) => {
     const sanitizedEmail = email.trim();
@@ -121,19 +122,22 @@ export const sendForgotPasswordService = async (email) => {
     if (!existUser) throw new ResponseError(404, "User does not exist!");
 
     const codeValue = Math.floor(Math.random() * 100000).toString();
-    let info = await transport.sendMail({
-        from: process.env.MAIL_ADDRESS,
-        to: existUser.email,
-        subject: "Forgot password code",
-        html: "<h1>" + codeValue + "</h1>",
-    });
-    if (info.accepted[0] !== existUser.email) throw new ResponseError(400, "Code sent failed!");
+    const url = generateForgotPasswordLink(existUser.email, codeValue);
+    await sendForgotPasswordEmail(url, existUser.email, existUser.fullName);
+
+    // let info = await transport.sendMail({
+    //     from: process.env.MAIL_ADDRESS,
+    //     to: existUser.email,
+    //     subject: "Forgot password code",
+    //     html: "<h1>" + codeValue + "</h1>",
+    // });
+    // if (info.accepted[0] !== existUser.email) throw new ResponseError(400, "Code sent failed!");
 
     existUser.forgotPasswordCode = hmacProcess(codeValue, process.env.HMAC_VERIFICATION_CODE);
     existUser.forgotPasswordCodeValidation = Date.now();
     await existUser.save();
 
-    return "Code send successfully!";
+    return "Send Email Reset Password Successfully";
 };
 
 export const verifyForgotPasswordCodeService = async ({ value }) => {

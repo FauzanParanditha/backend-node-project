@@ -83,6 +83,6 @@ router.patch("/verify-verification-code", jwtMiddleware, verifyVerificationCode)
 
 router.patch("/change-password", jwtMiddleware, changePassword);
 router.patch("/adm/change-password", jwtMiddlewareAdmin, changePasswordByAdmin);
-router.patch("/send-forgot-password-code", jwtMiddleware, sendForgotPassword);
-router.patch("/verify-forgot-password-code", jwtMiddleware, verifyForgotPasswordCode);
+router.patch("/send-forgot-password-code", sendForgotPassword);
+router.patch("/verify-forgot-password-code", verifyForgotPasswordCode);
 export default router;

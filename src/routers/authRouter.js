@@ -101,6 +101,4 @@ router.patch("/verify-verification-code", jwtUnifiedMiddleware, verifyVerificati
  *         description: Unauthorized
  */
 router.patch("/change-password", jwtUnifiedMiddleware, changePassword);
-router.patch("/send-forgot-password-code", sendForgotPassword);
-router.patch("/verify-forgot-password-code", verifyForgotPasswordCode);
 export default router;
