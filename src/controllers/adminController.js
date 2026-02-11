@@ -34,17 +34,18 @@ export const getAllAdmin = async (req, res, next) => {
 };
 
 export const register = async (req, res, next) => {
-    const { email, password, fullName } = req.body;
+    const { email, password, fullName, role } = req.body;
     const { adminId } = req.admin;
 
     try {
-        const { error } = registerSchema.validate({ email, password, fullName });
+        const { error } = registerSchema.validate({ email, password, fullName, role });
         if (error) return res.status(400).json({ success: false, message: error.details[0].message });
 
         await adminService.registerAdmin({
             email,
             password,
             fullName,
+            role,
             adminId,
         });
         res.status(201).json({ success: true, message: "Registered successfully" });
@@ -144,7 +145,7 @@ export const dashboard = async (req, res, next) => {
     try {
         const { role, userId } = req.auth ?? {};
 
-        if (role === "admin") {
+        if (role === "admin" || role === "finance") {
             const dashboard = await adminService.dashboard();
 
             return res.status(200).json({

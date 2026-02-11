@@ -6,4 +6,5 @@ export const clientSchema = joi.object({
     userId: joi.string().required(),
     active: joi.boolean().optional(),
     adminId: joi.string().required(),
+    availablePaymentIds: joi.array().items(joi.string()).optional(),
 });

@@ -5,6 +5,7 @@ import {
     createOrder,
     createOrderLink,
     editOrder,
+    exportOrdersXlsx,
     order,
     orderNoLimit,
     orders,
@@ -96,6 +97,50 @@ const router = express.Router();
  *         description: Unauthorized
  */
 router.get("/orders", jwtUnifiedMiddleware, orders);
+
+/**
+ * @swagger
+ * /api/v1/orders/export:
+ *   get:
+ *     summary: Export orders to Excel (admin all, user scoped)
+ *     tags: [Orders]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: clientId
+ *         schema:
+ *           type: string
+ *         description: Filter by clientId (partial match)
+ *       - in: query
+ *         name: domain
+ *         schema:
+ *           type: string
+ *         description: Filter by domain (items.domain)
+ *       - in: query
+ *         name: paymentStatus
+ *         schema:
+ *           type: string
+ *         description: Filter by payment status (comma-separated supported)
+ *       - in: query
+ *         name: dateFrom
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter orders created at or after this date
+ *       - in: query
+ *         name: dateTo
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter orders created at or before this date
+ *     responses:
+ *       200:
+ *         description: Excel file
+ *       401:
+ *         description: Unauthorized
+ */
+router.get("/orders/export", jwtUnifiedMiddleware, exportOrdersXlsx);
 
 /**
  * @swagger

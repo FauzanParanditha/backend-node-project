@@ -206,6 +206,93 @@ export const getOrders = async ({ query, sort_by, sort, countOnly, userId }) => 
     };
 };
 
+export const exportOrdersFilter = async ({
+    query,
+    userId,
+    clientId,
+    domain,
+    paymentStatus,
+    dateFrom,
+    dateTo,
+}) => {
+    const filter = {};
+
+    if (query && query.trim()) {
+        const searchTerm = escapeRegExp(query.trim());
+        filter["$or"] = [
+            { orderId: { $regex: searchTerm, $options: "i" } },
+            { status: { $regex: searchTerm, $options: "i" } },
+            { "items.domain": { $regex: searchTerm, $options: "i" } },
+        ];
+    }
+
+    if (clientId) {
+        const clientTerm = escapeRegExp(String(clientId).trim());
+        filter.clientId = { $regex: clientTerm, $options: "i" };
+    }
+
+    if (domain) {
+        const domainTerm = escapeRegExp(String(domain).trim());
+        filter["items.domain"] = { $regex: domainTerm, $options: "i" };
+    }
+
+    if (paymentStatus) {
+        const values = String(paymentStatus)
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+        filter.paymentStatus = values.length > 1 ? { $in: values } : values[0];
+    }
+
+    if (dateFrom || dateTo) {
+        filter.createdAt = {};
+        if (dateFrom) filter.createdAt.$gte = parseDate(dateFrom);
+        if (dateTo) filter.createdAt.$lte = parseDate(dateTo);
+    }
+
+    if (userId) {
+        const clientIds = await getClientIdsByUserId(userId);
+        const scopedClientIds = clientIds.length ? clientIds : ["__none__"];
+
+        if (filter.clientId) {
+            const allowedRegex = new RegExp(scopedClientIds.map((id) => escapeRegExp(id)).join("|"), "i");
+            filter.clientId = { $regex: allowedRegex };
+        } else {
+            filter.clientId = { $in: scopedClientIds };
+        }
+    }
+
+    return filter;
+};
+
+export const exportOrders = async ({
+    query,
+    sort_by,
+    sort,
+    userId,
+    clientId,
+    domain,
+    paymentStatus,
+    dateFrom,
+    dateTo,
+}) => {
+    const filter = await exportOrdersFilter({
+        query,
+        userId,
+        clientId,
+        domain,
+        paymentStatus,
+        dateFrom,
+        dateTo,
+    });
+
+    const sortField = sort_by || "_id";
+    const sortValue = Number(sort) || -1;
+
+    const orders = await Order.find(filter).sort({ [sortField]: sortValue }).lean();
+    return orders;
+};
+
 export const createOrder = async ({ validatedOrder, partnerId }) => {
     try {
         // Validate products in the order

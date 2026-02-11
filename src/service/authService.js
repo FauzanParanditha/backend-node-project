@@ -23,12 +23,13 @@ export const loginAdmin = async ({ email, password }) => {
         throw new ResponseError(400, "Invalid email or password");
     }
 
+    const role = existAdmin.role || "admin";
     const token = jwt.sign(
         {
             adminId: existAdmin._id.toString(),
             email: existAdmin.email,
             verified: existAdmin.verified,
-            role: "admin",
+            role,
         },
         process.env.ACCESS_TOKEN_ADMIN_PRIVATE_KEY,
         {
@@ -70,12 +71,13 @@ export const loginUnified = async ({ email, password, clientIP }) => {
             throw new ResponseError(400, "Invalid email or password");
         }
 
+        const role = existAdmin.role || "admin";
         const token = jwt.sign(
             {
                 adminId: existAdmin._id.toString(),
                 email: existAdmin.email,
                 verified: existAdmin.verified,
-                role: "admin",
+                role,
             },
             process.env.ACCESS_TOKEN_ADMIN_PRIVATE_KEY,
             {
@@ -86,7 +88,7 @@ export const loginUnified = async ({ email, password, clientIP }) => {
         );
 
         return {
-            role: "admin",
+            role,
             token,
             adminId: existAdmin._id,
             email: existAdmin.email,

@@ -10,7 +10,7 @@ const __dirname = dirname(__filename);
 const UPLOADS_DIR = path.resolve(__dirname, "../public/payment");
 
 export const availablePayments = async (req, res, next) => {
-    const { query = "", limit = 10, page = 1, sort_by = "_id", sort = -1, countOnly = false } = req.query;
+    const { query = "", limit = 10, page = 1, sort_by = "_id", sort = -1, countOnly = false, clientId } = req.query;
 
     try {
         const result = await availablePaymentService.getAllAvailablePayment({
@@ -20,6 +20,7 @@ export const availablePayments = async (req, res, next) => {
             sort_by,
             sort,
             countOnly,
+            clientId,
         });
 
         if (countOnly) {
@@ -33,7 +34,7 @@ export const availablePayments = async (req, res, next) => {
             pagination: result.pagination,
         });
     } catch (error) {
-        logger.error(`Error fetching available payment: ${error.message}`);
+        logger.error(`Error fetching available payments: ${error.message}`);
         next(error);
     }
 };
@@ -93,7 +94,13 @@ export const availablePayment = async (req, res, next) => {
     const { id } = req.params;
 
     try {
-        const product = await availablePaymentService.availablePayment({ id });
+        const { role, userId } = req.auth ?? {};
+
+        const product = await availablePaymentService.availablePayment({
+            id,
+            userId: role === "user" ? userId : null,
+        });
+
         return res.status(200).json({
             success: true,
             message: "Available Payment",

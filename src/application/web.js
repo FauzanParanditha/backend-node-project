@@ -9,17 +9,18 @@ import swaggerUi from "swagger-ui-express";
 import { fileURLToPath } from "url";
 import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
-import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
-import { jwtUnifiedMiddleware } from "../middlewares/jwtUnified.js";
 import apiLogger from "../middlewares/apiLog.js";
 import { errorMiddleware } from "../middlewares/errorMiddleware.js";
+import { jwtUnifiedMiddleware } from "../middlewares/jwtUnified.js";
 import Admin from "../models/adminModel.js";
+import Client from "../models/clientModel.js";
 import User from "../models/userModel.js";
 import adminRouter from "../routers/adminRouter.js";
 import authRouter from "../routers/authRouter.js";
 import authRouterUser from "../routers/authRouterUser.js";
 import availablePaymentRouter from "../routers/availablePaymentRoute.js";
 import categoryRouter from "../routers/categoryRouter.js";
+import clientAvailablePaymentRouter from "../routers/clientAvailablePaymentRouter.js";
 import clientKeyRouter from "../routers/clientKeyRouter.js";
 import clientRouter from "../routers/clientRouter.js";
 import ipWhitelistRouter from "../routers/ipWhitelistRouter.js";
@@ -131,6 +132,7 @@ web.use("/api/v1", categoryRouter);
 web.use("/api/v1", productRouter);
 web.use("/api/v1", clientRouter);
 web.use("/api/v1", clientKeyRouter);
+web.use("/api/v1", clientAvailablePaymentRouter);
 web.use("/api/v1", orderRouter);
 web.use("/api/v1", paymentRouter);
 web.use("/api/v1", userRouter);
@@ -187,7 +189,7 @@ web.get("/me", jwtUnifiedMiddleware, async (req, res, next) => {
     try {
         const { role, adminId, userId } = req.auth ?? {};
 
-        if (role === "admin") {
+        if (role === "admin" || role === "finance") {
             if (!adminId) throw new ResponseError(400, "Admin ID not provided");
 
             const existAdmin = await Admin.findById(adminId);
@@ -196,7 +198,7 @@ web.get("/me", jwtUnifiedMiddleware, async (req, res, next) => {
             return res.status(200).json({
                 success: true,
                 message: "Admin data retrieved successfully",
-                role: "admin",
+                role,
                 data: existAdmin,
             });
         }
@@ -207,11 +209,20 @@ web.get("/me", jwtUnifiedMiddleware, async (req, res, next) => {
             const existUser = await User.findById(userId);
             if (!existUser) throw new ResponseError(400, "User does not exist");
 
+            const clients = await Client.find({ userId }).select("+clientId name");
+
             return res.status(200).json({
                 success: true,
                 message: "User data retrieved successfully",
                 role: "user",
-                data: existUser,
+                data: {
+                    ...existUser.toObject(),
+                    clients: clients.map((client) => ({
+                        id: client._id,
+                        clientId: client.clientId,
+                        name: client.name,
+                    })),
+                },
             });
         }
 

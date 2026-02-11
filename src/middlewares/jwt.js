@@ -4,10 +4,12 @@ import { ResponseError } from "../error/responseError.js";
 
 export const jwtMiddleware = (req, res, next) => {
     let token;
-    if (req.headers.client === "not-browser") {
+    if (req.headers.authorization?.startsWith("Bearer ")) {
+        token = req.headers.authorization;
+    } else if (req.headers.client === "not-browser") {
         token = req.headers.authorization;
     } else {
-        token = req.cookies["Authorization"];
+        token = req.cookies?.["Authorization"];
     }
 
     if (!token) {

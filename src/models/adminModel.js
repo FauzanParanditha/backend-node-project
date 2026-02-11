@@ -21,6 +21,11 @@ const adminSchema = new mongoose.Schema(
             trim: true,
             select: false,
         },
+        role: {
+            type: String,
+            enum: ["admin", "finance"],
+            default: "admin",
+        },
         verified: {
             type: Boolean,
             default: false,

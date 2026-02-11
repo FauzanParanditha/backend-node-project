@@ -4,18 +4,46 @@ import { fileURLToPath } from "url";
 import { ResponseError } from "../error/responseError.js";
 import Admin from "../models/adminModel.js";
 import AvailablePayment from "../models/availablePaymentModel.js";
+import ClientAvailablePayment from "../models/clientAvailablePaymentModel.js";
+import Client from "../models/clientModel.js";
 import { escapeRegExp } from "../utils/helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export const getAllAvailablePayment = async ({ query, limit, page, sort_by, sort, countOnly }) => {
+const getClientIdsByUserId = async (userId) => {
+    const clients = await Client.find({ userId }).select("+clientId");
+    return clients.map((item) => item.clientId);
+};
+
+const getAvailablePaymentIdsForClients = async (clientIds, onlyActive = false) => {
+    if (!clientIds.length) return [];
+    const mappingFilter = {
+        clientId: { $in: clientIds },
+        ...(onlyActive && { active: true }),
+    };
+    const mappings = await ClientAvailablePayment.find(mappingFilter).select("availablePaymentId");
+    return [...new Set(mappings.map((item) => item.availablePaymentId.toString()))];
+};
+
+export const getAllAvailablePayment = async ({ query, limit, page, sort_by, sort, countOnly, userId, clientId }) => {
     const filter = {};
 
     // Parse and handle search term
     if (query.trim()) {
         const searchTerm = escapeRegExp(query.trim());
         filter["$or"] = [{ name: { $regex: searchTerm, $options: "i" } }];
+    }
+
+    if (userId) {
+        const clientIds = clientId ? [clientId] : await getClientIdsByUserId(userId);
+        const allowedIds = await getAvailablePaymentIdsForClients(clientIds, true);
+        filter._id = { $in: allowedIds.length ? allowedIds : ["__none__"] };
+        filter.active = true;
+    } else if (clientId) {
+        const allowedIds = await getAvailablePaymentIdsForClients([clientId], true);
+        filter._id = { $in: allowedIds.length ? allowedIds : ["__none__"] };
+        filter.active = true;
     }
 
     // Sort and pagination settings
@@ -86,7 +114,15 @@ export const createAvailablePayment = async ({ req, adminId }) => {
     return result;
 };
 
-export const availablePayment = async ({ id }) => {
+export const availablePayment = async ({ id, userId }) => {
+    if (userId) {
+        const clientIds = await getClientIdsByUserId(userId);
+        const allowedIds = await getAvailablePaymentIdsForClients(clientIds);
+        if (!allowedIds.includes(id)) {
+            throw new ResponseError(403, "Access forbidden");
+        }
+    }
+
     const result = await AvailablePayment.findOne({ _id: id }).populate({
         path: "adminId",
         select: "email",

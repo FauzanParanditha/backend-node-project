@@ -1,5 +1,7 @@
 import { ResponseError } from "../error/responseError.js";
 import Admin from "../models/adminModel.js";
+import AvailablePayment from "../models/availablePaymentModel.js";
+import ClientAvailablePayment from "../models/clientAvailablePaymentModel.js";
 import Client from "../models/clientModel.js";
 import Order from "../models/orderModel.js";
 import User from "../models/userModel.js";
@@ -75,20 +77,63 @@ export const createClient = async ({ value }) => {
         adminId: value.adminId,
     });
     const savedClient = await newClient.save();
+    const clientIdValue = savedClient.clientId || clientId;
+
+    if (value.availablePaymentIds && value.availablePaymentIds.length) {
+        const availablePayments = await AvailablePayment.find({
+            _id: { $in: value.availablePaymentIds },
+        }).select("_id");
+
+        const validIds = new Set(availablePayments.map((item) => item._id.toString()));
+        const payload = value.availablePaymentIds
+            .filter((id) => validIds.has(id.toString()))
+            .map((id) => ({
+                clientId: String(clientIdValue),
+                availablePaymentId: id,
+                active: true,
+                adminId: value.adminId,
+            }));
+
+        if (!payload.length) {
+            throw new ResponseError(400, "Available payment is not valid");
+        }
+
+        await ClientAvailablePayment.insertMany(payload);
+    }
+
     return savedClient;
 };
 
 export const client = async ({ id }) => {
-    const result = await Client.findOne({ _id: id }).populate({
-        path: "userId",
-        select: "email",
-    });
+    const result = await Client.findOne({ _id: id })
+        .populate({
+            path: "userId",
+            select: "email",
+        })
+        .select("+clientId");
     if (!result) throw new ResponseError(404, "Client does not exist!");
-    return result;
+
+    const payments = await ClientAvailablePayment.find({ clientId: result.clientId })
+        .populate({
+            path: "availablePaymentId",
+            model: "AvailablePayment",
+            select: "name image category active",
+        })
+        .exec();
+
+    return {
+        ...result.toObject(),
+        availablePayments: payments.map((item) => ({
+            id: item._id,
+            clientId: item.clientId,
+            active: item.active,
+            availablePayment: item.availablePaymentId,
+        })),
+    };
 };
 
 export const updateClient = async ({ id, value }) => {
-    const existClient = await Client.findOne({ _id: id });
+    const existClient = await Client.findOne({ _id: id }).select("+clientId");
     if (!existClient) throw new ResponseError(404, "Client does not exist!");
 
     const existUser = await User.findOne({ _id: value.userId });
@@ -116,6 +161,30 @@ export const updateClient = async ({ id, value }) => {
     existClient.userId = value.userId;
     existClient.active = value.active;
     const result = await existClient.save();
+
+    if (value.availablePaymentIds && value.availablePaymentIds.length) {
+        const availablePayments = await AvailablePayment.find({
+            _id: { $in: value.availablePaymentIds },
+        }).select("_id");
+
+        const validIds = new Set(availablePayments.map((item) => item._id.toString()));
+        const payload = value.availablePaymentIds
+            .filter((id) => validIds.has(id.toString()))
+            .map((id) => ({
+                clientId: existClient.clientId,
+                availablePaymentId: id,
+                active: true,
+                adminId: value.adminId,
+            }));
+
+        if (!payload.length) {
+            throw new ResponseError(400, "Available payment is not valid");
+        }
+
+        await ClientAvailablePayment.deleteMany({ clientId: existClient.clientId });
+        await ClientAvailablePayment.insertMany(payload);
+    }
+
     return result;
 };
 

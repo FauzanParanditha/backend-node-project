@@ -67,7 +67,7 @@ export const sendVerificationCode = async (req, res, next) => {
         const { role } = req.auth ?? {};
 
         let message;
-        if (role === "admin") {
+        if (role === "admin" || role === "finance") {
             message = await authService.sendVerificationCodeService(email);
         } else if (role === "user") {
             message = await authServiceUser.sendVerificationCodeService(email);
@@ -98,7 +98,7 @@ export const verifyVerificationCode = async (req, res, next) => {
         const { role } = req.auth ?? {};
 
         let message;
-        if (role === "admin") {
+        if (role === "admin" || role === "finance") {
             message = await authService.verifyVerificationCodeService({ value });
         } else if (role === "user") {
             message = await authServiceUser.verifyVerificationCodeService({ value });
@@ -123,8 +123,9 @@ export const changePassword = async (req, res, next) => {
     try {
         if (!role) throw new ResponseError(400, "Role not provided");
 
-        const identityId = role === "admin" ? adminId : userId;
-        const identityKey = role === "admin" ? "adminId" : "userId";
+        const isAdminRole = role === "admin" || role === "finance";
+        const identityId = isAdminRole ? adminId : userId;
+        const identityKey = isAdminRole ? "adminId" : "userId";
 
         const { error, value } = changePasswordSchema.validate({
             old_password,
@@ -140,7 +141,7 @@ export const changePassword = async (req, res, next) => {
         }
 
         let message;
-        if (role === "admin") {
+        if (role === "admin" || role === "finance") {
             message = await authService.changePasswordService({ value });
         } else if (role === "user") {
             message = await authServiceUser.changePasswordService({ value });

@@ -47,7 +47,7 @@ export const getAllAdmins = async ({ query, limit, page, sort_by, sort, countOnl
     };
 };
 
-export const registerAdmin = async ({ email, password, fullName, adminId }) => {
+export const registerAdmin = async ({ email, password, fullName, role, adminId }) => {
     const sanitizedEmail = email.trim();
 
     const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
@@ -59,7 +59,7 @@ export const registerAdmin = async ({ email, password, fullName, adminId }) => {
     }
 
     const hashPassword = await doHash(password, 12);
-    const newAdmin = new Admin({ email, password: hashPassword, fullName });
+    const newAdmin = new Admin({ email, password: hashPassword, fullName, role });
     const savedAdmin = await newAdmin.save();
     savedAdmin.password = undefined;
     return savedAdmin;
