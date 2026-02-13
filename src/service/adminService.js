@@ -340,17 +340,17 @@ const buildChartSeriesByClient = async ({ period, date, month, year, extraMatch 
         { $sort: { totalAmountSuccess: -1, _id: 1 } },
     ]);
 
-    const labels = aggregated.map((item) => item._id);
+    const data = aggregated.map((item) => ({
+        clientId: item._id,
+        totalAmountSuccess: item.totalAmountSuccess ?? 0,
+        totalTransactionSuccess: item.totalTransactionSuccess ?? 0,
+    }));
 
     return {
         period: config.period,
         groupBy: "client",
         filters: { ...config.filters, ...filterMeta },
-        labels,
-        series: [
-            { name: "totalAmountSuccess", data: aggregated.map((item) => item.totalAmountSuccess ?? 0) },
-            { name: "totalTransactionSuccess", data: aggregated.map((item) => item.totalTransactionSuccess ?? 0) },
-        ],
+        data,
     };
 };
 
@@ -385,7 +385,16 @@ export const dashboardChartForUser = async ({ userId, period, date, month, year,
     const selectedClientIds = sanitizedClientId ? [sanitizedClientId] : clientIds;
 
     if (!selectedClientIds.length) {
-        const emptyLabels = groupBy === "client" ? [] : config.labels;
+        if (groupBy === "client") {
+            return {
+                period: config.period,
+                groupBy,
+                filters: sanitizedClientId ? { ...config.filters, clientId: sanitizedClientId } : config.filters,
+                data: [],
+            };
+        }
+
+        const emptyLabels = config.labels;
         return {
             period: config.period,
             groupBy,
