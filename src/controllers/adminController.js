@@ -177,14 +177,17 @@ export const dashboard = async (req, res, next) => {
 export const dashboardChart = async (req, res, next) => {
     try {
         const { role, userId } = req.auth ?? {};
-        const { period = "monthly", date, month, year } = req.query;
+        const { period = "monthly", date, month, year, clientId, groupBy = "time" } = req.query;
 
         if (!["day", "month", "year", "monthly", "yearly"].includes(period)) {
             throw new ResponseError(400, "Invalid period. Use day, month, year, monthly, or yearly");
         }
+        if (!["time", "client"].includes(groupBy)) {
+            throw new ResponseError(400, "Invalid groupBy. Use time or client");
+        }
 
         if (role === "admin" || role === "finance") {
-            const chart = await adminService.dashboardChart({ period, date, month, year });
+            const chart = await adminService.dashboardChart({ period, date, month, year, clientId, groupBy });
 
             return res.status(200).json({
                 success: true,
@@ -202,6 +205,8 @@ export const dashboardChart = async (req, res, next) => {
                 date,
                 month,
                 year,
+                clientId,
+                groupBy,
             });
 
             return res.status(200).json({

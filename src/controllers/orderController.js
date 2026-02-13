@@ -45,6 +45,8 @@ const EXPORT_COLUMNS = [
     "items",
 ];
 
+const GROUPED_EXPORT_COLUMNS = ["clientId", "client.name", "orderCount", "totalAmount", "paidCount"];
+
 const pickExportRow = (row) => {
     const picked = {};
     EXPORT_COLUMNS.forEach((key) => {
@@ -116,6 +118,7 @@ export const exportOrdersXlsx = async (req, res, next) => {
         paymentStatus,
         dateFrom,
         dateTo,
+        group_by,
     } = req.query;
 
     try {
@@ -135,19 +138,58 @@ export const exportOrdersXlsx = async (req, res, next) => {
         const sortField = sort_by || "_id";
         const sortValue = Number(sort) || -1;
 
-        const pipeline = [
-            { $match: filter },
-            { $sort: { [sortField]: sortValue } },
-            {
-                $lookup: {
-                    from: "clients",
-                    localField: "clientId",
-                    foreignField: "clientId",
-                    as: "client",
-                },
-            },
-            { $addFields: { client: { $arrayElemAt: ["$client", 0] } } },
-        ];
+        const isGroupedByClient = group_by === "client";
+        const pipeline = isGroupedByClient
+            ? [
+                  { $match: filter },
+                  {
+                      $group: {
+                          _id: "$clientId",
+                          orderCount: { $sum: 1 },
+                          totalAmount: { $sum: "$totalAmount" },
+                          paidCount: {
+                              $sum: {
+                                  $cond: [{ $eq: ["$paymentStatus", "paid"] }, 1, 0],
+                              },
+                          },
+                      },
+                  },
+                  {
+                      $lookup: {
+                          from: "clients",
+                          localField: "_id",
+                          foreignField: "clientId",
+                          as: "client",
+                      },
+                  },
+                  { $unwind: { path: "$client", preserveNullAndEmptyArrays: true } },
+                  {
+                      $project: {
+                          _id: 0,
+                          clientId: "$_id",
+                          orderCount: 1,
+                          totalAmount: 1,
+                          paidCount: 1,
+                          client: {
+                              name: "$client.name",
+                          },
+                      },
+                  },
+                  { $sort: { [sortField]: sortValue } },
+              ]
+            : [
+                  { $match: filter },
+                  { $sort: { [sortField]: sortValue } },
+                  {
+                      $lookup: {
+                          from: "clients",
+                          localField: "clientId",
+                          foreignField: "clientId",
+                          as: "client",
+                      },
+                  },
+                  { $addFields: { client: { $arrayElemAt: ["$client", 0] } } },
+              ];
 
         let hasData = false;
 
@@ -161,12 +203,21 @@ export const exportOrdersXlsx = async (req, res, next) => {
         const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: res });
         const sheet = workbook.addWorksheet("Orders");
 
-        sheet.columns = EXPORT_COLUMNS.map((key) => ({ header: key, key }));
+        const columns = isGroupedByClient ? GROUPED_EXPORT_COLUMNS : EXPORT_COLUMNS;
+        sheet.columns = columns.map((key) => ({ header: key, key }));
 
         const cursorForRows = Order.aggregate(pipeline).cursor({ batchSize: 500 });
         await cursorForRows.eachAsync((doc) => {
             hasData = true;
-            sheet.addRow(pickExportRow(flattenObject(doc))).commit();
+            const flattened = flattenObject(doc);
+            const row = isGroupedByClient
+                ? GROUPED_EXPORT_COLUMNS.reduce((acc, key) => {
+                      acc[key] = Object.prototype.hasOwnProperty.call(flattened, key) ? flattened[key] : undefined;
+                      return acc;
+                  }, {})
+                : pickExportRow(flattened);
+
+            sheet.addRow(row).commit();
         });
 
         if (!hasData) {

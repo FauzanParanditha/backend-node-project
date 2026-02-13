@@ -267,7 +267,7 @@ const buildChartConfig = ({ period, date, month, year }) => {
     };
 };
 
-const buildChartSeries = async ({ period, date, month, year, extraMatch = {} }) => {
+const buildChartSeries = async ({ period, date, month, year, extraMatch = {}, filterMeta = {} }) => {
     const config = buildChartConfig({ period, date, month, year });
 
     const aggregated = await Order.aggregate([
@@ -309,7 +309,8 @@ const buildChartSeries = async ({ period, date, month, year, extraMatch = {} }) 
 
     return {
         period: config.period,
-        filters: config.filters,
+        groupBy: "time",
+        filters: { ...config.filters, ...filterMeta },
         labels: config.labels,
         series: [
             { name: "totalAmountSuccess", data: amountData },
@@ -318,34 +319,99 @@ const buildChartSeries = async ({ period, date, month, year, extraMatch = {} }) 
     };
 };
 
-export const dashboardChart = async ({ period, date, month, year }) => {
-    return buildChartSeries({ period, date, month, year });
-};
-
-export const dashboardChartForUser = async ({ userId, period, date, month, year }) => {
-    const clients = await Client.find({ userId }).select("+clientId");
-    const clientIds = clients.map((item) => item.clientId);
+const buildChartSeriesByClient = async ({ period, date, month, year, extraMatch = {}, filterMeta = {} }) => {
     const config = buildChartConfig({ period, date, month, year });
 
-    if (!clientIds.length) {
-        return {
-            period: config.period,
-            filters: config.filters,
-            labels: config.labels,
-            series: [
-                { name: "totalAmountSuccess", data: config.labels.map(() => 0) },
-                { name: "totalTransactionSuccess", data: config.labels.map(() => 0) },
-            ],
-        };
-    }
+    const aggregated = await Order.aggregate([
+        {
+            $match: {
+                ...extraMatch,
+                paymentStatus: "paid",
+                updatedAt: { $gte: config.startDate, $lt: config.endDateExclusive },
+            },
+        },
+        {
+            $group: {
+                _id: "$clientId",
+                totalAmountSuccess: { $sum: "$totalAmount" },
+                totalTransactionSuccess: { $sum: 1 },
+            },
+        },
+        { $sort: { totalAmountSuccess: -1, _id: 1 } },
+    ]);
 
-    return buildChartSeries({
+    const labels = aggregated.map((item) => item._id);
+
+    return {
+        period: config.period,
+        groupBy: "client",
+        filters: { ...config.filters, ...filterMeta },
+        labels,
+        series: [
+            { name: "totalAmountSuccess", data: aggregated.map((item) => item.totalAmountSuccess ?? 0) },
+            { name: "totalTransactionSuccess", data: aggregated.map((item) => item.totalTransactionSuccess ?? 0) },
+        ],
+    };
+};
+
+export const dashboardChart = async ({ period, date, month, year, clientId, groupBy = "time" }) => {
+    const sanitizedClientId = typeof clientId === "string" ? clientId.trim() : "";
+    const baseParams = {
         period,
         date,
         month,
         year,
-        extraMatch: { clientId: { $in: clientIds } },
-    });
+        extraMatch: sanitizedClientId ? { clientId: sanitizedClientId } : {},
+        filterMeta: sanitizedClientId ? { clientId: sanitizedClientId } : {},
+    };
+
+    if (groupBy === "client") {
+        return buildChartSeriesByClient(baseParams);
+    }
+
+    return buildChartSeries(baseParams);
+};
+
+export const dashboardChartForUser = async ({ userId, period, date, month, year, clientId, groupBy = "time" }) => {
+    const clients = await Client.find({ userId }).select("+clientId");
+    const clientIds = clients.map((item) => item.clientId);
+    const config = buildChartConfig({ period, date, month, year });
+    const sanitizedClientId = typeof clientId === "string" ? clientId.trim() : "";
+
+    if (sanitizedClientId && !clientIds.includes(sanitizedClientId)) {
+        throw new ResponseError(403, "Access forbidden for requested clientId");
+    }
+
+    const selectedClientIds = sanitizedClientId ? [sanitizedClientId] : clientIds;
+
+    if (!selectedClientIds.length) {
+        const emptyLabels = groupBy === "client" ? [] : config.labels;
+        return {
+            period: config.period,
+            groupBy,
+            filters: sanitizedClientId ? { ...config.filters, clientId: sanitizedClientId } : config.filters,
+            labels: emptyLabels,
+            series: [
+                { name: "totalAmountSuccess", data: emptyLabels.map(() => 0) },
+                { name: "totalTransactionSuccess", data: emptyLabels.map(() => 0) },
+            ],
+        };
+    }
+
+    const baseParams = {
+        period,
+        date,
+        month,
+        year,
+        extraMatch: { clientId: { $in: selectedClientIds } },
+        filterMeta: sanitizedClientId ? { clientId: sanitizedClientId } : {},
+    };
+
+    if (groupBy === "client") {
+        return buildChartSeriesByClient(baseParams);
+    }
+
+    return buildChartSeries(baseParams);
 };
 
 export const dashboardForUser = async ({ userId }) => {

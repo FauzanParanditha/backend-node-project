@@ -134,6 +134,12 @@ router.get("/orders", jwtUnifiedMiddleware, orders);
  *           type: string
  *           format: date-time
  *         description: Filter orders created at or before this date
+ *       - in: query
+ *         name: group_by
+ *         schema:
+ *           type: string
+ *           enum: [client]
+ *         description: Group result by client for export summary
  *     responses:
  *       200:
  *         description: Excel file
