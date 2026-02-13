@@ -173,3 +173,47 @@ export const dashboard = async (req, res, next) => {
         next(error);
     }
 };
+
+export const dashboardChart = async (req, res, next) => {
+    try {
+        const { role, userId } = req.auth ?? {};
+        const { period = "monthly", date, month, year } = req.query;
+
+        if (!["day", "month", "year", "monthly", "yearly"].includes(period)) {
+            throw new ResponseError(400, "Invalid period. Use day, month, year, monthly, or yearly");
+        }
+
+        if (role === "admin" || role === "finance") {
+            const chart = await adminService.dashboardChart({ period, date, month, year });
+
+            return res.status(200).json({
+                success: true,
+                message: "admin",
+                data: chart,
+            });
+        }
+
+        if (role === "user") {
+            if (!userId) throw new ResponseError(400, "User ID not provided");
+
+            const chart = await adminService.dashboardChartForUser({
+                userId,
+                period,
+                date,
+                month,
+                year,
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: "user",
+                data: chart,
+            });
+        }
+
+        throw new ResponseError(400, "Role not provided");
+    } catch (error) {
+        logger.error(`Error fetching dashboard chart: ${error.message}`);
+        next(error);
+    }
+};

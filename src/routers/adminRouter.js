@@ -1,5 +1,13 @@
 import express from "express";
-import { admin, dashboard, deleteAdmin, getAllAdmin, register, updateAdmin } from "../controllers/adminController.js";
+import {
+    admin,
+    dashboard,
+    dashboardChart,
+    deleteAdmin,
+    getAllAdmin,
+    register,
+    updateAdmin,
+} from "../controllers/adminController.js";
 import {
     getAllApiLog,
     getAllCallbackLog,
@@ -66,4 +74,5 @@ router.get("/failed-callbacklogs", jwtMiddlewareAdmin, getAllFailedCallbackLog);
 router.post("/retry/callback/:id", jwtMiddlewareAdmin, retryCallback);
 
 router.get("/dashboard", jwtUnifiedMiddleware, dashboard);
+router.get("/dashboard/chart", jwtUnifiedMiddleware, dashboardChart);
 export default router;

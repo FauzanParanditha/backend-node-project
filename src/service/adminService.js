@@ -109,10 +109,243 @@ export const deleteAdminById = async (id, adminId) => {
 };
 
 export const dashboard = async () => {
-    const client = await Client.countDocuments();
-    const user = await User.countDocuments();
-    const order = await Order.countDocuments();
-    return { success: true, client, user, order };
+    const [client, user, order, successStats] = await Promise.all([
+        Client.countDocuments(),
+        User.countDocuments(),
+        Order.countDocuments(),
+        Order.aggregate([
+            { $match: { paymentStatus: "paid" } },
+            {
+                $group: {
+                    _id: null,
+                    totalAmountSuccess: { $sum: "$totalAmount" },
+                    totalTransactionSuccess: { $sum: 1 },
+                },
+            },
+        ]),
+    ]);
+
+    const summary = successStats[0] ?? { totalAmountSuccess: 0, totalTransactionSuccess: 0 };
+
+    return {
+        success: true,
+        client,
+        user,
+        order,
+        totalAmountSuccess: summary.totalAmountSuccess,
+        totalTransactionSuccess: summary.totalTransactionSuccess,
+    };
+};
+
+const isValidIsoDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+const buildChartConfig = ({ period, date, month, year }) => {
+    const now = new Date();
+    const labels = [];
+
+    if (period === "day") {
+        const selectedDate = date || now.toISOString().slice(0, 10);
+        if (!isValidIsoDate(selectedDate)) {
+            throw new ResponseError(400, "Invalid date format. Use YYYY-MM-DD");
+        }
+
+        const startDate = new Date(`${selectedDate}T00:00:00.000Z`);
+        if (Number.isNaN(startDate.getTime())) {
+            throw new ResponseError(400, "Invalid date value");
+        }
+
+        const endDateExclusive = new Date(startDate);
+        endDateExclusive.setUTCDate(endDateExclusive.getUTCDate() + 1);
+
+        for (let i = 0; i < 24; i += 1) {
+            labels.push(`${String(i).padStart(2, "0")}:00`);
+        }
+
+        return {
+            period,
+            labels,
+            startDate,
+            endDateExclusive,
+            format: "%H:00",
+            filters: { date: selectedDate },
+        };
+    }
+
+    if (period === "month") {
+        const currentMonth = now.getUTCMonth() + 1;
+        const currentYear = now.getUTCFullYear();
+        const monthNum = month ? Number(month) : currentMonth;
+        const yearNum = year ? Number(year) : currentYear;
+
+        if (!Number.isInteger(monthNum) || monthNum < 1 || monthNum > 12) {
+            throw new ResponseError(400, "Invalid month. Use 1-12");
+        }
+        if (!Number.isInteger(yearNum) || yearNum < 1900 || yearNum > 9999) {
+            throw new ResponseError(400, "Invalid year");
+        }
+
+        const startDate = new Date(Date.UTC(yearNum, monthNum - 1, 1, 0, 0, 0, 0));
+        const endDateExclusive = new Date(Date.UTC(yearNum, monthNum, 1, 0, 0, 0, 0));
+        const daysInMonth = new Date(Date.UTC(yearNum, monthNum, 0)).getUTCDate();
+
+        for (let day = 1; day <= daysInMonth; day += 1) {
+            labels.push(`${yearNum}-${String(monthNum).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+        }
+
+        return {
+            period,
+            labels,
+            startDate,
+            endDateExclusive,
+            format: "%Y-%m-%d",
+            filters: { month: monthNum, year: yearNum },
+        };
+    }
+
+    if (period === "year") {
+        const yearNum = year ? Number(year) : now.getUTCFullYear();
+        if (!Number.isInteger(yearNum) || yearNum < 1900 || yearNum > 9999) {
+            throw new ResponseError(400, "Invalid year");
+        }
+
+        const startDate = new Date(Date.UTC(yearNum, 0, 1, 0, 0, 0, 0));
+        const endDateExclusive = new Date(Date.UTC(yearNum + 1, 0, 1, 0, 0, 0, 0));
+
+        for (let i = 1; i <= 12; i += 1) {
+            labels.push(`${yearNum}-${String(i).padStart(2, "0")}`);
+        }
+
+        return {
+            period,
+            labels,
+            startDate,
+            endDateExclusive,
+            format: "%Y-%m",
+            filters: { year: yearNum },
+        };
+    }
+
+    if (period === "yearly") {
+        const startDate = new Date(now);
+        startDate.setUTCDate(1);
+        startDate.setUTCHours(0, 0, 0, 0);
+        startDate.setUTCMonth(startDate.getUTCMonth() - 11);
+
+        const cursor = new Date(startDate);
+        for (let i = 0; i < 12; i += 1) {
+            labels.push(`${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth() + 1).padStart(2, "0")}`);
+            cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+        }
+
+        return {
+            period,
+            labels,
+            startDate,
+            endDateExclusive: now,
+            format: "%Y-%m",
+            filters: {},
+        };
+    }
+
+    const startDate = new Date(now);
+    startDate.setUTCHours(0, 0, 0, 0);
+    startDate.setUTCDate(startDate.getUTCDate() - 29);
+
+    const cursor = new Date(startDate);
+    for (let i = 0; i < 30; i += 1) {
+        labels.push(cursor.toISOString().slice(0, 10));
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+
+    return {
+        period: "monthly",
+        labels,
+        startDate,
+        endDateExclusive: now,
+        format: "%Y-%m-%d",
+        filters: {},
+    };
+};
+
+const buildChartSeries = async ({ period, date, month, year, extraMatch = {} }) => {
+    const config = buildChartConfig({ period, date, month, year });
+
+    const aggregated = await Order.aggregate([
+        {
+            $match: {
+                ...extraMatch,
+                paymentStatus: "paid",
+                updatedAt: { $gte: config.startDate, $lt: config.endDateExclusive },
+            },
+        },
+        {
+            $group: {
+                _id: {
+                    $dateToString: {
+                        format: config.format,
+                        date: "$updatedAt",
+                        timezone: "UTC",
+                    },
+                },
+                totalAmountSuccess: { $sum: "$totalAmount" },
+                totalTransactionSuccess: { $sum: 1 },
+            },
+        },
+        { $sort: { _id: 1 } },
+    ]);
+
+    const aggregatedMap = new Map(
+        aggregated.map((item) => [
+            item._id,
+            {
+                totalAmountSuccess: item.totalAmountSuccess ?? 0,
+                totalTransactionSuccess: item.totalTransactionSuccess ?? 0,
+            },
+        ]),
+    );
+
+    const amountData = config.labels.map((label) => aggregatedMap.get(label)?.totalAmountSuccess ?? 0);
+    const transactionData = config.labels.map((label) => aggregatedMap.get(label)?.totalTransactionSuccess ?? 0);
+
+    return {
+        period: config.period,
+        filters: config.filters,
+        labels: config.labels,
+        series: [
+            { name: "totalAmountSuccess", data: amountData },
+            { name: "totalTransactionSuccess", data: transactionData },
+        ],
+    };
+};
+
+export const dashboardChart = async ({ period, date, month, year }) => {
+    return buildChartSeries({ period, date, month, year });
+};
+
+export const dashboardChartForUser = async ({ userId, period, date, month, year }) => {
+    const clients = await Client.find({ userId }).select("+clientId");
+    const clientIds = clients.map((item) => item.clientId);
+    const config = buildChartConfig({ period, date, month, year });
+
+    if (!clientIds.length) {
+        return {
+            period: config.period,
+            filters: config.filters,
+            labels: config.labels,
+            series: [
+                { name: "totalAmountSuccess", data: config.labels.map(() => 0) },
+                { name: "totalTransactionSuccess", data: config.labels.map(() => 0) },
+            ],
+        };
+    }
+
+    return buildChartSeries({
+        period,
+        date,
+        month,
+        year,
+        extraMatch: { clientId: { $in: clientIds } },
+    });
 };
 
 export const dashboardForUser = async ({ userId }) => {
@@ -121,7 +354,30 @@ export const dashboardForUser = async ({ userId }) => {
 
     const client = clients.length;
     const user = 1;
-    const order = clientIds.length ? await Order.countDocuments({ clientId: { $in: clientIds } }) : 0;
+    const [order, successStats] = clientIds.length
+        ? await Promise.all([
+              Order.countDocuments({ clientId: { $in: clientIds } }),
+              Order.aggregate([
+                  { $match: { clientId: { $in: clientIds }, paymentStatus: "paid" } },
+                  {
+                      $group: {
+                          _id: null,
+                          totalAmountSuccess: { $sum: "$totalAmount" },
+                          totalTransactionSuccess: { $sum: 1 },
+                      },
+                  },
+              ]),
+          ])
+        : [0, []];
 
-    return { success: true, client, user, order };
+    const summary = successStats[0] ?? { totalAmountSuccess: 0, totalTransactionSuccess: 0 };
+
+    return {
+        success: true,
+        client,
+        user,
+        order,
+        totalAmountSuccess: summary.totalAmountSuccess,
+        totalTransactionSuccess: summary.totalTransactionSuccess,
+    };
 };
