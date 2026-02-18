@@ -452,6 +452,24 @@ const buildChartSeriesByClient = async ({ period, date, month, year, extraMatch 
     };
 };
 
+const removeRealAmountFromUserChart = (chart) => {
+    if (chart?.groupBy === "time" && Array.isArray(chart.series)) {
+        return {
+            ...chart,
+            series: chart.series.filter((item) => item?.name !== "totalRealAmountSuccess"),
+        };
+    }
+
+    if (chart?.groupBy === "client" && Array.isArray(chart.data)) {
+        return {
+            ...chart,
+            data: chart.data.map(({ totalRealAmountSuccess, ...rest }) => rest),
+        };
+    }
+
+    return chart;
+};
+
 export const dashboardChart = async ({ period, date, month, year, clientId, groupBy = "time" }) => {
     const sanitizedClientId = typeof clientId === "string" ? clientId.trim() : "";
     const baseParams = {
@@ -484,16 +502,16 @@ export const dashboardChartForUser = async ({ userId, period, date, month, year,
 
     if (!selectedClientIds.length) {
         if (groupBy === "client") {
-            return {
+            return removeRealAmountFromUserChart({
                 period: config.period,
                 groupBy,
                 filters: sanitizedClientId ? { ...config.filters, clientId: sanitizedClientId } : config.filters,
                 data: [],
-            };
+            });
         }
 
         const emptyLabels = config.labels;
-        return {
+        return removeRealAmountFromUserChart({
             period: config.period,
             groupBy,
             filters: sanitizedClientId ? { ...config.filters, clientId: sanitizedClientId } : config.filters,
@@ -503,7 +521,7 @@ export const dashboardChartForUser = async ({ userId, period, date, month, year,
                 { name: "totalRealAmountSuccess", data: emptyLabels.map(() => 0) },
                 { name: "totalTransactionSuccess", data: emptyLabels.map(() => 0) },
             ],
-        };
+        });
     }
 
     const baseParams = {
@@ -516,10 +534,10 @@ export const dashboardChartForUser = async ({ userId, period, date, month, year,
     };
 
     if (groupBy === "client") {
-        return buildChartSeriesByClient(baseParams);
+        return removeRealAmountFromUserChart(await buildChartSeriesByClient(baseParams));
     }
 
-    return buildChartSeries(baseParams);
+    return removeRealAmountFromUserChart(await buildChartSeries(baseParams));
 };
 
 export const dashboardForUser = async ({ userId }) => {
