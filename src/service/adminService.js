@@ -138,18 +138,51 @@ export const dashboard = async () => {
 };
 
 const isValidIsoDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+const WIB_TIMEZONE = "Asia/Jakarta";
+
+const pad2 = (value) => String(value).padStart(2, "0");
+
+const toWibDateParts = (date) => {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+        timeZone: WIB_TIMEZONE,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    });
+    const parts = formatter.formatToParts(date);
+    return {
+        year: Number(parts.find((part) => part.type === "year")?.value),
+        month: Number(parts.find((part) => part.type === "month")?.value),
+        day: Number(parts.find((part) => part.type === "day")?.value),
+    };
+};
+
+const wibDateToUtc = ({ year, month, day, hour = 0, minute = 0, second = 0 }) =>
+    new Date(`${year}-${pad2(month)}-${pad2(day)}T${pad2(hour)}:${pad2(minute)}:${pad2(second)}+07:00`);
+
+const toWibDateLabel = (date) => {
+    const { year, month, day } = toWibDateParts(date);
+    return `${year}-${pad2(month)}-${pad2(day)}`;
+};
+
+const toWibMonthLabel = (date) => {
+    const { year, month } = toWibDateParts(date);
+    return `${year}-${pad2(month)}`;
+};
 
 const buildChartConfig = ({ period, date, month, year }) => {
     const now = new Date();
     const labels = [];
 
     if (period === "day") {
-        const selectedDate = date || now.toISOString().slice(0, 10);
+        const nowWib = toWibDateParts(now);
+        const selectedDate = date || `${nowWib.year}-${pad2(nowWib.month)}-${pad2(nowWib.day)}`;
         if (!isValidIsoDate(selectedDate)) {
             throw new ResponseError(400, "Invalid date format. Use YYYY-MM-DD");
         }
 
-        const startDate = new Date(`${selectedDate}T00:00:00.000Z`);
+        const [selectedYear, selectedMonth, selectedDay] = selectedDate.split("-").map(Number);
+        const startDate = wibDateToUtc({ year: selectedYear, month: selectedMonth, day: selectedDay });
         if (Number.isNaN(startDate.getTime())) {
             throw new ResponseError(400, "Invalid date value");
         }
@@ -158,7 +191,7 @@ const buildChartConfig = ({ period, date, month, year }) => {
         endDateExclusive.setUTCDate(endDateExclusive.getUTCDate() + 1);
 
         for (let i = 0; i < 24; i += 1) {
-            labels.push(`${String(i).padStart(2, "0")}:00`);
+            labels.push(`${pad2(i)}:00`);
         }
 
         return {
@@ -172,10 +205,9 @@ const buildChartConfig = ({ period, date, month, year }) => {
     }
 
     if (period === "month") {
-        const currentMonth = now.getUTCMonth() + 1;
-        const currentYear = now.getUTCFullYear();
-        const monthNum = month ? Number(month) : currentMonth;
-        const yearNum = year ? Number(year) : currentYear;
+        const currentWib = toWibDateParts(now);
+        const monthNum = month ? Number(month) : currentWib.month;
+        const yearNum = year ? Number(year) : currentWib.year;
 
         if (!Number.isInteger(monthNum) || monthNum < 1 || monthNum > 12) {
             throw new ResponseError(400, "Invalid month. Use 1-12");
@@ -184,12 +216,14 @@ const buildChartConfig = ({ period, date, month, year }) => {
             throw new ResponseError(400, "Invalid year");
         }
 
-        const startDate = new Date(Date.UTC(yearNum, monthNum - 1, 1, 0, 0, 0, 0));
-        const endDateExclusive = new Date(Date.UTC(yearNum, monthNum, 1, 0, 0, 0, 0));
+        const startDate = wibDateToUtc({ year: yearNum, month: monthNum, day: 1 });
+        const endDateExclusive = monthNum === 12
+            ? wibDateToUtc({ year: yearNum + 1, month: 1, day: 1 })
+            : wibDateToUtc({ year: yearNum, month: monthNum + 1, day: 1 });
         const daysInMonth = new Date(Date.UTC(yearNum, monthNum, 0)).getUTCDate();
 
         for (let day = 1; day <= daysInMonth; day += 1) {
-            labels.push(`${yearNum}-${String(monthNum).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+            labels.push(`${yearNum}-${pad2(monthNum)}-${pad2(day)}`);
         }
 
         return {
@@ -203,16 +237,17 @@ const buildChartConfig = ({ period, date, month, year }) => {
     }
 
     if (period === "year") {
-        const yearNum = year ? Number(year) : now.getUTCFullYear();
+        const currentWib = toWibDateParts(now);
+        const yearNum = year ? Number(year) : currentWib.year;
         if (!Number.isInteger(yearNum) || yearNum < 1900 || yearNum > 9999) {
             throw new ResponseError(400, "Invalid year");
         }
 
-        const startDate = new Date(Date.UTC(yearNum, 0, 1, 0, 0, 0, 0));
-        const endDateExclusive = new Date(Date.UTC(yearNum + 1, 0, 1, 0, 0, 0, 0));
+        const startDate = wibDateToUtc({ year: yearNum, month: 1, day: 1 });
+        const endDateExclusive = wibDateToUtc({ year: yearNum + 1, month: 1, day: 1 });
 
         for (let i = 1; i <= 12; i += 1) {
-            labels.push(`${yearNum}-${String(i).padStart(2, "0")}`);
+            labels.push(`${yearNum}-${pad2(i)}`);
         }
 
         return {
@@ -226,14 +261,14 @@ const buildChartConfig = ({ period, date, month, year }) => {
     }
 
     if (period === "yearly") {
-        const startDate = new Date(now);
-        startDate.setUTCDate(1);
-        startDate.setUTCHours(0, 0, 0, 0);
+        const currentWib = toWibDateParts(now);
+        const currentMonthStart = wibDateToUtc({ year: currentWib.year, month: currentWib.month, day: 1 });
+        const startDate = new Date(currentMonthStart);
         startDate.setUTCMonth(startDate.getUTCMonth() - 11);
 
         const cursor = new Date(startDate);
         for (let i = 0; i < 12; i += 1) {
-            labels.push(`${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth() + 1).padStart(2, "0")}`);
+            labels.push(toWibMonthLabel(cursor));
             cursor.setUTCMonth(cursor.getUTCMonth() + 1);
         }
 
@@ -247,13 +282,13 @@ const buildChartConfig = ({ period, date, month, year }) => {
         };
     }
 
-    const startDate = new Date(now);
-    startDate.setUTCHours(0, 0, 0, 0);
+    const currentWib = toWibDateParts(now);
+    const startDate = wibDateToUtc({ year: currentWib.year, month: currentWib.month, day: currentWib.day });
     startDate.setUTCDate(startDate.getUTCDate() - 29);
 
     const cursor = new Date(startDate);
     for (let i = 0; i < 30; i += 1) {
-        labels.push(cursor.toISOString().slice(0, 10));
+        labels.push(toWibDateLabel(cursor));
         cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
@@ -284,7 +319,7 @@ const buildChartSeries = async ({ period, date, month, year, extraMatch = {}, fi
                     $dateToString: {
                         format: config.format,
                         date: "$updatedAt",
-                        timezone: "UTC",
+                        timezone: WIB_TIMEZONE,
                     },
                 },
                 totalAmountSuccess: { $sum: "$totalAmount" },
