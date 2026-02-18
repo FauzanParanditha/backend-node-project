@@ -119,13 +119,14 @@ export const dashboard = async () => {
                 $group: {
                     _id: null,
                     totalAmountSuccess: { $sum: "$totalAmount" },
+                    totalRealAmountSuccess: { $sum: realAmountExpression() },
                     totalTransactionSuccess: { $sum: 1 },
                 },
             },
         ]),
     ]);
 
-    const summary = successStats[0] ?? { totalAmountSuccess: 0, totalTransactionSuccess: 0 };
+    const summary = successStats[0] ?? { totalAmountSuccess: 0, totalRealAmountSuccess: 0, totalTransactionSuccess: 0 };
 
     return {
         success: true,
@@ -133,6 +134,7 @@ export const dashboard = async () => {
         user,
         order,
         totalAmountSuccess: summary.totalAmountSuccess,
+        totalRealAmountSuccess: summary.totalRealAmountSuccess,
         totalTransactionSuccess: summary.totalTransactionSuccess,
     };
 };
@@ -141,6 +143,61 @@ const isValidIsoDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value);
 const WIB_TIMEZONE = "Asia/Jakarta";
 
 const pad2 = (value) => String(value).padStart(2, "0");
+
+const pickFirstNonEmpty = (candidates) => ({
+    $let: {
+        vars: {
+            matches: {
+                $filter: {
+                    input: candidates,
+                    as: "value",
+                    cond: {
+                        $and: [{ $ne: ["$$value", null] }, { $ne: ["$$value", ""] }],
+                    },
+                },
+            },
+        },
+        in: { $arrayElemAt: ["$$matches", 0] },
+    },
+});
+
+const toNumberOrZero = (valueExpression) => ({
+    $cond: {
+        if: {
+            $or: [{ $eq: [valueExpression, null] }, { $eq: [valueExpression, ""] }],
+        },
+        then: 0,
+        else: { $toDouble: valueExpression },
+    },
+});
+
+const totalTransFeeExpression = () =>
+    toNumberOrZero(
+        pickFirstNonEmpty([
+            "$paymentPaylabs.totalTransFee",
+            "$paymentPaylabsVaSnap.additionalInfo.totalTransFee",
+            "$qris.totalTransFee",
+            "$va.totalTransFee",
+            "$cc.totalTransFee",
+            "$eMoney.totalTransFee",
+        ]),
+    );
+
+const vatFeeExpression = () =>
+    toNumberOrZero(
+        pickFirstNonEmpty([
+            "$paymentPaylabs.vatFee",
+            "$paymentPaylabsVaSnap.additionalInfo.vatFee",
+            "$qris.vatFee",
+            "$va.vatFee",
+            "$cc.vatFee",
+            "$eMoney.vatFee",
+        ]),
+    );
+
+const realAmountExpression = () => ({
+    $subtract: [{ $subtract: ["$totalAmount", totalTransFeeExpression()] }, vatFeeExpression()],
+});
 
 const toWibDateParts = (date) => {
     const formatter = new Intl.DateTimeFormat("en-CA", {
@@ -323,6 +380,7 @@ const buildChartSeries = async ({ period, date, month, year, extraMatch = {}, fi
                     },
                 },
                 totalAmountSuccess: { $sum: "$totalAmount" },
+                totalRealAmountSuccess: { $sum: realAmountExpression() },
                 totalTransactionSuccess: { $sum: 1 },
             },
         },
@@ -334,12 +392,14 @@ const buildChartSeries = async ({ period, date, month, year, extraMatch = {}, fi
             item._id,
             {
                 totalAmountSuccess: item.totalAmountSuccess ?? 0,
+                totalRealAmountSuccess: item.totalRealAmountSuccess ?? 0,
                 totalTransactionSuccess: item.totalTransactionSuccess ?? 0,
             },
         ]),
     );
 
     const amountData = config.labels.map((label) => aggregatedMap.get(label)?.totalAmountSuccess ?? 0);
+    const realAmountData = config.labels.map((label) => aggregatedMap.get(label)?.totalRealAmountSuccess ?? 0);
     const transactionData = config.labels.map((label) => aggregatedMap.get(label)?.totalTransactionSuccess ?? 0);
 
     return {
@@ -349,6 +409,7 @@ const buildChartSeries = async ({ period, date, month, year, extraMatch = {}, fi
         labels: config.labels,
         series: [
             { name: "totalAmountSuccess", data: amountData },
+            { name: "totalRealAmountSuccess", data: realAmountData },
             { name: "totalTransactionSuccess", data: transactionData },
         ],
     };
@@ -369,6 +430,7 @@ const buildChartSeriesByClient = async ({ period, date, month, year, extraMatch 
             $group: {
                 _id: "$clientId",
                 totalAmountSuccess: { $sum: "$totalAmount" },
+                totalRealAmountSuccess: { $sum: realAmountExpression() },
                 totalTransactionSuccess: { $sum: 1 },
             },
         },
@@ -378,6 +440,7 @@ const buildChartSeriesByClient = async ({ period, date, month, year, extraMatch 
     const data = aggregated.map((item) => ({
         clientId: item._id,
         totalAmountSuccess: item.totalAmountSuccess ?? 0,
+        totalRealAmountSuccess: item.totalRealAmountSuccess ?? 0,
         totalTransactionSuccess: item.totalTransactionSuccess ?? 0,
     }));
 
@@ -437,6 +500,7 @@ export const dashboardChartForUser = async ({ userId, period, date, month, year,
             labels: emptyLabels,
             series: [
                 { name: "totalAmountSuccess", data: emptyLabels.map(() => 0) },
+                { name: "totalRealAmountSuccess", data: emptyLabels.map(() => 0) },
                 { name: "totalTransactionSuccess", data: emptyLabels.map(() => 0) },
             ],
         };
@@ -473,6 +537,7 @@ export const dashboardForUser = async ({ userId }) => {
                       $group: {
                           _id: null,
                           totalAmountSuccess: { $sum: "$totalAmount" },
+                          totalRealAmountSuccess: { $sum: realAmountExpression() },
                           totalTransactionSuccess: { $sum: 1 },
                       },
                   },
@@ -480,7 +545,7 @@ export const dashboardForUser = async ({ userId }) => {
           ])
         : [0, []];
 
-    const summary = successStats[0] ?? { totalAmountSuccess: 0, totalTransactionSuccess: 0 };
+    const summary = successStats[0] ?? { totalAmountSuccess: 0, totalRealAmountSuccess: 0, totalTransactionSuccess: 0 };
 
     return {
         success: true,
@@ -488,6 +553,7 @@ export const dashboardForUser = async ({ userId }) => {
         user,
         order,
         totalAmountSuccess: summary.totalAmountSuccess,
+        totalRealAmountSuccess: summary.totalRealAmountSuccess,
         totalTransactionSuccess: summary.totalTransactionSuccess,
     };
 };

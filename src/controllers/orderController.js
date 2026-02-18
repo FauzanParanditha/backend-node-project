@@ -23,12 +23,69 @@ const flattenObject = (obj, prefix = "", result = {}) => {
     return result;
 };
 
+const pickFirstNonEmptyExpression = (candidates) => ({
+    $let: {
+        vars: {
+            matches: {
+                $filter: {
+                    input: candidates,
+                    as: "value",
+                    cond: {
+                        $and: [{ $ne: ["$$value", null] }, { $ne: ["$$value", ""] }],
+                    },
+                },
+            },
+        },
+        in: { $arrayElemAt: ["$$matches", 0] },
+    },
+});
+
+const toNumberOrZeroExpression = (valueExpression) => ({
+    $convert: {
+        input: valueExpression,
+        to: "double",
+        onError: 0,
+        onNull: 0,
+    },
+});
+
+const totalTransFeeExpression = () =>
+    toNumberOrZeroExpression(
+        pickFirstNonEmptyExpression([
+            "$paymentPaylabs.totalTransFee",
+            "$paymentPaylabsVaSnap.additionalInfo.totalTransFee",
+            "$qris.totalTransFee",
+            "$va.totalTransFee",
+            "$cc.totalTransFee",
+            "$eMoney.totalTransFee",
+        ]),
+    );
+
+const vatFeeExpression = () =>
+    toNumberOrZeroExpression(
+        pickFirstNonEmptyExpression([
+            "$paymentPaylabs.vatFee",
+            "$paymentPaylabsVaSnap.additionalInfo.vatFee",
+            "$qris.vatFee",
+            "$va.vatFee",
+            "$cc.vatFee",
+            "$eMoney.vatFee",
+        ]),
+    );
+
+const realAmountExpression = () => ({
+    $subtract: [{ $subtract: ["$totalAmount", totalTransFeeExpression()] }, vatFeeExpression()],
+});
+
 const EXPORT_COLUMNS = [
     "orderId",
     "clientId",
     "client.name",
     "paymentStatus",
     "totalAmount",
+    "totalTransFee",
+    "vatFee",
+    "realAmount",
     "paymentMethod",
     "paymentId",
     "createdAt",
@@ -45,7 +102,16 @@ const EXPORT_COLUMNS = [
     "items",
 ];
 
-const GROUPED_EXPORT_COLUMNS = ["clientId", "client.name", "orderCount", "totalAmount", "paidCount"];
+const GROUPED_EXPORT_COLUMNS = [
+    "clientId",
+    "client.name",
+    "orderCount",
+    "paidCount",
+    "totalAmount",
+    "totalTransFee",
+    "vatFee",
+    "totalRealAmount",
+];
 
 const pickExportRow = (row) => {
     const picked = {};
@@ -147,6 +213,9 @@ export const exportOrdersXlsx = async (req, res, next) => {
                           _id: "$clientId",
                           orderCount: { $sum: 1 },
                           totalAmount: { $sum: "$totalAmount" },
+                          totalTransFee: { $sum: totalTransFeeExpression() },
+                          vatFee: { $sum: vatFeeExpression() },
+                          totalRealAmount: { $sum: realAmountExpression() },
                           paidCount: {
                               $sum: {
                                   $cond: [{ $eq: ["$paymentStatus", "paid"] }, 1, 0],
@@ -169,6 +238,9 @@ export const exportOrdersXlsx = async (req, res, next) => {
                           clientId: "$_id",
                           orderCount: 1,
                           totalAmount: 1,
+                          totalTransFee: 1,
+                          vatFee: 1,
+                          totalRealAmount: 1,
                           paidCount: 1,
                           client: {
                               name: "$client.name",
@@ -189,6 +261,13 @@ export const exportOrdersXlsx = async (req, res, next) => {
                       },
                   },
                   { $addFields: { client: { $arrayElemAt: ["$client", 0] } } },
+                  {
+                      $addFields: {
+                          totalTransFee: totalTransFeeExpression(),
+                          vatFee: vatFeeExpression(),
+                          realAmount: realAmountExpression(),
+                      },
+                  },
               ];
 
         let hasData = false;
