@@ -1,26 +1,20 @@
 # Use official Node.js base image
 FROM node:20-alpine AS base
 
-# Install OS dependencies
 RUN apk add --no-cache libc6-compat
-
-# Set working directory
 WORKDIR /app
 
-# Copy package files and install dependencies
-COPY package*.json ./
-RUN ls -la && echo "----" && ls -la package*.json && echo "----" && ls -la package-lock.json || true
+# Copy manifest secara eksplisit (lebih deterministik daripada package*.json)
+COPY package.json package-lock.json ./
+
+# Validasi lockfile (akan fail cepat kalau lockfile corrupt / kepotong / conflict)
+RUN node -e "JSON.parse(require('fs').readFileSync('package-lock.json','utf8')); console.log('package-lock.json OK')"
+
+# Install dependencies
 RUN npm ci --omit=dev
 
 # Copy the rest of the application
 COPY . .
 
-# Optional: if you use .env or .key in production, mount them via volume instead of copy
-# COPY .env .env
-# COPY .key .key
-
-# Expose the app port (update if your app uses a different port)
 EXPOSE 5001
-
-# Start the app
 CMD ["node", "src/index.js"]
