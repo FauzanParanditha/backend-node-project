@@ -9,9 +9,8 @@ WORKDIR /app
 
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN node -p "require('./package-lock.json').lockfileVersion" \
- && node -p "Object.keys(require('./package-lock.json')).slice(0,10)"
-RUN npm ci --omit=dev
+RUN ls -la && echo "----" && ls -la package*.json && echo "----" && ls -la package-lock.json || true
+RUN npm install --omit=dev
 
 # Copy the rest of the application
 COPY . .
