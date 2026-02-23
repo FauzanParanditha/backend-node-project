@@ -10,7 +10,7 @@ WORKDIR /app
 # Copy package files and install dependencies
 COPY package*.json ./
 RUN ls -la && echo "----" && ls -la package*.json && echo "----" && ls -la package-lock.json || true
-RUN npm install --omit=dev
+RUN npm ci --omit=dev
 
 # Copy the rest of the application
 COPY . .
