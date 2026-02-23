@@ -42,6 +42,20 @@ export const web = express();
 // K8s: trust 1 hop proxy (Ingress) - paling umum & aman
 web.set("trust proxy", 1);
 
+// logger.info(`TRUSTED_PROXY_IP=${process.env.TRUSTED_PROXY_IP}`);
+
+// const trustedProxySet = new Set(
+//     ["127.0.0.1", "::1"]
+//         .concat(process.env.TRUSTED_PROXY_IP || [])
+//         .map(normalizeIP)
+//         .filter(Boolean),
+// );
+
+// web.set("trust proxy", (ip) => {
+//     if (!ip) return false;
+//     return trustedProxySet.has(normalizeIP(ip));
+// });
+
 web.use(
     cors({
         origin: (origin, callback) => {
