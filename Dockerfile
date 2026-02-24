@@ -23,7 +23,12 @@ WORKDIR /app
 
 # Install ONLY production dependencies to minimize runtime image size
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+
+# Validasi lockfile (akan fail cepat kalau lockfile corrupt / kepotong / conflict)
+RUN node -e "JSON.parse(require('fs').readFileSync('package-lock.json','utf8')); console.log('package-lock.json OK')"
+
+# Install dependencies
+RUN npm ci
 
 # Copy compiled artifacts from builder stage
 COPY --from=builder /app/dist ./dist
