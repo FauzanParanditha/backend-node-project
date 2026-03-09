@@ -18,7 +18,7 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "start:websocket": "node dist/application/websocket_server.js",
-        "prepare": "husky"
+        "prepare": "command -v husky >/dev/null 2>&1 && husky || true"
     },
     "type": "module",
     "keywords": [],
