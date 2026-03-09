@@ -29,9 +29,6 @@ RUN npm ci --omit=dev
 # Copy compiled artifacts from builder stage
 COPY --from=builder /app/dist ./dist
 
-# Copy public static assets if your app serves them (e.g., swagger docs, images)
-COPY --from=builder /app/public ./public
-
 EXPOSE 5001
 
 CMD ["node", "dist/index.js"]
