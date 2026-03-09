@@ -1,5 +1,7 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
+# Stage 1: Build
+FROM node:20-alpine AS builder
 
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
@@ -48,12 +50,9 @@ COPY --from=builder /app/dist ./dist
 
 # Copy public static assets if your app serves them (e.g., swagger docs, images)
 COPY --from=builder /app/public ./public
-# Copy compiled artifacts from builder stage
-COPY --from=builder /app/dist ./dist
-
-# Copy public static assets if your app serves them (e.g., swagger docs, images)
-COPY --from=builder /app/public ./public
 
 EXPOSE 5001
+
+CMD ["node", "dist/index.js"]
 
 CMD ["node", "dist/index.js"]
