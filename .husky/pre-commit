@@ -1,5 +1,2 @@
-<<<<<<< HEAD
-=======
 #!/bin/sh
->>>>>>> fcc23fd (refactor: Migrate project from JavaScript to TypeScript, introducing new services, controllers, validators, and updating development tooling.)
 npm run typecheck
