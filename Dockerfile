@@ -23,7 +23,7 @@ WORKDIR /app
 
 # Install ONLY production dependencies to minimize runtime image size
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+ENV HUSKY=0
 RUN npm ci --omit=dev
 
 # Copy compiled artifacts from builder stage
