@@ -1,20 +1,36 @@
-# Use official Node.js base image
-FROM node:20-alpine AS base
+# Stage 1: Build
+FROM node:20-alpine AS builder
 
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy manifest secara eksplisit (lebih deterministik daripada package*.json)
-COPY package.json package-lock.json ./
+# Copy dependency graphs
+COPY package.json package-lock.json tsconfig.json ./
 
-# Validasi lockfile (akan fail cepat kalau lockfile corrupt / kepotong / conflict)
-RUN node -e "JSON.parse(require('fs').readFileSync('package-lock.json','utf8')); console.log('package-lock.json OK')"
-
-# Install dependencies
+# Install ALL dependencies (termasuk devDependencies untuk build types)
 RUN npm ci
 
-# Copy the rest of the application
+# Copy all source code
 COPY . .
 
+# Compile TypeScript to dist/
+RUN npm run build
+
+# Stage 2: Production Runner
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Install ONLY production dependencies to minimize runtime image size
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+# Copy compiled artifacts from builder stage
+COPY --from=builder /app/dist ./dist
+
+# Copy public static assets if your app serves them (e.g., swagger docs, images)
+COPY --from=builder /app/public ./public
+
 EXPOSE 5001
-CMD ["node", "src/index.js"]
+
+CMD ["node", "dist/index.js"]
