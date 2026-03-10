@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import logger from "../application/logger.js";
 import { logActivity } from "../service/activityLogService.js";
+import { getAdminActivityActor } from "../utils/activityActor.js";
 import * as clientKeyService from "../service/clientKeyService.js";
 import { clientKeySchema } from "../validators/clientKeyValidator.js";
 
@@ -51,13 +52,16 @@ export const createClientKey = async (req: Request, res: Response, next: NextFun
             value,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "CREATE_API_KEY",
-            details: { clientId },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "CREATE_API_KEY",
+                details: { clientId },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         res.status(201).json({ success: true, message: "Client add successfully" });
     } catch (error) {
@@ -102,13 +106,16 @@ export const updateClientKey = async (req: Request, res: Response, next: NextFun
             value,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "UPDATE_API_KEY",
-            details: { targetKeyId: id, clientId },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "UPDATE_API_KEY",
+                details: { targetKeyId: id, clientId },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,
@@ -130,13 +137,16 @@ export const deleteClientKey = async (req: Request, res: Response, next: NextFun
             adminId,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "DELETE_API_KEY",
-            details: { targetKeyId: id },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "DELETE_API_KEY",
+                details: { targetKeyId: id },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,

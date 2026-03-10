@@ -153,8 +153,6 @@ export const getAllActivityLog = async (req: Request, res: Response, next: NextF
 
     let filterRole = role;
 
-    // Enforce role barrier: Non-admins can only see logs for their own role string,
-    // thereby preventing privilege escalation reading of other logs.
     if (requesterRole && requesterRole !== "admin") {
         filterRole = requesterRole;
     }

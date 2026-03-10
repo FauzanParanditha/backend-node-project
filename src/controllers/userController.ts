@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import logger from "../application/logger.js";
 import { logActivity } from "../service/activityLogService.js";
+import { getAdminActivityActor } from "../utils/activityActor.js";
 import * as userService from "../service/userService.js";
 import { registerSchema, updateUserSchema } from "../validators/authValidator.js";
 
@@ -55,13 +56,16 @@ export const register = async (req: Request, res: Response, next: NextFunction):
             adminId,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "CREATE_USER",
-            details: { newUserEmail: email },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "CREATE_USER",
+                details: { newUserEmail: email },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         res.status(201).json({ success: true, message: "Registered successfully" });
     } catch (error) {
@@ -107,13 +111,16 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
             adminId,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "UPDATE_USER",
-            details: { targetUserId: id },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "UPDATE_USER",
+                details: { targetUserId: id },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,
@@ -132,13 +139,16 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
     try {
         await userService.deleteUserById(id, adminId);
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "DELETE_USER",
-            details: { targetUserId: id },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "DELETE_USER",
+                details: { targetUserId: id },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,

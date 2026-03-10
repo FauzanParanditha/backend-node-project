@@ -4,6 +4,8 @@ import { ResponseError } from "../error/responseError.js";
 import { logActivity } from "../service/activityLogService.js";
 import * as authService from "../service/authService.js";
 import * as authServiceUser from "../service/authServiceUser.js";
+import Admin from "../models/adminModel.js";
+import { getAuthActivityActor } from "../utils/activityActor.js";
 import {
     acceptCodeSchema,
     acceptFPCodeSchema,
@@ -63,13 +65,11 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 };
 
 export const logout = async (req: Request, res: Response): Promise<any> => {
-    const { role, adminId, userId } = req.auth ?? {};
-    const actorId = role === "admin" || role === "finance" ? adminId : userId;
-
-    if (actorId && role) {
+    const actor = getAuthActivityActor(req);
+    if (actor) {
         logActivity({
-            actorId: actorId.toString(),
-            role: role as "admin" | "user" | "client" | "finance",
+            actorId: actor.actorId,
+            role: actor.role,
             action: "LOGOUT",
             ipAddress: req.ip,
         }).catch(console.error);
@@ -83,7 +83,7 @@ export const logout = async (req: Request, res: Response): Promise<any> => {
 
 export const sendVerificationCode = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { email } = req.body;
-    const { role, adminId, userId } = req.auth ?? {};
+    const { role } = req.auth ?? {};
 
     try {
         let message;
@@ -95,11 +95,11 @@ export const sendVerificationCode = async (req: Request, res: Response, next: Ne
             throw new ResponseError(400, "Role not provided");
         }
 
-        const actorId = role === "admin" || role === "finance" ? adminId : userId;
-        if (actorId && role) {
+        const actor = getAuthActivityActor(req);
+        if (actor) {
             logActivity({
-                actorId: actorId.toString(),
-                role: role as "admin" | "user" | "client" | "finance",
+                actorId: actor.actorId,
+                role: actor.role,
                 action: "REQUEST_VERIFICATION_CODE",
                 details: { targetEmail: email },
                 ipAddress: req.ip,
@@ -222,10 +222,12 @@ export const verifyForgotPasswordCode = async (req: Request, res: Response, next
         }
 
         const message = await authService.verifyForgotPasswordCodeService({ value });
+        const sanitizedEmail = email.trim();
+        const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
 
         logActivity({
-            actorId: email, // Since admin may not be resolved fully via email parameter context directly initially without db lookup
-            role: "admin",
+            actorId: existAdmin ? String(existAdmin._id) : email,
+            role: existAdmin?.role === "finance" ? "finance" : "admin",
             action: "RESET_PASSWORD",
             details: { resetEmail: email },
             ipAddress: req.ip,

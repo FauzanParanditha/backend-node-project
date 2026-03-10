@@ -5,6 +5,7 @@ import logger from "../application/logger.js";
 import Order from "../models/orderModel.js";
 import { logActivity } from "../service/activityLogService.js";
 import * as orderService from "../service/orderService.js";
+import { getAuthActivityActor } from "../utils/activityActor.js";
 import { orderLinkSchema } from "../validators/orderValidator.js";
 
 const flattenObject = (
@@ -278,6 +279,7 @@ export const exportOrdersXlsx = async (req: Request, res: Response, next: NextFu
               ];
 
         let hasData = false;
+        let exportedRows = 0;
 
         const filename = `orders-${Date.now()}.xlsx`;
         res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -294,6 +296,7 @@ export const exportOrdersXlsx = async (req: Request, res: Response, next: NextFu
         const cursorForRows = Order.aggregate(pipeline as mongoose.PipelineStage[]).cursor({ batchSize: 500 });
         await cursorForRows.eachAsync((doc: any) => {
             hasData = true;
+            exportedRows += 1;
             const flattened = flattenObject(doc);
             const row = isGroupedByClient
                 ? GROUPED_EXPORT_COLUMNS.reduce((acc: Record<string, any>, key) => {
@@ -311,6 +314,29 @@ export const exportOrdersXlsx = async (req: Request, res: Response, next: NextFu
 
         await sheet.commit();
         await workbook.commit();
+
+        const actor = getAuthActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "EXPORT_ORDERS_XLSX",
+                details: {
+                    filename,
+                    exportedRows,
+                    groupBy: group_by || null,
+                    query,
+                    clientId,
+                    domain,
+                    paymentStatus,
+                    dateFrom,
+                    dateTo,
+                    sortBy: sortField,
+                    sort: sortValue,
+                },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.end();
     } catch (error: unknown) {

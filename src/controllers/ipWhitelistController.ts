@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import logger from "../application/logger.js";
 import { logActivity } from "../service/activityLogService.js";
+import { getAdminActivityActor } from "../utils/activityActor.js";
 import * as ipWhitelistService from "../service/ipWhitelistService.js";
 import { ipWhitelistSchema } from "../validators/ipWhitelistValidator.js";
 
@@ -56,13 +57,16 @@ export const create = async (req: Request, res: Response, next: NextFunction): P
             value,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "CREATE_IP_WHITELIST",
-            details: { ipAddress },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "CREATE_IP_WHITELIST",
+                details: { ipAddress },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         res.status(201).json({
             success: true,
@@ -110,13 +114,16 @@ export const updateIpWhitelist = async (req: Request, res: Response, next: NextF
             value,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "UPDATE_IP_WHITELIST",
-            details: { targetIpId: id, newIpAddress: ipAddress },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "UPDATE_IP_WHITELIST",
+                details: { targetIpId: id, newIpAddress: ipAddress },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,
@@ -138,13 +145,16 @@ export const deleteIpWhitelist = async (req: Request, res: Response, next: NextF
             adminId,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "DELETE_IP_WHITELIST",
-            details: { targetIpId: id },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "DELETE_IP_WHITELIST",
+                details: { targetIpId: id },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,

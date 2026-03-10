@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import logger from "../application/logger.js";
 import { logActivity } from "../service/activityLogService.js";
+import { getAdminActivityActor } from "../utils/activityActor.js";
 import * as clientService from "../service/clientService.js";
 import { clientSchema } from "../validators/clientValidator.js";
 
@@ -59,13 +60,16 @@ export const createClient = async (req: Request, res: Response, next: NextFuncti
             value,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "CREATE_CLIENT",
-            details: { clientId: savedClient.clientId, clientName: name },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "CREATE_CLIENT",
+                details: { clientId: savedClient.clientId, clientName: name },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         res.status(201).json({ success: true, message: "Client add successfully" });
     } catch (error) {
@@ -116,13 +120,16 @@ export const updateClient = async (req: Request, res: Response, next: NextFuncti
             value,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "UPDATE_CLIENT",
-            details: { targetClientId: id, newName: name },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "UPDATE_CLIENT",
+                details: { targetClientId: id, newName: name },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,
@@ -144,13 +151,16 @@ export const deleteClient = async (req: Request, res: Response, next: NextFuncti
             adminId,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "DELETE_CLIENT",
-            details: { targetClientId: id },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "DELETE_CLIENT",
+                details: { targetClientId: id },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,

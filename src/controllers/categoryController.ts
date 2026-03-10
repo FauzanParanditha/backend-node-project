@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import logger from "../application/logger.js";
 import { logActivity } from "../service/activityLogService.js";
+import { getAdminActivityActor } from "../utils/activityActor.js";
 import * as categoryService from "../service/categoryService.js";
 import { categorySchema } from "../validators/categoryValidator.js";
 
@@ -58,13 +59,16 @@ export const create = async (req: Request, res: Response, next: NextFunction): P
 
         await categoryService.createCategory({ value });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "CREATE_CATEGORY",
-            details: { categoryName: name },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "CREATE_CATEGORY",
+                details: { categoryName: name },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         res.status(201).json({ success: true, message: "Category create successfully" });
     } catch (error) {
@@ -109,13 +113,16 @@ export const updateCategory = async (req: Request, res: Response, next: NextFunc
             value,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "UPDATE_CATEGORY",
-            details: { targetCategoryId: id, newCategoryName: name },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "UPDATE_CATEGORY",
+                details: { targetCategoryId: id, newCategoryName: name },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,
@@ -134,13 +141,16 @@ export const deleteCategory = async (req: Request, res: Response, next: NextFunc
     try {
         await categoryService.deleteCategory({ id, adminId });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "DELETE_CATEGORY",
-            details: { targetCategoryId: id },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "DELETE_CATEGORY",
+                details: { targetCategoryId: id },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,

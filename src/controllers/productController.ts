@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import logger from "../application/logger.js";
 import { logActivity } from "../service/activityLogService.js";
+import { getAdminActivityActor } from "../utils/activityActor.js";
 import * as productService from "../service/productService.js";
 import { productValidationSchema } from "../validators/productValidator.js";
 
@@ -61,13 +62,16 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
         await productService.createProduct({ req, adminId });
 
         const reqBodyTitle = req.body.title || "Unknown Product";
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "CREATE_PRODUCT",
-            details: { productTitle: reqBodyTitle },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "CREATE_PRODUCT",
+                details: { productTitle: reqBodyTitle },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(201).json({
             success: true,
@@ -123,13 +127,16 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
         });
 
         const reqBodyTitleUpdate = req.body.title || undefined;
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "UPDATE_PRODUCT",
-            details: { targetProductId: id, updatedTitle: reqBodyTitleUpdate },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "UPDATE_PRODUCT",
+                details: { targetProductId: id, updatedTitle: reqBodyTitleUpdate },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,
@@ -148,13 +155,16 @@ export const deleteProduct = async (req: Request, res: Response, next: NextFunct
     try {
         await productService.deleteProduct({ id, adminId });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "DELETE_PRODUCT",
-            details: { targetProductId: id },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "DELETE_PRODUCT",
+                details: { targetProductId: id },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,

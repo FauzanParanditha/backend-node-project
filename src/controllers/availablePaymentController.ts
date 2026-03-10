@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import logger from "../application/logger.js";
 import { logActivity } from "../service/activityLogService.js";
 import * as availablePaymentService from "../service/availablePaymentService.js";
+import { getAdminActivityActor } from "../utils/activityActor.js";
 import { availablePaymentValidationSchema } from "../validators/availablePaymentValidator.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -64,12 +65,15 @@ export const createAvailablePayment = async (req: Request, res: Response, next: 
 
         await availablePaymentService.createAvailablePayment({ req, adminId });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "CREATE_AVAILABLE_PAYMENT",
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "CREATE_AVAILABLE_PAYMENT",
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(201).json({
             success: true,
@@ -153,13 +157,16 @@ export const updateAvailablePayment = async (req: Request, res: Response, next: 
             req,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "UPDATE_AVAILABLE_PAYMENT",
-            details: { paymentId: id },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "UPDATE_AVAILABLE_PAYMENT",
+                details: { paymentId: id },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,
@@ -178,13 +185,16 @@ export const deleteAvailablepayment = async (req: Request, res: Response, next: 
     try {
         await availablePaymentService.deleteAvailablepayment({ id, adminId });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "DELETE_AVAILABLE_PAYMENT",
-            details: { paymentId: id },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "DELETE_AVAILABLE_PAYMENT",
+                details: { paymentId: id },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,

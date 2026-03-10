@@ -4,6 +4,7 @@ import { ResponseError } from "../error/responseError.js";
 import User from "../models/userModel.js";
 import { logActivity } from "../service/activityLogService.js";
 import * as adminService from "../service/adminService.js";
+import { getAdminActivityActor } from "../utils/activityActor.js";
 import { registerSchema, updateAdminSchema } from "../validators/authValidator.js";
 
 export const getAllAdmin = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
@@ -58,13 +59,16 @@ export const register = async (req: Request, res: Response, next: NextFunction):
             adminId,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "CREATE_ADMIN",
-            details: { newAdminEmail: email, newAdminRole: role },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "CREATE_ADMIN",
+                details: { newAdminEmail: email, newAdminRole: role },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         res.status(201).json({ success: true, message: "Registered successfully" });
     } catch (error) {
@@ -133,13 +137,16 @@ export const updateAdmin = async (req: Request, res: Response, next: NextFunctio
             adminId,
         });
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "UPDATE_ADMIN",
-            details: { targetAdminId: id },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "UPDATE_ADMIN",
+                details: { targetAdminId: id },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,
@@ -158,13 +165,16 @@ export const deleteAdmin = async (req: Request, res: Response, next: NextFunctio
     try {
         await adminService.deleteAdminById(id, adminId);
 
-        logActivity({
-            actorId: adminId.toString(),
-            role: "admin",
-            action: "DELETE_ADMIN",
-            details: { targetAdminId: id },
-            ipAddress: req.ip,
-        }).catch(console.error);
+        const actor = getAdminActivityActor(req);
+        if (actor) {
+            logActivity({
+                actorId: actor.actorId,
+                role: actor.role,
+                action: "DELETE_ADMIN",
+                details: { targetAdminId: id },
+                ipAddress: req.ip,
+            }).catch(console.error);
+        }
 
         return res.status(200).json({
             success: true,

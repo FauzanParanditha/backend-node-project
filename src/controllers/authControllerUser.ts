@@ -5,6 +5,7 @@ import { logActivity } from "../service/activityLogService.js";
 import * as authService from "../service/authService.js";
 import * as authServiceUser from "../service/authServiceUser.js";
 import { sendAuthAlert } from "../service/discordService.js";
+import { getAuthActivityActor, resolveActivityActor } from "../utils/activityActor.js";
 import {
     acceptCodeSchema,
     acceptFPCodeSchema,
@@ -50,11 +51,15 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
         );
 
         // Record Activity Log asynchronously
-        const actorId = role === "admin" ? adminId : userId;
-        if (actorId) {
+        const actor = resolveActivityActor({
+            role,
+            adminId: adminId ? String(adminId) : undefined,
+            userId: userId ? String(userId) : undefined,
+        });
+        if (actor) {
             logActivity({
-                actorId: actorId.toString(),
-                role: role as "admin" | "user" | "client" | "finance",
+                actorId: actor.actorId,
+                role: actor.role,
                 action: "LOGIN",
                 details: { email: loginEmail },
                 ipAddress: req.ip,
@@ -83,12 +88,11 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 };
 
 export const logout = async (req: Request, res: Response): Promise<any> => {
-    const { role, adminId, userId } = req.auth ?? {};
-    const actorId = role === "admin" ? adminId : userId;
-    if (actorId && role) {
+    const actor = getAuthActivityActor(req);
+    if (actor) {
         logActivity({
-            actorId: actorId.toString(),
-            role: role as "admin" | "user" | "client" | "finance",
+            actorId: actor.actorId,
+            role: actor.role,
             action: "LOGOUT",
             ipAddress: req.ip,
         }).catch(console.error);
@@ -102,16 +106,15 @@ export const logout = async (req: Request, res: Response): Promise<any> => {
 
 export const sendVerificationCode = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { email } = req.body;
-    const { role, userId, adminId } = req.auth ?? {};
 
     try {
         const message = await authServiceUser.sendVerificationCodeService(email);
 
-        const actorId = role === "admin" || role === "finance" ? adminId : userId;
-        if (actorId && role) {
+        const actor = getAuthActivityActor(req);
+        if (actor) {
             logActivity({
-                actorId: actorId.toString(),
-                role: role as "admin" | "user" | "client" | "finance",
+                actorId: actor.actorId,
+                role: actor.role,
                 action: "REQUEST_VERIFICATION_CODE",
                 details: { targetEmail: email },
                 ipAddress: req.ip,
@@ -140,12 +143,11 @@ export const verifyVerificationCode = async (req: Request, res: Response, next: 
         }
         const message = await authServiceUser.verifyVerificationCodeService({ value });
 
-        const { role, userId, adminId } = req.auth ?? {};
-        const actorId = role === "admin" || role === "finance" ? adminId : userId;
-        if (actorId && role) {
+        const actor = getAuthActivityActor(req);
+        if (actor) {
             logActivity({
-                actorId: actorId.toString(),
-                role: role as "admin" | "user" | "client" | "finance",
+                actorId: actor.actorId,
+                role: actor.role,
                 action: "VERIFY_CODE",
                 details: { email },
                 ipAddress: req.ip,
@@ -215,11 +217,11 @@ export const changePasswordByAdmin = async (req: Request, res: Response, next: N
         }
         const message = await authServiceUser.changePasswordByAdminService({ value });
 
-        const { role, adminId } = req.auth ?? {};
-        if (role === "admin" && adminId) {
+        const actor = getAuthActivityActor(req);
+        if (actor && (actor.role === "admin" || actor.role === "finance")) {
             logActivity({
-                actorId: adminId.toString(),
-                role: "admin",
+                actorId: actor.actorId,
+                role: actor.role,
                 action: "CHANGE_PASSWORD_BY_ADMIN",
                 details: { targetUserId: userId },
                 ipAddress: req.ip,
@@ -286,8 +288,8 @@ export const verifyForgotPasswordCode = async (req: Request, res: Response, next
         // Unauthenticated state resolution
         const actorIdentity = existAdmin ? existAdmin._id : email;
         logActivity({
-            actorId: actorIdentity.toString(), // May not be an ObjectId if tracking email fallback
-            role: existAdmin ? "admin" : "user",
+            actorId: String(actorIdentity), // May not be an ObjectId if tracking email fallback
+            role: existAdmin?.role === "finance" ? "finance" : existAdmin ? "admin" : "user",
             action: "RESET_PASSWORD",
             details: { resetEmail: email },
             ipAddress: req.ip,
