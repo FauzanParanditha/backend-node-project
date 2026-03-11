@@ -1,6 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 import logger from "../application/logger.js";
+import { ResponseError } from "../error/responseError.js";
 import Admin from "../models/adminModel.js";
+import User from "../models/userModel.js";
 import { logActivity } from "../service/activityLogService.js";
 import * as authService from "../service/authService.js";
 import * as authServiceUser from "../service/authServiceUser.js";
@@ -12,6 +14,10 @@ import {
     changePasswordSchema,
     loginSchema,
 } from "../validators/authValidator.js";
+
+const PUBLIC_VERIFICATION_RESPONSE = "If the account exists, a verification code will be sent.";
+const PUBLIC_RESET_RESPONSE = "If the account exists, a reset instruction will be sent.";
+const PUBLIC_INVALID_CODE_RESPONSE = "Invalid or expired code";
 
 export const login = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { email, password } = req.body;
@@ -108,7 +114,7 @@ export const sendVerificationCode = async (req: Request, res: Response, next: Ne
     const { email } = req.body;
 
     try {
-        const message = await authServiceUser.sendVerificationCodeService(email);
+        await authServiceUser.sendVerificationCodeService(email);
 
         const actor = getAuthActivityActor(req);
         if (actor) {
@@ -121,8 +127,12 @@ export const sendVerificationCode = async (req: Request, res: Response, next: Ne
             }).catch(console.error);
         }
 
-        res.status(200).json({ success: true, message });
+        res.status(200).json({ success: true, message: PUBLIC_VERIFICATION_RESPONSE });
     } catch (error) {
+        if (error instanceof ResponseError && [400, 404, 429].includes(error.status)) {
+            logger.warn(`Masked send verification response: ${error.message}`);
+            return res.status(200).json({ success: true, message: PUBLIC_VERIFICATION_RESPONSE });
+        }
         logger.error(`Error send verification code: ${(error as Error).message}`);
         next(error);
     }
@@ -141,6 +151,11 @@ export const verifyVerificationCode = async (req: Request, res: Response, next: 
                 message: error.details[0].message,
             });
         }
+        const existingUser = await User.findOne({ email: value.email.trim() });
+        if (!existingUser) {
+            throw new ResponseError(400, PUBLIC_INVALID_CODE_RESPONSE);
+        }
+
         const message = await authServiceUser.verifyVerificationCodeService({ value });
 
         const actor = getAuthActivityActor(req);
@@ -159,6 +174,13 @@ export const verifyVerificationCode = async (req: Request, res: Response, next: 
             message,
         });
     } catch (error) {
+        if (error instanceof ResponseError && [400, 404, 429].includes(error.status)) {
+            logger.warn(`Masked verify verification response: ${error.message}`);
+            return res.status(400).json({
+                success: false,
+                errors: PUBLIC_INVALID_CODE_RESPONSE,
+            });
+        }
         logger.error(`Error verify verification code: ${(error as Error).message}`);
         next(error);
     }
@@ -244,9 +266,14 @@ export const sendForgotPassword = async (req: Request, res: Response, next: Next
         const sanitizedEmail = email.trim();
         const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
 
-        const message = existAdmin
-            ? await authService.sendForgotPasswordService(email)
-            : await authServiceUser.sendForgotPasswordService(email);
+        if (existAdmin) {
+            await authService.sendForgotPasswordService(email);
+        } else {
+            const existingUser = await User.findOne({ email: { $eq: sanitizedEmail } });
+            if (existingUser) {
+                await authServiceUser.sendForgotPasswordService(email);
+            }
+        }
 
         // Unauthenticated request, using 'system' or 'user' pseudo actor based on existence?
         // Since we don't have an auth context, we will omit or log neutrally.
@@ -255,9 +282,16 @@ export const sendForgotPassword = async (req: Request, res: Response, next: Next
 
         return res.status(200).json({
             success: true,
-            message,
+            message: PUBLIC_RESET_RESPONSE,
         });
     } catch (error) {
+        if (error instanceof ResponseError && [400, 404, 429].includes(error.status)) {
+            logger.warn(`Masked send forgot password response: ${error.message}`);
+            return res.status(200).json({
+                success: true,
+                message: PUBLIC_RESET_RESPONSE,
+            });
+        }
         logger.error(`Error send forgot password: ${(error as Error).message}`);
         next(error);
     }
@@ -281,9 +315,16 @@ export const verifyForgotPasswordCode = async (req: Request, res: Response, next
         const sanitizedEmail = email.trim();
         const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
 
-        const message = existAdmin
-            ? await authService.verifyForgotPasswordCodeService({ value })
-            : await authServiceUser.verifyForgotPasswordCodeService({ value });
+        let message: string;
+        if (existAdmin) {
+            message = await authService.verifyForgotPasswordCodeService({ value });
+        } else {
+            const existingUser = await User.findOne({ email: { $eq: sanitizedEmail } });
+            if (!existingUser) {
+                throw new ResponseError(400, PUBLIC_INVALID_CODE_RESPONSE);
+            }
+            message = await authServiceUser.verifyForgotPasswordCodeService({ value });
+        }
 
         // Unauthenticated state resolution
         const actorIdentity = existAdmin ? existAdmin._id : email;
@@ -300,6 +341,13 @@ export const verifyForgotPasswordCode = async (req: Request, res: Response, next
             message,
         });
     } catch (error) {
+        if (error instanceof ResponseError && [400, 404, 429].includes(error.status)) {
+            logger.warn(`Masked verify forgot password response: ${error.message}`);
+            return res.status(400).json({
+                success: false,
+                errors: PUBLIC_INVALID_CODE_RESPONSE,
+            });
+        }
         logger.error(`Error verify forgot password: ${(error as Error).message}`);
         next(error);
     }

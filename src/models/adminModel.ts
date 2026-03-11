@@ -7,10 +7,15 @@ export interface IAdmin extends Document {
     password: string;
     role: "admin" | "finance";
     verified: boolean;
+    verifiedAt?: Date;
     verificationCode?: string;
     verificationCodeValidation?: number;
+    verificationCodeAttempts?: number;
+    verificationCodeLockedUntil?: number;
     forgotPasswordCode?: string;
     forgotPasswordCodeValidation?: number;
+    forgotPasswordCodeAttempts?: number;
+    forgotPasswordCodeLockedUntil?: number;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -45,6 +50,9 @@ const adminSchema = new mongoose.Schema<IAdmin>(
             type: Boolean,
             default: false,
         },
+        verifiedAt: {
+            type: Date,
+        },
         verificationCode: {
             type: String,
             select: false,
@@ -53,11 +61,29 @@ const adminSchema = new mongoose.Schema<IAdmin>(
             type: Number,
             select: false,
         },
+        verificationCodeAttempts: {
+            type: Number,
+            default: 0,
+            select: false,
+        },
+        verificationCodeLockedUntil: {
+            type: Number,
+            select: false,
+        },
         forgotPasswordCode: {
             type: String,
             select: false,
         },
         forgotPasswordCodeValidation: {
+            type: Number,
+            select: false,
+        },
+        forgotPasswordCodeAttempts: {
+            type: Number,
+            default: 0,
+            select: false,
+        },
+        forgotPasswordCodeLockedUntil: {
             type: Number,
             select: false,
         },

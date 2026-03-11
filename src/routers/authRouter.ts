@@ -1,6 +1,7 @@
 import express from "express";
 import { changePassword, logout, sendVerificationCode, verifyVerificationCode } from "../controllers/authController.js";
 import { jwtUnifiedMiddleware } from "../middlewares/jwtUnified.js";
+import { verificationCheckLimiter, verificationSendLimiter } from "../middlewares/rateLimiter.js";
 
 const router = express.Router();
 
@@ -8,11 +9,9 @@ const router = express.Router();
  * @swagger
  * /adm/auth/send-verification-code:
  *   patch:
- *     summary: Send verification code (admin or user)
+ *     summary: Send verification code (public)
  *     tags:
  *       - Auth
- *     security:
- *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -36,11 +35,9 @@ router.post("/logout", jwtUnifiedMiddleware, logout);
  * @swagger
  * /adm/auth/verify-verification-code:
  *   patch:
- *     summary: Verify verification code (admin or user)
+ *     summary: Verify verification code (public)
  *     tags:
  *       - Auth
- *     security:
- *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -61,8 +58,8 @@ router.post("/logout", jwtUnifiedMiddleware, logout);
  *       401:
  *         description: Unauthorized
  */
-router.patch("/send-verification-code", jwtUnifiedMiddleware, sendVerificationCode);
-router.patch("/verify-verification-code", jwtUnifiedMiddleware, verifyVerificationCode);
+router.patch("/send-verification-code", verificationSendLimiter, sendVerificationCode);
+router.patch("/verify-verification-code", verificationCheckLimiter, verifyVerificationCode);
 
 /**
  * @swagger

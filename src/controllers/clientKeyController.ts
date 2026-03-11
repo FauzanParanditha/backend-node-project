@@ -1,9 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
 import logger from "../application/logger.js";
 import { logActivity } from "../service/activityLogService.js";
-import { getAdminActivityActor } from "../utils/activityActor.js";
+import { getAdminActivityActor, getAuthActivityActor } from "../utils/activityActor.js";
 import * as clientKeyService from "../service/clientKeyService.js";
-import { clientKeySchema } from "../validators/clientKeyValidator.js";
+import { clientKeySchema, clientKeyUserUpdateSchema } from "../validators/clientKeyValidator.js";
 
 export const getAllClientKey = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const {
@@ -16,6 +16,7 @@ export const getAllClientKey = async (req: Request, res: Response, next: NextFun
     } = req.query as Record<string, any>;
 
     try {
+        const { role, userId } = req.auth ?? {};
         const result = await clientKeyService.getAllClients({
             query,
             limit,
@@ -23,6 +24,7 @@ export const getAllClientKey = async (req: Request, res: Response, next: NextFun
             sort_by,
             sort,
             countOnly,
+            userId: role === "user" ? userId : undefined,
         });
 
         if (countOnly) {
@@ -74,7 +76,8 @@ export const clientKey = async (req: Request, res: Response, next: NextFunction)
     const { id } = req.params;
 
     try {
-        const client = await clientKeyService.client({ id });
+        const { role, userId } = req.auth ?? {};
+        const client = await clientKeyService.client({ id, userId: role === "user" ? userId : undefined });
 
         return res.status(200).json({
             success: true,
@@ -90,31 +93,58 @@ export const clientKey = async (req: Request, res: Response, next: NextFunction)
 export const updateClientKey = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { id } = req.params;
     const { clientId, publicKey, active } = req.body;
-    const { adminId } = req.admin!;
 
     try {
-        const { error, value } = clientKeySchema.validate({ clientId, publicKey, active, adminId });
-        if (error) {
-            return res.status(400).json({
-                success: false,
-                message: error.details[0].message,
+        const { role, userId, adminId } = req.auth ?? {};
+        let actor = getAuthActivityActor(req);
+
+        if (role === "user") {
+            const { error, value } = clientKeyUserUpdateSchema.validate({ publicKey, active });
+            if (error) {
+                return res.status(400).json({
+                    success: false,
+                    message: error.details[0].message,
+                });
+            }
+
+            const updatedClientKey = await clientKeyService.updateClient({
+                id,
+                value,
+                userId,
             });
-        }
 
-        await clientKeyService.updateClient({
-            id,
-            value,
-        });
+            if (actor) {
+                logActivity({
+                    actorId: actor.actorId,
+                    role: actor.role,
+                    action: "UPDATE_API_KEY",
+                    details: { targetKeyId: id, clientId: updatedClientKey.clientId },
+                    ipAddress: req.ip,
+                }).catch(console.error);
+            }
+        } else {
+            const { error, value } = clientKeySchema.validate({ clientId, publicKey, active, adminId });
+            if (error) {
+                return res.status(400).json({
+                    success: false,
+                    message: error.details[0].message,
+                });
+            }
 
-        const actor = getAdminActivityActor(req);
-        if (actor) {
-            logActivity({
-                actorId: actor.actorId,
-                role: actor.role,
-                action: "UPDATE_API_KEY",
-                details: { targetKeyId: id, clientId },
-                ipAddress: req.ip,
-            }).catch(console.error);
+            const updatedClientKey = await clientKeyService.updateClient({
+                id,
+                value,
+            });
+
+            if (actor) {
+                logActivity({
+                    actorId: actor.actorId,
+                    role: actor.role,
+                    action: "UPDATE_API_KEY",
+                    details: { targetKeyId: id, clientId: updatedClientKey.clientId },
+                    ipAddress: req.ip,
+                }).catch(console.error);
+            }
         }
 
         return res.status(200).json({
@@ -132,7 +162,7 @@ export const deleteClientKey = async (req: Request, res: Response, next: NextFun
     const { adminId } = req.admin!;
 
     try {
-        await clientKeyService.deleteClient({
+        const deletedClientKey = await clientKeyService.deleteClient({
             id,
             adminId,
         });
@@ -143,7 +173,7 @@ export const deleteClientKey = async (req: Request, res: Response, next: NextFun
                 actorId: actor.actorId,
                 role: actor.role,
                 action: "DELETE_API_KEY",
-                details: { targetKeyId: id },
+                details: { targetKeyId: id, clientId: deletedClientKey.clientId },
                 ipAddress: req.ip,
             }).catch(console.error);
         }

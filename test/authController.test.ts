@@ -68,4 +68,24 @@ describe("POST /api/v1/auth/login", () => {
         expect(response.body.data.role).toBe("admin");
         expect(response.body.data.email).toBe("admin@test.com");
     });
+
+    it("should reject login for unverified accounts", async () => {
+        const hashedPassword = await bcrypt.hash("User@1234", 10);
+        await Admin.create({
+            email: "pending@test.com",
+            fullName: "Pending Admin",
+            password: hashedPassword,
+            role: "admin",
+            verified: false,
+        });
+
+        const response = await request(web).post("/api/v1/auth/login").send({
+            email: "pending@test.com",
+            password: "User@1234",
+        });
+
+        expect(response.status).toBe(403);
+        expect(response.body.success).toBe(false);
+        expect(response.body.errors).toBe("Account not verified. Please verify your account first.");
+    });
 });

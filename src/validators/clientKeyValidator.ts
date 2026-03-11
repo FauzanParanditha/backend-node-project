@@ -6,3 +6,8 @@ export const clientKeySchema = joi.object({
     active: joi.boolean().required(),
     adminId: joi.string().required(),
 });
+
+export const clientKeyUserUpdateSchema = joi.object({
+    publicKey: joi.string().required(),
+    active: joi.boolean().required(),
+});

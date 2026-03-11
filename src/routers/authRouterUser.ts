@@ -11,7 +11,13 @@ import {
 } from "../controllers/authControllerUser.js";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
 import { jwtMiddleware } from "../middlewares/jwt.js";
-import { loginLimiter } from "../middlewares/rateLimiter.js";
+import {
+    forgotPasswordCheckLimiter,
+    forgotPasswordSendLimiter,
+    loginLimiter,
+    verificationCheckLimiter,
+    verificationSendLimiter,
+} from "../middlewares/rateLimiter.js";
 
 const router = express.Router();
 
@@ -85,11 +91,59 @@ const router = express.Router();
 router.post("/login", loginLimiter, login);
 router.post("/logout", jwtMiddleware, logout);
 
-router.patch("/send-verification-code", jwtMiddleware, sendVerificationCode);
-router.patch("/verify-verification-code", jwtMiddleware, verifyVerificationCode);
+/**
+ * @swagger
+ * /api/v1/auth/send-verification-code:
+ *   patch:
+ *     summary: Send user verification code (public)
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Code sent
+ */
+router.patch("/send-verification-code", verificationSendLimiter, sendVerificationCode);
+
+/**
+ * @swagger
+ * /api/v1/auth/verify-verification-code:
+ *   patch:
+ *     summary: Verify user verification code (public)
+ *     tags:
+ *       - Auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - provided_code
+ *             properties:
+ *               email:
+ *                 type: string
+ *               provided_code:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Verified
+ */
+router.patch("/verify-verification-code", verificationCheckLimiter, verifyVerificationCode);
 
 router.patch("/change-password", jwtMiddleware, changePassword);
 router.patch("/adm/change-password", jwtMiddlewareAdmin, changePasswordByAdmin);
-router.patch("/send-forgot-password-code", sendForgotPassword);
-router.patch("/verify-forgot-password-code", verifyForgotPasswordCode);
+router.patch("/send-forgot-password-code", forgotPasswordSendLimiter, sendForgotPassword);
+router.patch("/verify-forgot-password-code", forgotPasswordCheckLimiter, verifyForgotPasswordCode);
 export default router;

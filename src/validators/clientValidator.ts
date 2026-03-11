@@ -8,3 +8,9 @@ export const clientSchema = joi.object({
     adminId: joi.string().required(),
     availablePaymentIds: joi.array().items(joi.string()).optional(),
 });
+
+export const clientUserUpdateSchema = joi.object({
+    name: joi.string().max(100).required(),
+    notifyUrl: joi.string().uri().allow(null, "").optional(),
+    active: joi.boolean().optional(),
+});

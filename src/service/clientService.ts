@@ -8,7 +8,15 @@ import User from "../models/userModel.js";
 import type { ListQueryParams } from "../types/service.js";
 import { escapeRegExp } from "../utils/helper.js";
 
-export const getAllClients = async ({ query, limit, page, sort_by, sort, countOnly }: ListQueryParams) => {
+export const getAllClients = async ({
+    query,
+    limit,
+    page,
+    sort_by,
+    sort,
+    countOnly,
+    userId,
+}: ListQueryParams & { userId?: string }) => {
     const filter: Record<string, unknown> = {};
 
     // Apply search term if provided
@@ -18,6 +26,10 @@ export const getAllClients = async ({ query, limit, page, sort_by, sort, countOn
             { name: { $regex: searchTerm, $options: "i" } },
             { clientId: { $regex: searchTerm, $options: "i" } },
         ];
+    }
+
+    if (userId) {
+        filter.userIds = { $in: [userId] };
     }
 
     const sortField = sort_by || "_id";
@@ -107,8 +119,14 @@ export const createClient = async ({ value }: { value: Record<string, any> }) =>
     return savedClient;
 };
 
-export const client = async ({ id }: { id: string }) => {
-    const result = await Client.findOne({ _id: id })
+export const client = async ({ id, userId }: { id: string; userId?: string }) => {
+    const filter: Record<string, unknown> = { _id: id };
+
+    if (userId) {
+        filter.userIds = { $in: [userId] };
+    }
+
+    const result = await Client.findOne(filter)
         .populate({
             path: "userIds",
             select: "email",
@@ -135,21 +153,15 @@ export const client = async ({ id }: { id: string }) => {
     };
 };
 
-export const updateClient = async ({ id, value }: { id: string; value: Record<string, any> }) => {
-    const existClient = await Client.findOne({ _id: id }).select("+clientId");
+export const updateClient = async ({ id, value, userId }: { id: string; value: Record<string, any>; userId?: string }) => {
+    const filter: Record<string, unknown> = { _id: id };
+
+    if (userId) {
+        filter.userIds = { $in: [userId] };
+    }
+
+    const existClient = await Client.findOne(filter).select("+clientId");
     if (!existClient) throw new ResponseError(404, "Client does not exist!");
-
-    const existingUsers = await User.find({ _id: { $in: value.userIds } });
-    if (existingUsers.length !== value.userIds.length) {
-        throw new ResponseError(400, "One or more users are not registered!");
-    }
-
-    if (existClient.adminId.toString() != value.adminId) throw new ResponseError(401, "Unauthorized!");
-
-    const verifiedAdmin = await Admin.findOne({ _id: value.adminId });
-    if (!verifiedAdmin?.verified) {
-        throw new ResponseError(400, `Admin is not verified`);
-    }
 
     // Sanitize the input
     const sanitizedName = value.name.trim();
@@ -163,38 +175,52 @@ export const updateClient = async ({ id, value }: { id: string; value: Record<st
 
     existClient.name = value.name;
     existClient.notifyUrl = value.notifyUrl;
-    existClient.userIds = value.userIds;
     existClient.active = value.active;
-    const result = await existClient.save();
 
-    if (value.availablePaymentIds && value.availablePaymentIds.length) {
-        const availablePayments = await AvailablePayment.find({
-            _id: { $in: value.availablePaymentIds },
-        }).select("_id");
-
-        const validIds = new Set(availablePayments.map((item) => String(item._id)));
-        const payload = value.availablePaymentIds
-            .filter((id: string) => validIds.has(id.toString()))
-            .map((id: string) => ({
-                clientId: existClient.clientId,
-                availablePaymentId: id,
-                active: true,
-                adminId: value.adminId,
-            }));
-
-        if (!payload.length) {
-            throw new ResponseError(400, "Available payment is not valid");
+    if (!userId) {
+        const existingUsers = await User.find({ _id: { $in: value.userIds } });
+        if (existingUsers.length !== value.userIds.length) {
+            throw new ResponseError(400, "One or more users are not registered!");
         }
 
-        await ClientAvailablePayment.deleteMany({ clientId: existClient.clientId });
-        await ClientAvailablePayment.insertMany(payload);
+        if (existClient.adminId.toString() != value.adminId) throw new ResponseError(401, "Unauthorized!");
+
+        const verifiedAdmin = await Admin.findOne({ _id: value.adminId });
+        if (!verifiedAdmin?.verified) {
+            throw new ResponseError(400, `Admin is not verified`);
+        }
+
+        existClient.userIds = value.userIds;
+
+        if (value.availablePaymentIds && value.availablePaymentIds.length) {
+            const availablePayments = await AvailablePayment.find({
+                _id: { $in: value.availablePaymentIds },
+            }).select("_id");
+
+            const validIds = new Set(availablePayments.map((item) => String(item._id)));
+            const payload = value.availablePaymentIds
+                .filter((id: string) => validIds.has(id.toString()))
+                .map((id: string) => ({
+                    clientId: existClient.clientId,
+                    availablePaymentId: id,
+                    active: true,
+                    adminId: value.adminId,
+                }));
+
+            if (!payload.length) {
+                throw new ResponseError(400, "Available payment is not valid");
+            }
+
+            await ClientAvailablePayment.deleteMany({ clientId: existClient.clientId });
+            await ClientAvailablePayment.insertMany(payload);
+        }
     }
 
-    return result;
+    return existClient.save();
 };
 
 export const deleteClient = async ({ id, adminId }: { id: string; adminId: string }) => {
-    const existClient = await Client.findOne({ _id: id });
+    const existClient = await Client.findOne({ _id: id }).select("+clientId");
     if (!existClient) throw new ResponseError(404, "Client does not exist!");
 
     const verifiedAdmin = await Admin.findOne({ _id: adminId });
@@ -206,7 +232,11 @@ export const deleteClient = async ({ id, adminId }: { id: string; adminId: strin
     if (haveOrder) throw new ResponseError(400, "This Client Have Order");
 
     await Client.deleteOne({ _id: id });
-    return true;
+    return {
+        id: String(existClient._id),
+        clientId: existClient.clientId,
+        name: existClient.name,
+    };
 };
 
 export async function generateUniqueClientId(name: string): Promise<string> {

@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import logger from "../application/logger.js";
+import Admin from "../models/adminModel.js";
 import ActivityLog from "../models/activityLogModel.js";
+import User from "../models/userModel.js";
 
 interface LogActivityParams {
     actorId: string | mongoose.Types.ObjectId;
@@ -47,19 +49,48 @@ export const getActivityLogs = async ({
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const logs = await ActivityLog.find(filter).sort({ createdAt: -1 }).limit(Number(limit)).skip(skip).exec();
+    const logs = await ActivityLog.find(filter).sort({ createdAt: -1 }).limit(Number(limit)).skip(skip).lean().exec();
+
+    const adminActorIds = [
+        ...new Set(
+            logs.filter((item) => item.role === "admin" || item.role === "finance").map((item) => item.actorId.toString()),
+        ),
+    ];
+    const userActorIds = [
+        ...new Set(logs.filter((item) => item.role === "user" || item.role === "client").map((item) => item.actorId.toString())),
+    ];
+
+    const [admins, users] = await Promise.all([
+        adminActorIds.length
+            ? Admin.find({ _id: { $in: adminActorIds } }).select("email").lean().exec()
+            : Promise.resolve([]),
+        userActorIds.length ? User.find({ _id: { $in: userActorIds } }).select("email").lean().exec() : Promise.resolve([]),
+    ]);
+
+    const actorEmailMap = new Map<string, string>();
+    admins.forEach((item) => {
+        if (item?._id && item.email) actorEmailMap.set(item._id.toString(), item.email);
+    });
+    users.forEach((item) => {
+        if (item?._id && item.email) actorEmailMap.set(item._id.toString(), item.email);
+    });
+
+    const enrichedLogs = logs.map((item) => ({
+        ...item,
+        email: actorEmailMap.get(item.actorId.toString()) ?? null,
+    }));
 
     const total = await ActivityLog.countDocuments(filter);
     const totalPages = Math.ceil(total / Number(limit));
 
     return {
-        logs,
+        logs: enrichedLogs,
         pagination: {
             totalRecords: total,
             totalPages,
             currentPage: Number(page),
             perPage: Number(limit),
-            recordsOnPage: logs.length,
+            recordsOnPage: enrichedLogs.length,
         },
     };
 };

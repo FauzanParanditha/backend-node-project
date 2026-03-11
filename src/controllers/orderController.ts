@@ -81,7 +81,7 @@ const vatFeeExpression = () =>
         ]),
     );
 
-const realAmountExpression = () => ({
+const netAmountExpression = () => ({
     $subtract: [{ $subtract: ["$totalAmount", totalTransFeeExpression()] }, vatFeeExpression()],
 });
 
@@ -93,7 +93,7 @@ const EXPORT_COLUMNS = [
     "totalAmount",
     "totalTransFee",
     "vatFee",
-    "realAmount",
+    "netAmount",
     "paymentMethod",
     "paymentId",
     "createdAt",
@@ -118,7 +118,7 @@ const GROUPED_EXPORT_COLUMNS = [
     "totalAmount",
     "totalTransFee",
     "vatFee",
-    "totalRealAmount",
+    "totalNetAmount",
 ];
 
 const pickExportRow = (row: Record<string, any>): Record<string, any> => {
@@ -223,7 +223,7 @@ export const exportOrdersXlsx = async (req: Request, res: Response, next: NextFu
                           totalAmount: { $sum: "$totalAmount" },
                           totalTransFee: { $sum: totalTransFeeExpression() },
                           vatFee: { $sum: vatFeeExpression() },
-                          totalRealAmount: { $sum: realAmountExpression() },
+                          totalNetAmount: { $sum: netAmountExpression() },
                           paidCount: {
                               $sum: {
                                   $cond: [{ $eq: ["$paymentStatus", "paid"] }, 1, 0],
@@ -248,7 +248,7 @@ export const exportOrdersXlsx = async (req: Request, res: Response, next: NextFu
                           totalAmount: 1,
                           totalTransFee: 1,
                           vatFee: 1,
-                          totalRealAmount: 1,
+                          totalNetAmount: 1,
                           paidCount: 1,
                           client: {
                               name: "$client.name",
@@ -273,7 +273,7 @@ export const exportOrdersXlsx = async (req: Request, res: Response, next: NextFu
                       $addFields: {
                           totalTransFee: totalTransFeeExpression(),
                           vatFee: vatFeeExpression(),
-                          realAmount: realAmountExpression(),
+                          netAmount: netAmountExpression(),
                       },
                   },
               ];

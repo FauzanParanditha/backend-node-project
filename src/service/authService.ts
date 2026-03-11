@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { ResponseError } from "../error/responseError.js";
 import Admin from "../models/adminModel.js";
@@ -5,6 +6,25 @@ import IPWhitelist from "../models/ipWhitelistModel.js";
 import User from "../models/userModel.js";
 import { compareDoHash, doHash, hmacProcess, normalizeIP } from "../utils/helper.js";
 import { generateForgotPasswordLink, sendForgotPasswordEmail, sendVerifiedEmail } from "./sendMail.js";
+
+const VERIFICATION_CODE_TTL_MS = 5 * 60 * 1000;
+const MAX_VERIFICATION_ATTEMPTS = 5;
+const VERIFICATION_LOCK_MS = 15 * 60 * 1000;
+const FORGOT_PASSWORD_TTL_MS = 5 * 60 * 1000;
+const MAX_FORGOT_PASSWORD_ATTEMPTS = 5;
+const FORGOT_PASSWORD_LOCK_MS = 15 * 60 * 1000;
+
+const generateVerificationCode = (): string => crypto.randomInt(100000, 1000000).toString();
+
+const getVerificationLockMessage = (lockedUntil: number): string => {
+    const retryAfterMinutes = Math.ceil((lockedUntil - Date.now()) / 60000);
+    return `Too many invalid verification attempts. Request a new code in ${Math.max(retryAfterMinutes, 1)} minute(s).`;
+};
+
+const getForgotPasswordLockMessage = (lockedUntil: number): string => {
+    const retryAfterMinutes = Math.ceil((lockedUntil - Date.now()) / 60000);
+    return `Too many invalid reset attempts. Request a new reset code in ${Math.max(retryAfterMinutes, 1)} minute(s).`;
+};
 
 export const loginAdmin = async ({ email, password }: { email: string; password: string }) => {
     const sanitizedEmail = email.trim().toLowerCase();
@@ -21,6 +41,10 @@ export const loginAdmin = async ({ email, password }: { email: string; password:
 
     if (!isValidPassword) {
         throw new ResponseError(400, "Invalid email or password");
+    }
+
+    if (!existAdmin.verified) {
+        throw new ResponseError(403, "Account not verified. Please verify your account first.");
     }
 
     const role = existAdmin.role || "admin";
@@ -79,6 +103,10 @@ export const loginUnified = async ({
             throw new ResponseError(400, "Invalid email or password");
         }
 
+        if (!existAdmin.verified) {
+            throw new ResponseError(403, "Account not verified. Please verify your account first.");
+        }
+
         const role = existAdmin.role || "admin";
         const token = jwt.sign(
             {
@@ -113,6 +141,10 @@ export const loginUnified = async ({
     const isValidPassword = await compareDoHash(password, existUser.password as string);
     if (!isValidPassword) throw new ResponseError(400, "Invalid email or password");
 
+    if (!existUser.verified) {
+        throw new ResponseError(403, "Account not verified. Please verify your account first.");
+    }
+
     const token = jwt.sign(
         {
             userId: existUser._id,
@@ -141,11 +173,20 @@ export const sendVerificationCodeService = async (email: string) => {
 
     if (existAdmin.verified) throw new ResponseError(400, "Admin is already verified!");
 
-    const codeValue = Math.floor(100000 + Math.random() * 900000).toString();
+    if (
+        existAdmin.verificationCodeLockedUntil &&
+        Date.now() < existAdmin.verificationCodeLockedUntil
+    ) {
+        throw new ResponseError(429, getVerificationLockMessage(existAdmin.verificationCodeLockedUntil));
+    }
+
+    const codeValue = generateVerificationCode();
     await sendVerifiedEmail(codeValue, existAdmin.email, existAdmin.fullName);
 
     existAdmin.verificationCode = hmacProcess(codeValue, process.env.HMAC_VERIFICATION_CODE as string);
     existAdmin.verificationCodeValidation = Date.now();
+    existAdmin.verificationCodeAttempts = 0;
+    existAdmin.verificationCodeLockedUntil = undefined;
     await existAdmin.save();
 
     return "Code sent successfully!";
@@ -157,24 +198,54 @@ export const verifyVerificationCodeService = async ({ value }: { value: Record<s
 
     const existAdmin = await Admin.findOne({
         email: { $eq: sanitizedEmail },
-    }).select("+verificationCode +verificationCodeValidation");
+    }).select("+verificationCode +verificationCodeValidation +verificationCodeAttempts +verificationCodeLockedUntil");
     if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
     if (existAdmin.verified) throw new ResponseError(400, "Admin is verified!");
 
+    if (
+        existAdmin.verificationCodeLockedUntil &&
+        Date.now() < existAdmin.verificationCodeLockedUntil
+    ) {
+        throw new ResponseError(429, getVerificationLockMessage(existAdmin.verificationCodeLockedUntil));
+    }
+
     if (!existAdmin.verificationCode || !existAdmin.verificationCodeValidation)
         throw new ResponseError(400, "Something is wrong with the code!");
 
-    if (Date.now() - (existAdmin.verificationCodeValidation as number) > 5 * 60 * 1000)
+    if (Date.now() - (existAdmin.verificationCodeValidation as number) > VERIFICATION_CODE_TTL_MS) {
+        existAdmin.verificationCode = undefined;
+        existAdmin.verificationCodeValidation = undefined;
+        existAdmin.verificationCodeAttempts = 0;
+        await existAdmin.save();
         throw new ResponseError(400, "Code has been expired!");
+    }
 
     const hashedCodeValue = hmacProcess(codeValue, process.env.HMAC_VERIFICATION_CODE as string);
 
-    if (hashedCodeValue !== existAdmin.verificationCode) throw new ResponseError(400, "Unexpected occured!");
+    if (hashedCodeValue !== existAdmin.verificationCode) {
+        const attempts = (existAdmin.verificationCodeAttempts ?? 0) + 1;
+
+        if (attempts >= MAX_VERIFICATION_ATTEMPTS) {
+            existAdmin.verificationCode = undefined;
+            existAdmin.verificationCodeValidation = undefined;
+            existAdmin.verificationCodeAttempts = 0;
+            existAdmin.verificationCodeLockedUntil = Date.now() + VERIFICATION_LOCK_MS;
+            await existAdmin.save();
+            throw new ResponseError(429, getVerificationLockMessage(existAdmin.verificationCodeLockedUntil));
+        }
+
+        existAdmin.verificationCodeAttempts = attempts;
+        await existAdmin.save();
+        throw new ResponseError(400, "Invalid verification code");
+    }
 
     existAdmin.verified = true;
+    existAdmin.verifiedAt = new Date();
     existAdmin.verificationCode = undefined;
     existAdmin.verificationCodeValidation = undefined;
+    existAdmin.verificationCodeAttempts = 0;
+    existAdmin.verificationCodeLockedUntil = undefined;
     await existAdmin.save();
 
     return "successfully verified!";
@@ -202,12 +273,21 @@ export const sendForgotPasswordService = async (email: string) => {
     const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
     if (!existAdmin) return "Send Email Reset Password Successfully";
 
+    if (
+        existAdmin.forgotPasswordCodeLockedUntil &&
+        Date.now() < existAdmin.forgotPasswordCodeLockedUntil
+    ) {
+        throw new ResponseError(429, getForgotPasswordLockMessage(existAdmin.forgotPasswordCodeLockedUntil));
+    }
+
     const codeValue = Math.floor(Math.random() * 100000).toString();
     const url = generateForgotPasswordLink(existAdmin.email, codeValue);
     await sendForgotPasswordEmail(url, existAdmin.email, existAdmin.fullName);
 
     existAdmin.forgotPasswordCode = hmacProcess(codeValue, process.env.HMAC_VERIFICATION_CODE as string);
     existAdmin.forgotPasswordCodeValidation = Date.now();
+    existAdmin.forgotPasswordCodeAttempts = 0;
+    existAdmin.forgotPasswordCodeLockedUntil = undefined;
     await existAdmin.save();
 
     return "Send Email Reset Password Successfully";
@@ -219,22 +299,52 @@ export const verifyForgotPasswordCodeService = async ({ value }: { value: Record
 
     const existAdmin = await Admin.findOne({
         email: { $eq: sanitizedEmail },
-    }).select("+forgotPasswordCode +forgotPasswordCodeValidation");
+    }).select("+forgotPasswordCode +forgotPasswordCodeValidation +forgotPasswordCodeAttempts +forgotPasswordCodeLockedUntil");
     if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
+
+    if (
+        existAdmin.forgotPasswordCodeLockedUntil &&
+        Date.now() < existAdmin.forgotPasswordCodeLockedUntil
+    ) {
+        throw new ResponseError(429, getForgotPasswordLockMessage(existAdmin.forgotPasswordCodeLockedUntil));
+    }
 
     if (!existAdmin.forgotPasswordCode || !existAdmin.forgotPasswordCodeValidation)
         throw new ResponseError(400, "Something is wrong with the code!");
 
-    if (Date.now() - (existAdmin.forgotPasswordCodeValidation as number) > 5 * 60 * 1000)
+    if (Date.now() - (existAdmin.forgotPasswordCodeValidation as number) > FORGOT_PASSWORD_TTL_MS) {
+        existAdmin.forgotPasswordCode = undefined;
+        existAdmin.forgotPasswordCodeValidation = undefined;
+        existAdmin.forgotPasswordCodeAttempts = 0;
+        await existAdmin.save();
         throw new ResponseError(400, "Code has been expired!");
+    }
 
     const hashedCodeValue = hmacProcess(codeValue, process.env.HMAC_VERIFICATION_CODE as string);
 
-    if (hashedCodeValue !== existAdmin.forgotPasswordCode) throw new ResponseError(400, "Unexpected occured!");
+    if (hashedCodeValue !== existAdmin.forgotPasswordCode) {
+        const attempts = (existAdmin.forgotPasswordCodeAttempts ?? 0) + 1;
+
+        if (attempts >= MAX_FORGOT_PASSWORD_ATTEMPTS) {
+            existAdmin.forgotPasswordCode = undefined;
+            existAdmin.forgotPasswordCodeValidation = undefined;
+            existAdmin.forgotPasswordCodeAttempts = 0;
+            existAdmin.forgotPasswordCodeLockedUntil = Date.now() + FORGOT_PASSWORD_LOCK_MS;
+            await existAdmin.save();
+            throw new ResponseError(429, getForgotPasswordLockMessage(existAdmin.forgotPasswordCodeLockedUntil));
+        }
+
+        existAdmin.forgotPasswordCodeAttempts = attempts;
+        await existAdmin.save();
+        throw new ResponseError(400, "Invalid reset code");
+    }
 
     const hashedPassword = await doHash(value.new_password, 12);
     existAdmin.password = hashedPassword;
     existAdmin.forgotPasswordCode = undefined;
+    existAdmin.forgotPasswordCodeValidation = undefined;
+    existAdmin.forgotPasswordCodeAttempts = 0;
+    existAdmin.forgotPasswordCodeLockedUntil = undefined;
     await existAdmin.save();
 
     return "Successfully update password";

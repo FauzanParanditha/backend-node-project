@@ -1,9 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
 import logger from "../application/logger.js";
 import { logActivity } from "../service/activityLogService.js";
-import { getAdminActivityActor } from "../utils/activityActor.js";
+import { getAuthActivityActor, getAdminActivityActor } from "../utils/activityActor.js";
 import * as clientService from "../service/clientService.js";
-import { clientSchema } from "../validators/clientValidator.js";
+import { clientSchema, clientUserUpdateSchema } from "../validators/clientValidator.js";
 
 export const getAllClient = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const {
@@ -16,6 +16,7 @@ export const getAllClient = async (req: Request, res: Response, next: NextFuncti
     } = req.query as Record<string, any>;
 
     try {
+        const { role, userId } = req.auth ?? {};
         const result = await clientService.getAllClients({
             query,
             limit,
@@ -23,6 +24,7 @@ export const getAllClient = async (req: Request, res: Response, next: NextFuncti
             sort_by,
             sort,
             countOnly,
+            userId: role === "user" ? userId : undefined,
         });
 
         if (countOnly) {
@@ -82,7 +84,8 @@ export const client = async (req: Request, res: Response, next: NextFunction): P
     const { id } = req.params;
 
     try {
-        const client = await clientService.client({ id });
+        const { role, userId } = req.auth ?? {};
+        const client = await clientService.client({ id, userId: role === "user" ? userId : undefined });
 
         return res.status(200).json({
             success: true,
@@ -98,37 +101,69 @@ export const client = async (req: Request, res: Response, next: NextFunction): P
 export const updateClient = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { id } = req.params;
     const { name, notifyUrl, userIds, active, availablePaymentIds } = req.body;
-    const { adminId } = req.admin!;
 
     try {
-        const { error, value } = clientSchema.validate({
-            name,
-            notifyUrl,
-            userIds,
-            active,
-            adminId,
-            availablePaymentIds,
-        });
-        if (error) {
-            return res.status(400).json({
-                success: false,
-                message: error.details[0].message,
-            });
-        }
-        await clientService.updateClient({
-            id,
-            value,
-        });
+        const { role, userId, adminId } = req.auth ?? {};
+        let actor: ReturnType<typeof getAuthActivityActor> = getAuthActivityActor(req);
 
-        const actor = getAdminActivityActor(req);
-        if (actor) {
-            logActivity({
-                actorId: actor.actorId,
-                role: actor.role,
-                action: "UPDATE_CLIENT",
-                details: { targetClientId: id, newName: name },
-                ipAddress: req.ip,
-            }).catch(console.error);
+        if (role === "user") {
+            const { error, value } = clientUserUpdateSchema.validate({
+                name,
+                notifyUrl,
+                active,
+            });
+            if (error) {
+                return res.status(400).json({
+                    success: false,
+                    message: error.details[0].message,
+                });
+            }
+
+            const updatedClient = await clientService.updateClient({
+                id,
+                value,
+                userId,
+            });
+            actor = getAuthActivityActor(req);
+
+            if (actor) {
+                logActivity({
+                    actorId: actor.actorId,
+                    role: actor.role,
+                    action: "UPDATE_CLIENT",
+                    details: { targetClientId: id, clientId: updatedClient.clientId, newName: name },
+                    ipAddress: req.ip,
+                }).catch(console.error);
+            }
+        } else {
+            const { error, value } = clientSchema.validate({
+                name,
+                notifyUrl,
+                userIds,
+                active,
+                adminId,
+                availablePaymentIds,
+            });
+            if (error) {
+                return res.status(400).json({
+                    success: false,
+                    message: error.details[0].message,
+                });
+            }
+            const updatedClient = await clientService.updateClient({
+                id,
+                value,
+            });
+
+            if (actor) {
+                logActivity({
+                    actorId: actor.actorId,
+                    role: actor.role,
+                    action: "UPDATE_CLIENT",
+                    details: { targetClientId: id, clientId: updatedClient.clientId, newName: name },
+                    ipAddress: req.ip,
+                }).catch(console.error);
+            }
         }
 
         return res.status(200).json({
@@ -146,7 +181,7 @@ export const deleteClient = async (req: Request, res: Response, next: NextFuncti
     const { adminId } = req.admin!;
 
     try {
-        await clientService.deleteClient({
+        const deletedClient = await clientService.deleteClient({
             id,
             adminId,
         });
@@ -157,7 +192,7 @@ export const deleteClient = async (req: Request, res: Response, next: NextFuncti
                 actorId: actor.actorId,
                 role: actor.role,
                 action: "DELETE_CLIENT",
-                details: { targetClientId: id },
+                details: { targetClientId: id, clientId: deletedClient.clientId, clientName: deletedClient.name },
                 ipAddress: req.ip,
             }).catch(console.error);
         }

@@ -5,6 +5,11 @@ import Client from "../models/clientModel.js";
 import type { ListQueryParams } from "../types/service.js";
 import { escapeRegExp } from "../utils/helper.js";
 
+const getClientIdsByUserId = async (userId: string): Promise<string[]> => {
+    const clients = await Client.find({ userIds: { $in: [userId] } }).select("+clientId");
+    return clients.map((item) => item.clientId).filter(Boolean) as string[];
+};
+
 export async function getClientPublicKey(clientId: string): Promise<string> {
     const clientKey = await ClientKeyModel.findOne({ clientId, active: true }).lean().select("+publicKey");
     if (!clientKey) {
@@ -13,16 +18,28 @@ export async function getClientPublicKey(clientId: string): Promise<string> {
     return clientKey.publicKey as string;
 }
 
-export const getAllClients = async ({ query, limit, page, sort_by, sort, countOnly }: ListQueryParams) => {
+export const getAllClients = async ({
+    query,
+    limit,
+    page,
+    sort_by,
+    sort,
+    countOnly,
+    userId,
+}: ListQueryParams & { userId?: string }) => {
     const filter: Record<string, unknown> = {};
 
     // Apply search term if provided
     if (query && query.trim()) {
         const searchTerm = escapeRegExp(query.trim());
         filter["$or"] = [
-            { name: { $regex: searchTerm, $options: "i" } },
             { clientId: { $regex: searchTerm, $options: "i" } },
         ];
+    }
+
+    if (userId) {
+        const clientIds = await getClientIdsByUserId(userId);
+        filter.clientId = { $in: clientIds.length ? clientIds : ["__none__"] };
     }
 
     const sortField = sort_by || "_id";
@@ -81,8 +98,15 @@ export const createClient = async ({ value }: { value: Record<string, any> }) =>
     return savedClient;
 };
 
-export const client = async ({ id }: { id: string }) => {
-    const result = await ClientKeyModel.findOne({ _id: id }).select("+publicKey").populate({
+export const client = async ({ id, userId }: { id: string; userId?: string }) => {
+    const filter: Record<string, unknown> = { _id: id };
+
+    if (userId) {
+        const clientIds = await getClientIdsByUserId(userId);
+        filter.clientId = { $in: clientIds.length ? clientIds : ["__none__"] };
+    }
+
+    const result = await ClientKeyModel.findOne(filter).select("+publicKey").populate({
         path: "adminId",
         select: "email",
     });
@@ -90,25 +114,33 @@ export const client = async ({ id }: { id: string }) => {
     return result;
 };
 
-export const updateClient = async ({ id, value }: { id: string; value: Record<string, any> }) => {
-    const existClient = await ClientKeyModel.findOne({ _id: id });
-    if (!existClient) throw new ResponseError(404, "Client does not exist!");
+export const updateClient = async ({ id, value, userId }: { id: string; value: Record<string, any>; userId?: string }) => {
+    const filter: Record<string, unknown> = { _id: id };
 
-    if (existClient.adminId.toString() != value.adminId) throw new ResponseError(401, "Unauthorized!");
-
-    const verifiedAdmin = await Admin.findOne({ _id: value.adminId });
-    if (!verifiedAdmin?.verified) {
-        throw new ResponseError(400, `Admin is not verified`);
+    if (userId) {
+        const clientIds = await getClientIdsByUserId(userId);
+        filter.clientId = { $in: clientIds.length ? clientIds : ["__none__"] };
     }
 
-    // Sanitize the input
-    const sanitizedName = value.clientId.trim();
+    const existClient = await ClientKeyModel.findOne(filter);
+    if (!existClient) throw new ResponseError(404, "Client does not exist!");
 
-    if (existClient.clientId != value.clientId) {
-        const existingClient = await ClientKeyModel.findOne({
-            clientId: { $eq: sanitizedName },
-        });
-        if (existingClient) throw new ResponseError(400, `Client ${value.name} already exist!`);
+    if (!userId) {
+        if (existClient.adminId.toString() != value.adminId) throw new ResponseError(401, "Unauthorized!");
+
+        const verifiedAdmin = await Admin.findOne({ _id: value.adminId });
+        if (!verifiedAdmin?.verified) {
+            throw new ResponseError(400, `Admin is not verified`);
+        }
+
+        const sanitizedName = value.clientId.trim();
+
+        if (existClient.clientId != value.clientId) {
+            const existingClient = await ClientKeyModel.findOne({
+                clientId: { $eq: sanitizedName },
+            });
+            if (existingClient) throw new ResponseError(400, `Client ${value.name} already exist!`);
+        }
     }
 
     existClient.publicKey = value.publicKey;
@@ -129,5 +161,8 @@ export const deleteClient = async ({ id, adminId }: { id: string; adminId: strin
     if (existClient.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
 
     await ClientKeyModel.deleteOne({ _id: id });
-    return true;
+    return {
+        id: String(existClient._id),
+        clientId: existClient.clientId,
+    };
 };
