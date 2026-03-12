@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import logger from "../application/logger.js";
 import { getActivityLogs } from "../service/activityLogService.js";
+import { isAdminRole } from "../utils/authRole.js";
 import * as apiLogService from "../service/apiLogService.js";
 
 export const getAllApiLog = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
@@ -153,7 +154,7 @@ export const getAllActivityLog = async (req: Request, res: Response, next: NextF
 
     let filterRole = role;
 
-    if (requesterRole && requesterRole !== "admin") {
+    if (requesterRole && !isAdminRole(requesterRole)) {
         filterRole = requesterRole;
     }
 

@@ -1,7 +1,7 @@
 import type { Request } from "express";
-import { isAdminRole, normalizeAdminActivityRole } from "./authRole.js";
+import { isAdminRole } from "./authRole.js";
 
-type ActivityRole = "admin" | "finance" | "user" | "client";
+type ActivityRole = "admin" | "finance" | "super_admin" | "user" | "client";
 
 export const resolveActivityActor = ({
     role,
@@ -17,7 +17,7 @@ export const resolveActivityActor = ({
 
         return {
             actorId: adminId.toString(),
-            role: normalizeAdminActivityRole(role),
+            role: role as Extract<ActivityRole, "admin" | "finance" | "super_admin">,
         };
     }
 
@@ -35,14 +35,14 @@ export const resolveActivityActor = ({
 
 export const getAdminActivityActor = (
     req: Request,
-): { actorId: string; role: Extract<ActivityRole, "admin" | "finance"> } | null => {
+): { actorId: string; role: Extract<ActivityRole, "admin" | "finance" | "super_admin"> } | null => {
     const { adminId, role } = req.admin ?? {};
 
-    if (!adminId) return null;
+    if (!adminId || !isAdminRole(role)) return null;
 
     return {
         actorId: adminId.toString(),
-        role: normalizeAdminActivityRole(role),
+        role: role as Extract<ActivityRole, "admin" | "finance" | "super_admin">,
     };
 };
 

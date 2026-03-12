@@ -7,7 +7,7 @@ import * as authService from "../service/authService.js";
 import * as authServiceUser from "../service/authServiceUser.js";
 import Admin from "../models/adminModel.js";
 import { getAuthActivityActor } from "../utils/activityActor.js";
-import { isAdminRole, normalizeAdminActivityRole } from "../utils/authRole.js";
+import { isAdminRole } from "../utils/authRole.js";
 import {
     acceptCodeSchema,
     acceptFPCodeSchema,
@@ -245,7 +245,10 @@ export const verifyForgotPasswordCode = async (req: Request, res: Response, next
         }
 
         const sanitizedEmail = email.trim();
-        const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
+        const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } }).populate({
+            path: "roleId",
+            select: "name",
+        });
 
         if (!existAdmin) {
             throw new ResponseError(400, PUBLIC_INVALID_CODE_RESPONSE);
@@ -255,7 +258,10 @@ export const verifyForgotPasswordCode = async (req: Request, res: Response, next
 
         logActivity({
             actorId: existAdmin ? String(existAdmin._id) : email,
-            role: normalizeAdminActivityRole(existAdmin?.role),
+            role: ((existAdmin.roleId as { name?: string } | null)?.name ?? "admin") as
+                | "admin"
+                | "finance"
+                | "super_admin",
             action: "RESET_PASSWORD",
             details: { resetEmail: email },
             ipAddress: req.ip,

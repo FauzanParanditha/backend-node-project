@@ -6,7 +6,7 @@ import User from "../models/userModel.js";
 
 interface LogActivityParams {
     actorId: string | mongoose.Types.ObjectId;
-    role: "admin" | "user" | "client" | "finance";
+    role: "admin" | "user" | "client" | "finance" | "super_admin";
     action: string;
     details?: Record<string, unknown>;
     ipAddress?: string;
@@ -53,7 +53,9 @@ export const getActivityLogs = async ({
 
     const adminActorIds = [
         ...new Set(
-            logs.filter((item) => item.role === "admin" || item.role === "finance").map((item) => item.actorId.toString()),
+            logs
+                .filter((item) => item.role === "admin" || item.role === "finance" || item.role === "super_admin")
+                .map((item) => item.actorId.toString()),
         ),
     ];
     const userActorIds = [

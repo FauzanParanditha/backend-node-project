@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 export interface IActivityLog extends Document {
     actorId: mongoose.Types.ObjectId;
-    role: "admin" | "user" | "client" | "finance";
+    role: "admin" | "user" | "client" | "finance" | "super_admin";
     action: string;
     details?: Record<string, unknown>;
     ipAddress?: string;
@@ -20,7 +20,7 @@ const activityLogSchema = new mongoose.Schema<IActivityLog>(
         role: {
             type: String,
             required: true,
-            enum: ["admin", "user", "client", "finance"],
+            enum: ["admin", "user", "client", "finance", "super_admin"],
         },
         action: {
             type: String,

@@ -8,7 +8,7 @@ import * as authService from "../service/authService.js";
 import * as authServiceUser from "../service/authServiceUser.js";
 import { sendAuthAlert } from "../service/discordService.js";
 import { getAuthActivityActor, resolveActivityActor } from "../utils/activityActor.js";
-import { isAdminRole, normalizeAdminActivityRole } from "../utils/authRole.js";
+import { isAdminRole } from "../utils/authRole.js";
 import {
     acceptCodeSchema,
     acceptFPCodeSchema,
@@ -244,7 +244,7 @@ export const changePasswordByAdmin = async (req: Request, res: Response, next: N
         if (actor && isAdminRole(actor.role)) {
             logActivity({
                 actorId: actor.actorId,
-                role: normalizeAdminActivityRole(actor.role),
+                role: actor.role,
                 action: "CHANGE_PASSWORD_BY_ADMIN",
                 details: { targetUserId: userId },
                 ipAddress: req.ip,
@@ -265,7 +265,10 @@ export const sendForgotPassword = async (req: Request, res: Response, next: Next
     const { email } = req.body;
     try {
         const sanitizedEmail = email.trim();
-        const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
+        const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } }).populate({
+            path: "roleId",
+            select: "name",
+        });
 
         if (existAdmin) {
             await authService.sendForgotPasswordService(email);
@@ -331,7 +334,12 @@ export const verifyForgotPasswordCode = async (req: Request, res: Response, next
         const actorIdentity = existAdmin ? existAdmin._id : email;
         logActivity({
             actorId: String(actorIdentity), // May not be an ObjectId if tracking email fallback
-            role: existAdmin ? normalizeAdminActivityRole(existAdmin.role) : "user",
+            role: existAdmin
+                ? (((existAdmin.roleId as { name?: string } | null)?.name ?? "admin") as
+                      | "admin"
+                      | "finance"
+                      | "super_admin")
+                : "user",
             action: "RESET_PASSWORD",
             details: { resetEmail: email },
             ipAddress: req.ip,
