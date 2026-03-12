@@ -38,7 +38,9 @@ vi.mock("../src/service/sendMail.js", () => ({
 }));
 
 const createQuery = <T>(result: T) => ({
-    select: vi.fn().mockResolvedValue(result),
+    select: vi.fn().mockReturnValue({
+        populate: vi.fn().mockResolvedValue(result),
+    }),
 });
 
 describe("auth service security", () => {

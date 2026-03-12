@@ -2,6 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import Admin from "../src/models/adminModel.js";
 import Client from "../src/models/clientModel.js";
 import Order from "../src/models/orderModel.js";
+import Role from "../src/models/roleModel.js";
+import { ALL_PERMISSIONS } from "../src/constants/permissions.js";
 import User from "../src/models/userModel.js";
 import { dashboard } from "../src/service/adminService.js";
 import { clearDatabase, closeMongo, setupMongo } from "./setup-test.js";
@@ -10,12 +12,19 @@ describe("Admin Service - Dashboard Analytics", () => {
     beforeAll(async () => {
         await setupMongo();
 
+        // Seed a role
+        const role = await Role.create({
+            name: "admin",
+            permissions: ALL_PERMISSIONS,
+            isSystem: true,
+        });
+
         // 1. Seed Admin
         const admin = await Admin.create({
             email: "analytic_admin@test.com",
             fullName: "Analytic Admin",
             password: "hashedPassword123",
-            role: "admin",
+            roleId: role._id,
             verified: true,
         });
 

@@ -23,6 +23,8 @@ import {
 import { balance, xenditCallback } from "../controllers/xenditController.js";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
 import { jwtUnifiedMiddleware } from "../middlewares/jwtUnified.js";
+import { requirePermission } from "../middlewares/requirePermission.js";
+import { PERMISSIONS } from "../constants/permissions.js";
 import { orderLimiter } from "../middlewares/rateLimiter.js";
 import { jwtMiddlewareVerify } from "../middlewares/verifyMiddleware.js";
 
@@ -409,8 +411,8 @@ router.get("/order/:id", jwtMiddlewareVerify, order);
  */
 router.get("/order/status/:id", jwtUnifiedMiddleware, order);
 
-router.put("/order/:id", jwtMiddlewareAdmin, editOrder);
-router.get("/xendit/balance", jwtMiddlewareAdmin, balance);
+router.put("/order/:id", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.ORDER_UPDATE), editOrder);
+router.get("/xendit/balance", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.DASHBOARD_VIEW), balance);
 
 // Paylabs
 router.post("/order/webhook/paylabs", paylabsCallback);

@@ -16,65 +16,32 @@ import {
     getAllFailedCallbackLog,
 } from "../controllers/apiLogController.js";
 import { retryCallback } from "../controllers/retryCallbackController.js";
+import { PERMISSIONS } from "../constants/permissions.js";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
 import { jwtUnifiedMiddleware } from "../middlewares/jwtUnified.js";
+import { requirePermission } from "../middlewares/requirePermission.js";
 
 const router = express.Router();
 
-/**
- * @swagger
- * /api/v1/adm/dashboard:
- *   get:
- *     summary: Dashboard data (admin or user scoped)
- *     tags:
- *       - Admin
- *     security:
- *       - BearerAuth: []
- *     responses:
- *       200:
- *         description: Dashboard data
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Access forbidden
- */
-router.get("/admins", jwtMiddlewareAdmin, getAllAdmin);
-/**
- * @swagger
- * /api/v1/adm/admin/{id}:
- *   get:
- *     summary: Admin detail (admin) or self user profile (user)
- *     tags:
- *       - Admin
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Admin or user data
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Access forbidden
- */
+// Admin CRUD
+router.get("/admins", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.ADMIN_LIST), getAllAdmin);
 router.get("/admin/:id", jwtUnifiedMiddleware, admin);
-router.post("/register", jwtMiddlewareAdmin, register);
-router.put("/admin/:id", jwtMiddlewareAdmin, updateAdmin);
-router.delete("/admin/:id", jwtMiddlewareAdmin, deleteAdmin);
+router.post("/register", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.ADMIN_CREATE), register);
+router.put("/admin/:id", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.ADMIN_UPDATE), updateAdmin);
+router.delete("/admin/:id", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.ADMIN_DELETE), deleteAdmin);
 
-router.get("/apilogs", jwtMiddlewareAdmin, getAllApiLog);
-router.get("/emaillogs", jwtMiddlewareAdmin, getAllEmailLog);
-router.get("/callbacklogs", jwtMiddlewareAdmin, getAllCallbackLog);
-router.get("/failed-callbacklogs", jwtMiddlewareAdmin, getAllFailedCallbackLog);
-router.get("/activitylogs", jwtMiddlewareAdmin, getAllActivityLog);
+// Logs
+router.get("/apilogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_API), getAllApiLog);
+router.get("/emaillogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_EMAIL), getAllEmailLog);
+router.get("/callbacklogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_CALLBACK), getAllCallbackLog);
+router.get("/failed-callbacklogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_CALLBACK), getAllFailedCallbackLog);
+router.get("/activitylogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_ACTIVITY), getAllActivityLog);
 
-router.post("/retry/callback/:id", jwtMiddlewareAdmin, retryCallback);
+// Retry
+router.post("/retry/callback/:id", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_RETRY), retryCallback);
 
+// Dashboard (unified: admin sees all, user sees scoped)
 router.get("/dashboard", jwtUnifiedMiddleware, dashboard);
 router.get("/dashboard/chart", jwtUnifiedMiddleware, dashboardChart);
+
 export default router;

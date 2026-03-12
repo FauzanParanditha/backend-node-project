@@ -17,7 +17,10 @@ export interface AdminPayload extends JwtPayload {
     adminId: string;
     email: string;
     verified: boolean;
-    role: string;
+    /** Role ObjectId referencing the Role collection */
+    roleId: string;
+    /** @deprecated Legacy role string — kept for backward compatibility during migration */
+    role?: string;
 }
 
 /**
@@ -38,7 +41,10 @@ export interface AuthPayload extends JwtPayload {
     userId?: string;
     email: string;
     verified: boolean;
-    role: string;
+    /** Role ObjectId referencing the Role collection (admin/finance only) */
+    roleId?: string;
+    /** @deprecated Legacy role string — kept for backward compatibility during migration */
+    role?: string;
 }
 
 declare global {
@@ -52,6 +58,8 @@ declare global {
             auth?: AuthPayload;
             /** Set by jwtMiddlewareVerify — the matched Client document */
             partnerId?: PaymentPartner;
+            /** Set by requirePermission — resolved permissions for the current role */
+            permissions?: string[];
         }
     }
 }

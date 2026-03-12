@@ -2,6 +2,8 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { ResponseError } from "../error/responseError.js";
 import Admin from "../models/adminModel.js";
+// Side-effect import: registers "Role" model with Mongoose so .populate("roleId") works
+import "../models/roleModel.js";
 import IPWhitelist from "../models/ipWhitelistModel.js";
 import User from "../models/userModel.js";
 import { compareDoHash, doHash, hmacProcess, normalizeIP } from "../utils/helper.js";
@@ -31,7 +33,7 @@ export const loginAdmin = async ({ email, password }: { email: string; password:
 
     const existAdmin = await Admin.findOne({
         email: sanitizedEmail,
-    }).select("+password");
+    }).select("+password").populate("roleId");
 
     if (!existAdmin) {
         throw new ResponseError(400, "Invalid email or password");
@@ -47,13 +49,15 @@ export const loginAdmin = async ({ email, password }: { email: string; password:
         throw new ResponseError(403, "Account not verified. Please verify your account first.");
     }
 
-    const role = existAdmin.role || "admin";
+    const populatedRole = existAdmin.roleId as any;
+    const roleName: string = populatedRole?.name ?? "admin";
     const token = jwt.sign(
         {
             adminId: String(existAdmin._id),
             email: existAdmin.email,
             verified: existAdmin.verified,
-            role,
+            roleId: String(existAdmin.roleId?._id ?? existAdmin.roleId),
+            role: roleName,
         },
         process.env.ACCESS_TOKEN_ADMIN_PRIVATE_KEY as string,
         {
@@ -83,7 +87,7 @@ export const loginUnified = async ({
 
     const existAdmin = await Admin.findOne({
         email: sanitizedEmail,
-    }).select("+password");
+    }).select("+password").populate("roleId");
 
     if (existAdmin) {
         if (!clientIP) throw new ResponseError(400, "Client IP not provided");
@@ -107,12 +111,14 @@ export const loginUnified = async ({
             throw new ResponseError(403, "Account not verified. Please verify your account first.");
         }
 
-        const role = existAdmin.role || "admin";
+        const populatedRole = existAdmin.roleId as any;
+        const role: string = populatedRole?.name ?? "admin";
         const token = jwt.sign(
             {
                 adminId: String(existAdmin._id),
                 email: existAdmin.email,
                 verified: existAdmin.verified,
+                roleId: String(existAdmin.roleId?._id ?? existAdmin.roleId),
                 role,
             },
             process.env.ACCESS_TOKEN_ADMIN_PRIVATE_KEY as string,

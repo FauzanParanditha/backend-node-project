@@ -5,6 +5,7 @@ import User from "../models/userModel.js";
 import { logActivity } from "../service/activityLogService.js";
 import * as adminService from "../service/adminService.js";
 import { getAdminActivityActor } from "../utils/activityActor.js";
+import { isAdminRole } from "../utils/authRole.js";
 import { registerSchema, updateAdminSchema } from "../validators/authValidator.js";
 
 export const getAllAdmin = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
@@ -44,18 +45,18 @@ export const getAllAdmin = async (req: Request, res: Response, next: NextFunctio
 };
 
 export const register = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { email, password, fullName, role } = req.body;
+    const { email, password, fullName, roleId } = req.body;
     const { adminId } = req.admin!;
 
     try {
-        const { error } = registerSchema.validate({ email, password, fullName, role });
+        const { error } = registerSchema.validate({ email, password, fullName, roleId });
         if (error) return res.status(400).json({ success: false, message: error.details[0].message });
 
         await adminService.registerAdmin({
             email,
             password,
             fullName,
-            role,
+            roleId,
             adminId,
         });
 
@@ -65,7 +66,7 @@ export const register = async (req: Request, res: Response, next: NextFunction):
                 actorId: actor.actorId,
                 role: actor.role,
                 action: "CREATE_ADMIN",
-                details: { newAdminEmail: email, newAdminRole: role },
+                details: { newAdminEmail: email, newAdminRoleId: roleId },
                 ipAddress: req.ip,
             }).catch(console.error);
         }
@@ -83,7 +84,7 @@ export const admin = async (req: Request, res: Response, next: NextFunction): Pr
     try {
         const { role, adminId: _adminId, userId } = req.auth ?? {};
 
-        if (role === "admin") {
+        if (isAdminRole(role)) {
             const admin = await adminService.admin({ id });
 
             return res.status(200).json({
@@ -223,7 +224,7 @@ export const dashboard = async (req: Request, res: Response, next: NextFunction)
             groupBy,
         };
 
-        if (role === "admin" || role === "finance") {
+        if (isAdminRole(role)) {
             const result = await adminService.dashboard(dashboardParams);
 
             return res.status(200).json({
@@ -273,7 +274,7 @@ export const dashboardChart = async (req: Request, res: Response, next: NextFunc
             throw new ResponseError(400, "Invalid groupBy. Use time or client");
         }
 
-        if (role === "admin" || role === "finance") {
+        if (isAdminRole(role)) {
             const chart = await adminService.dashboardChart({ period, date, month, year, clientId, groupBy, status });
 
             return res.status(200).json({

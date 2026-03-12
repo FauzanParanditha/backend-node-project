@@ -4,6 +4,8 @@ import { web } from "../src/application/web.js";
 import Admin from "../src/models/adminModel.js";
 import Client from "../src/models/clientModel.js";
 import Order from "../src/models/orderModel.js";
+import Role from "../src/models/roleModel.js";
+import { ALL_PERMISSIONS } from "../src/constants/permissions.js";
 import * as paylabs from "../src/service/paylabs.js";
 import { clearDatabase, closeMongo, setupMongo } from "./setup-test.js";
 
@@ -17,12 +19,19 @@ describe("POST /api/v1/order/webhook/paylabs", () => {
         originalMerchantId = process.env.PAYLABS_MERCHANT_ID;
         process.env.PAYLABS_MERCHANT_ID = TEMP_MERCHANT_ID;
 
+        // Seed a role
+        const role = await Role.create({
+            name: "admin",
+            permissions: ALL_PERMISSIONS,
+            isSystem: true,
+        });
+
         // Seed an Admin first because Client requires adminId
         const admin = await Admin.create({
             email: "admin_webhook@test.com",
             fullName: "Test Admin Webhook",
             password: "hashedPassword123",
-            role: "admin",
+            roleId: role._id,
             verified: true,
         });
 

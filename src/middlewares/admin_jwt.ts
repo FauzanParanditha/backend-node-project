@@ -41,7 +41,7 @@ export const jwtMiddlewareAdmin = async (req: Request, res: Response, next: Next
             return;
         }
 
-        // Inject admin context
+        // Inject admin context (includes roleId from JWT)
         req.admin = decoded as Express.Request["admin"];
         next();
     } catch (error: unknown) {

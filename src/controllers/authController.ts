@@ -7,6 +7,7 @@ import * as authService from "../service/authService.js";
 import * as authServiceUser from "../service/authServiceUser.js";
 import Admin from "../models/adminModel.js";
 import { getAuthActivityActor } from "../utils/activityActor.js";
+import { isAdminRole, normalizeAdminActivityRole } from "../utils/authRole.js";
 import {
     acceptCodeSchema,
     acceptFPCodeSchema,
@@ -169,9 +170,9 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
     try {
         if (!role) throw new ResponseError(400, "Role not provided");
 
-        const isAdminRole = role === "admin" || role === "finance";
-        const identityId = isAdminRole ? adminId : userId;
-        const identityKey = isAdminRole ? "adminId" : "userId";
+        const adminRole = isAdminRole(role);
+        const identityId = adminRole ? adminId : userId;
+        const identityKey = adminRole ? "adminId" : "userId";
 
         const { error, value } = changePasswordSchema.validate({
             old_password,
@@ -187,7 +188,7 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
         }
 
         let message;
-        if (role === "admin" || role === "finance") {
+        if (isAdminRole(role)) {
             message = await authService.changePasswordService({ value });
         } else if (role === "user") {
             message = await authServiceUser.changePasswordService({ value });
@@ -254,7 +255,7 @@ export const verifyForgotPasswordCode = async (req: Request, res: Response, next
 
         logActivity({
             actorId: existAdmin ? String(existAdmin._id) : email,
-            role: existAdmin?.role === "finance" ? "finance" : "admin",
+            role: normalizeAdminActivityRole(existAdmin?.role),
             action: "RESET_PASSWORD",
             details: { resetEmail: email },
             ipAddress: req.ip,

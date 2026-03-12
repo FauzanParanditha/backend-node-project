@@ -27,9 +27,11 @@ import ipWhitelistRouter from "../routers/ipWhitelistRouter.js";
 import orderRouter from "../routers/orderRouter.js";
 import paymentRouter from "../routers/paymentRouter.js";
 import productRouter from "../routers/productRouter.js";
+import roleRouter from "../routers/roleRouter.js";
 import userRouter from "../routers/userRouter.js";
 import { generateHeadersForward, generateRequestId, verifySignatureMiddleware } from "../service/paylabs.js";
 import swaggerSpec from "../swagger.js";
+import { isAdminRole } from "../utils/authRole.js";
 import { ensureUploadsDirExists } from "../utils/helper.js";
 
 dotenv.config();
@@ -140,6 +142,7 @@ web.get("/redoc", (_req, res) => {
 web.use("/api/v1/auth", authRouterUser);
 web.use("/adm/auth", authRouter);
 web.use("/api/v1/adm", adminRouter);
+web.use("/api/v1/adm", roleRouter);
 web.use("/api/v1", ipWhitelistRouter);
 web.use("/api/v1", availablePaymentRouter);
 web.use("/api/v1", categoryRouter);
@@ -212,7 +215,7 @@ web.get("/me", jwtUnifiedMiddleware, (async (req: any, res: any, next: any) => {
     try {
         const { role, adminId, userId } = req.auth ?? {};
 
-        if (role === "admin" || role === "finance") {
+        if (isAdminRole(role)) {
             if (!adminId) throw new ResponseError(400, "Admin ID not provided");
 
             const existAdmin = await Admin.findById(adminId);

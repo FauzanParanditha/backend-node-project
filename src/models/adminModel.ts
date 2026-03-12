@@ -1,11 +1,14 @@
-import type { Document } from "mongoose";
+import type { Document, Types } from "mongoose";
 import mongoose from "mongoose";
 
 export interface IAdmin extends Document {
     email: string;
     fullName: string;
     password: string;
-    role: "admin" | "finance";
+    /** Reference to Role collection */
+    roleId: Types.ObjectId;
+    /** @deprecated Virtual field — resolved from roleId for backward compatibility */
+    role?: string;
     verified: boolean;
     verifiedAt?: Date;
     verificationCode?: string;
@@ -41,10 +44,10 @@ const adminSchema = new mongoose.Schema<IAdmin>(
             trim: true,
             select: false,
         },
-        role: {
-            type: String,
-            enum: ["admin", "finance"],
-            default: "admin",
+        roleId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Role",
+            required: [true, "Role is required"],
         },
         verified: {
             type: Boolean,

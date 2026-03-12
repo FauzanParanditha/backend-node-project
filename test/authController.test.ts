@@ -4,11 +4,20 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { web } from "../src/application/web.js";
 import Admin from "../src/models/adminModel.js";
 import IPWhitelist from "../src/models/ipWhitelistModel.js";
+import Role from "../src/models/roleModel.js";
+import { ALL_PERMISSIONS } from "../src/constants/permissions.js";
 import { clearDatabase, closeMongo, setupMongo } from "./setup-test.js";
 
 describe("POST /api/v1/auth/login", () => {
     beforeAll(async () => {
         await setupMongo();
+
+        // Seed a default role
+        const role = await Role.create({
+            name: "admin",
+            permissions: ALL_PERMISSIONS,
+            isSystem: true,
+        });
 
         // Seed an admin
         const hashedPassword = await bcrypt.hash("Admin@123", 10);
@@ -16,7 +25,7 @@ describe("POST /api/v1/auth/login", () => {
             email: "admin@test.com",
             fullName: "Test Admin",
             password: hashedPassword,
-            role: "admin",
+            roleId: role._id,
             verified: true,
         });
 
@@ -71,11 +80,12 @@ describe("POST /api/v1/auth/login", () => {
 
     it("should reject login for unverified accounts", async () => {
         const hashedPassword = await bcrypt.hash("User@1234", 10);
+        const role = await Role.findOne({ name: "admin" });
         await Admin.create({
             email: "pending@test.com",
             fullName: "Pending Admin",
             password: hashedPassword,
-            role: "admin",
+            roleId: role!._id,
             verified: false,
         });
 

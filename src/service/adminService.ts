@@ -2,9 +2,23 @@ import { ResponseError } from "../error/responseError.js";
 import Admin from "../models/adminModel.js";
 import Client from "../models/clientModel.js";
 import Order from "../models/orderModel.js";
+import Role from "../models/roleModel.js";
 import User from "../models/userModel.js";
 import type { ListQueryParams } from "../types/service.js";
 import { doHash, escapeRegExp } from "../utils/helper.js";
+
+const serializeAdminWithRole = (admin: any) => {
+    const plainAdmin = typeof admin.toObject === "function" ? admin.toObject() : admin;
+    const populatedRole = plainAdmin.roleId;
+    const roleName = populatedRole && typeof populatedRole === "object" ? populatedRole.name ?? null : null;
+
+    return {
+        ...plainAdmin,
+        roleId: populatedRole && typeof populatedRole === "object" ? populatedRole._id : plainAdmin.roleId,
+        role: roleName,
+        roleName,
+    };
+};
 
 export const getAllAdmins = async ({ query, limit, page, sort_by, sort, countOnly }: ListQueryParams) => {
     const filter: Record<string, unknown> = {};
@@ -28,6 +42,7 @@ export const getAllAdmins = async ({ query, limit, page, sort_by, sort, countOnl
     }
 
     const admins = await Admin.find(filter)
+        .populate({ path: "roleId", select: "name" })
         .sort({ [sortField]: sortValue as 1 | -1 })
         .limit(limitNum)
         .skip(skip)
@@ -37,7 +52,7 @@ export const getAllAdmins = async ({ query, limit, page, sort_by, sort, countOnl
     const totalPages = Math.ceil(total / limitNum);
 
     return {
-        admins,
+        admins: admins.map(serializeAdminWithRole),
         pagination: {
             totalRecords: total,
             totalPages,
@@ -52,13 +67,13 @@ export const registerAdmin = async ({
     email,
     password,
     fullName,
-    role,
+    roleId,
     adminId,
 }: {
     email: string;
     password: string;
     fullName: string;
-    role: string;
+    roleId: string;
     adminId: string;
 }) => {
     const sanitizedEmail = email.trim();
@@ -71,17 +86,21 @@ export const registerAdmin = async ({
         throw new ResponseError(400, `Admin is not verified`);
     }
 
+    // Validate that the role exists
+    const existRole = await Role.findById(roleId);
+    if (!existRole) throw new ResponseError(400, "Role does not exist!");
+
     const hashPassword = await doHash(password, 12);
-    const newAdmin = new Admin({ email, password: hashPassword, fullName, role });
+    const newAdmin = new Admin({ email, password: hashPassword, fullName, roleId });
     const savedAdmin = await newAdmin.save();
     (savedAdmin as unknown as Record<string, unknown>).password = undefined;
     return savedAdmin;
 };
 
 export const admin = async ({ id }: { id: string }) => {
-    const result = await Admin.findOne({ _id: id });
+    const result = await Admin.findOne({ _id: id }).populate({ path: "roleId", select: "name" });
     if (!result) throw new ResponseError(404, "Admin does not exist!");
-    return result;
+    return serializeAdminWithRole(result);
 };
 
 export const updateAdmin = async ({
@@ -101,17 +120,25 @@ export const updateAdmin = async ({
         throw new ResponseError(400, `Admin is not verified`);
     }
 
-    // Sanitize the input
-    const sanitizedadmin = value.fullName.trim();
-
-    if (existAdmin.fullName != value.fullName) {
-        const existingAdmin = await Admin.findOne({
-            fullName: { $eq: sanitizedadmin },
-        });
-        if (existingAdmin) throw new ResponseError(400, `Admin ${value.fullName} already exist!`);
+    // Update fullName if provided
+    if (value.fullName) {
+        const sanitizedadmin = value.fullName.trim();
+        if (existAdmin.fullName != value.fullName) {
+            const existingAdmin = await Admin.findOne({
+                fullName: { $eq: sanitizedadmin },
+            });
+            if (existingAdmin) throw new ResponseError(400, `Admin ${value.fullName} already exist!`);
+        }
+        existAdmin.fullName = value.fullName;
     }
 
-    existAdmin.fullName = value.fullName;
+    // Update roleId if provided
+    if (value.roleId) {
+        const roleExists = await Role.findById(value.roleId);
+        if (!roleExists) throw new ResponseError(400, "Role does not exist!");
+        existAdmin.roleId = value.roleId;
+    }
+
     const result = await existAdmin.save();
     return result;
 };

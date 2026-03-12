@@ -11,7 +11,9 @@ export const registerSchema = joi.object({
         }),
     fullName: joi.string().max(100).required(),
     password: joi.string().required().pattern(new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).{8,}$")),
-    role: joi.string().valid("admin", "finance").optional(),
+    roleId: joi.string().required().messages({
+        "any.required": "Role is required",
+    }),
 });
 
 export const updateAdminSchema = joi.object({

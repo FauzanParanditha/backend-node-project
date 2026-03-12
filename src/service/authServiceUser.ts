@@ -1,10 +1,9 @@
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { ResponseError } from "../error/responseError.js";
-import transport from "../middlewares/sendMail.js";
 import User from "../models/userModel.js";
 import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
-import { generateForgotPasswordLink, sendForgotPasswordEmail } from "./sendMail.js";
+import { generateForgotPasswordLink, sendForgotPasswordEmail, sendVerifiedEmail } from "./sendMail.js";
 
 const VERIFICATION_CODE_TTL_MS = 5 * 60 * 1000;
 const MAX_VERIFICATION_ATTEMPTS = 5;
@@ -69,14 +68,7 @@ export const sendVerificationCodeService = async (email: string) => {
     }
 
     const codeValue = generateVerificationCode();
-    const info = await transport.sendMail({
-        from: process.env.MAIL_ADDRESS,
-        to: existUser.email,
-        subject: "Verification code",
-        html: `<h1>${codeValue}</h1>`,
-    });
-
-    if (info.accepted[0] !== existUser.email) throw new ResponseError(400, "Code sent failed!");
+    await sendVerifiedEmail(codeValue, existUser.email, existUser.fullName);
 
     existUser.verificationCode = hmacProcess(codeValue, process.env.HMAC_VERIFICATION_CODE as string);
     existUser.verificationCodeValidation = Date.now();

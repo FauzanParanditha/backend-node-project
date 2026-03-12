@@ -8,6 +8,7 @@ import * as authService from "../service/authService.js";
 import * as authServiceUser from "../service/authServiceUser.js";
 import { sendAuthAlert } from "../service/discordService.js";
 import { getAuthActivityActor, resolveActivityActor } from "../utils/activityActor.js";
+import { isAdminRole, normalizeAdminActivityRole } from "../utils/authRole.js";
 import {
     acceptCodeSchema,
     acceptFPCodeSchema,
@@ -240,10 +241,10 @@ export const changePasswordByAdmin = async (req: Request, res: Response, next: N
         const message = await authServiceUser.changePasswordByAdminService({ value });
 
         const actor = getAuthActivityActor(req);
-        if (actor && (actor.role === "admin" || actor.role === "finance")) {
+        if (actor && isAdminRole(actor.role)) {
             logActivity({
                 actorId: actor.actorId,
-                role: actor.role,
+                role: normalizeAdminActivityRole(actor.role),
                 action: "CHANGE_PASSWORD_BY_ADMIN",
                 details: { targetUserId: userId },
                 ipAddress: req.ip,
@@ -330,7 +331,7 @@ export const verifyForgotPasswordCode = async (req: Request, res: Response, next
         const actorIdentity = existAdmin ? existAdmin._id : email;
         logActivity({
             actorId: String(actorIdentity), // May not be an ObjectId if tracking email fallback
-            role: existAdmin?.role === "finance" ? "finance" : existAdmin ? "admin" : "user",
+            role: existAdmin ? normalizeAdminActivityRole(existAdmin.role) : "user",
             action: "RESET_PASSWORD",
             details: { resetEmail: email },
             ipAddress: req.ip,

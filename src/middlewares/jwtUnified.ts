@@ -26,9 +26,11 @@ export const jwtUnifiedMiddleware = (req: Request, res: Response, next: NextFunc
 
     try {
         const adminVerified = jwt.verify(userToken, process.env.ACCESS_TOKEN_ADMIN_PRIVATE_KEY as string) as JwtPayload;
+        const adminPayload = adminVerified as Record<string, unknown>;
         req.auth = {
             ...adminVerified,
-            role: ((adminVerified as Record<string, unknown>).role as string) ?? "admin",
+            role: (adminPayload.role as string) ?? "admin",
+            roleId: adminPayload.roleId as string | undefined,
         } as Express.Request["auth"];
         return next();
     } catch (error: unknown) {

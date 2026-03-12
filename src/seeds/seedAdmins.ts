@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import { connectDB } from "../application/db.js";
 import logger from "../application/logger.js";
 import Admin from "../models/adminModel.js";
+import Role from "../models/roleModel.js";
+import { DEFAULT_ROLE_PERMISSIONS } from "../constants/permissions.js";
 import dotenv from "dotenv";
 import { doHash } from "../utils/helper.js";
 
@@ -11,6 +13,18 @@ const seedAdmins = async () => {
     try {
         // Connect to MongoDB
         connectDB();
+
+        // Ensure default roles exist
+        let superAdminRole = await Role.findOne({ name: "super_admin" });
+        if (!superAdminRole) {
+            superAdminRole = await Role.create({
+                name: "super_admin",
+                description: "Full access to all features including role management",
+                permissions: DEFAULT_ROLE_PERMISSIONS.super_admin,
+                isSystem: true,
+            });
+            logger.info('Created "super_admin" role');
+        }
 
         // Clear existing admins
         await Admin.deleteMany();
@@ -23,6 +37,7 @@ const seedAdmins = async () => {
                 fullName: "Super Admin",
                 email: "fauzan@pandi.id",
                 password: hashPassword,
+                roleId: superAdminRole._id,
             },
         ];
 

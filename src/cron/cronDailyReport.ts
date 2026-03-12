@@ -53,5 +53,5 @@ export const initDailyCronReport = () => {
         } catch (error) {
             logger.error(`Error executing daily cron report: ${(error as Error).message}`);
         }
-    });
+    }, { timezone: "Asia/Jakarta" });
 };

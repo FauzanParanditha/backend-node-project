@@ -1,4 +1,5 @@
 import type { Request } from "express";
+import { isAdminRole, normalizeAdminActivityRole } from "./authRole.js";
 
 type ActivityRole = "admin" | "finance" | "user" | "client";
 
@@ -11,12 +12,12 @@ export const resolveActivityActor = ({
     adminId?: string | { toString(): string };
     userId?: string | { toString(): string };
 }): { actorId: string; role: ActivityRole } | null => {
-    if (role === "admin" || role === "finance") {
+    if (isAdminRole(role)) {
         if (!adminId) return null;
 
         return {
             actorId: adminId.toString(),
-            role,
+            role: normalizeAdminActivityRole(role),
         };
     }
 
@@ -41,7 +42,7 @@ export const getAdminActivityActor = (
 
     return {
         actorId: adminId.toString(),
-        role: role === "finance" ? "finance" : "admin",
+        role: normalizeAdminActivityRole(role),
     };
 };
 
