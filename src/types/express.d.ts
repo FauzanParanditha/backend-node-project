@@ -30,6 +30,8 @@ export interface UserPayload extends JwtPayload {
     userId: string;
     email: string;
     verified: boolean;
+    roleId?: string;
+    role?: string;
 }
 
 /**

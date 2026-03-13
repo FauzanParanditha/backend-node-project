@@ -42,17 +42,18 @@ export const getAllUser = async (req: Request, res: Response, next: NextFunction
 };
 
 export const register = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { email, password, fullName } = req.body;
+    const { email, password, fullName, roleId } = req.body;
     const { adminId } = req.admin!;
 
     try {
-        const { error } = registerSchema.validate({ email, password, fullName });
+        const { error } = registerSchema.validate({ email, password, fullName, roleId });
         if (error) return res.status(400).json({ success: false, message: error.details[0].message });
 
         await userService.registerUser({
             email,
             password,
             fullName,
+            roleId,
             adminId,
         });
 
@@ -93,11 +94,11 @@ export const user = async (req: Request, res: Response, next: NextFunction): Pro
 
 export const updateUser = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { id } = req.params;
-    const { fullName } = req.body;
+    const { fullName, email, roleId, verified } = req.body;
     const { adminId } = req.admin!;
 
     try {
-        const { error, value } = updateUserSchema.validate({ fullName });
+        const { error, value } = updateUserSchema.validate({ fullName, email, roleId, verified });
         if (error) {
             return res.status(400).json({
                 success: false,

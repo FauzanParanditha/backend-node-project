@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { ResponseError } from "../error/responseError.js";
+import "../models/roleModel.js";
 import User from "../models/userModel.js";
 import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
 import { generateForgotPasswordLink, sendForgotPasswordEmail, sendVerifiedEmail } from "./sendMail.js";
@@ -29,7 +30,7 @@ export const loginUser = async ({ email, password }: { email: string; password: 
 
     const existUser = await User.findOne({
         email: { $eq: sanitizedEmail },
-    }).select("+password");
+    }).select("+password").populate("roleId");
     if (!existUser) throw new ResponseError(404, "User does not exist!");
 
     const isValidPassword = await compareDoHash(password, existUser.password as string);
@@ -39,11 +40,14 @@ export const loginUser = async ({ email, password }: { email: string; password: 
         throw new ResponseError(403, "Account not verified. Please verify your account first.");
     }
 
+    const populatedRole = existUser.roleId as any;
     const token = jwt.sign(
         {
             userId: existUser._id,
             email: existUser.email,
             verified: existUser.verified,
+            roleId: populatedRole?._id ? String(populatedRole._id) : String(existUser.roleId),
+            role: "user",
         },
         process.env.ACCESS_TOKEN_PRIVATE_KEY as string,
         { expiresIn: "2h" },

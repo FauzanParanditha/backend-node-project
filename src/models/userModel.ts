@@ -1,10 +1,11 @@
-import type { Document } from "mongoose";
+import type { Document, Types } from "mongoose";
 import mongoose from "mongoose";
 
 export interface IUser extends Document {
     email: string;
     fullName: string;
     password: string;
+    roleId: Types.ObjectId;
     verified: boolean;
     verifiedAt?: Date;
     verificationCode?: string;
@@ -39,6 +40,11 @@ const userSchema = new mongoose.Schema<IUser>(
             required: [true, "Password must be provided!"],
             trim: true,
             select: false,
+        },
+        roleId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Role",
+            required: [true, "Role is required"],
         },
         verified: {
             type: Boolean,

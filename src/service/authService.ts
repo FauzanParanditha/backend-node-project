@@ -140,7 +140,7 @@ export const loginUnified = async ({
 
     const existUser = await User.findOne({
         email: { $eq: sanitizedEmail },
-    }).select("+password");
+    }).select("+password").populate("roleId");
 
     if (!existUser) throw new ResponseError(400, "Invalid email or password");
 
@@ -151,11 +151,13 @@ export const loginUnified = async ({
         throw new ResponseError(403, "Account not verified. Please verify your account first.");
     }
 
+    const populatedRole = existUser.roleId as any;
     const token = jwt.sign(
         {
             userId: existUser._id,
             email: existUser.email,
             verified: existUser.verified,
+            roleId: populatedRole?._id ? String(populatedRole._id) : String(existUser.roleId),
             role: "user",
         },
         process.env.ACCESS_TOKEN_PRIVATE_KEY as string,

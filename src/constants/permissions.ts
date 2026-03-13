@@ -71,6 +71,9 @@ export const PERMISSIONS = {
     ROLE_CREATE: "role:create",
     ROLE_UPDATE: "role:update",
     ROLE_DELETE: "role:delete",
+
+    // ── Developers ─────────────────────────────────────────────
+    DEVELOPER_DOCS_READ: "developer_docs:read",
 } as const;
 
 /** Union type of all permission string values */
@@ -86,9 +89,7 @@ export const ALL_PERMISSIONS: Permission[] = Object.values(PERMISSIONS);
 export const DEFAULT_ROLE_PERMISSIONS = {
     super_admin: ALL_PERMISSIONS,
 
-    admin: ALL_PERMISSIONS.filter(
-        (p) => !["role:create", "role:update", "role:delete"].includes(p),
-    ),
+    admin: ALL_PERMISSIONS.filter((p) => !["role:create", "role:update", "role:delete"].includes(p)),
 
     finance: [
         PERMISSIONS.DASHBOARD_VIEW,
@@ -117,6 +118,7 @@ export const DEFAULT_ROLE_PERMISSIONS = {
     ] as Permission[],
 
     client: [
+        PERMISSIONS.DASHBOARD_VIEW,
         PERMISSIONS.ORDER_LIST,
         PERMISSIONS.ORDER_READ,
         PERMISSIONS.CLIENT_READ,

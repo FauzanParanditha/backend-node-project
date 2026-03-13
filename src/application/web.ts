@@ -218,31 +218,50 @@ web.get("/me", jwtUnifiedMiddleware, (async (req: any, res: any, next: any) => {
         if (isAdminRole(role)) {
             if (!adminId) throw new ResponseError(400, "Admin ID not provided");
 
-            const existAdmin = await Admin.findById(adminId);
+            const existAdmin = await Admin.findById(adminId).populate({
+                path: "roleId",
+                select: "name permissions",
+            });
             if (!existAdmin) throw new ResponseError(400, "Admin does not exist");
+
+            const adminObject = existAdmin.toObject();
+            const roleData = adminObject.roleId as { _id?: mongoose.Types.ObjectId; name?: string; permissions?: string[] } | null;
 
             return res.status(200).json({
                 success: true,
                 message: "Admin data retrieved successfully",
                 role,
-                data: existAdmin,
+                data: {
+                    ...adminObject,
+                    roleId: roleData?._id ?? adminObject.roleId,
+                    roleName: roleData?.name ?? role,
+                    permissions: roleData?.permissions ?? [],
+                },
             });
         }
 
         if (role === "user") {
             if (!userId) throw new ResponseError(400, "User ID not provided");
 
-            const existUser = await User.findById(userId);
+            const existUser = await User.findById(userId).populate({
+                path: "roleId",
+                select: "name permissions",
+            });
             if (!existUser) throw new ResponseError(400, "User does not exist");
 
             const clients = await Client.find({ userIds: { $in: [userId] } }).select("+clientId name");
+            const userObject = existUser.toObject();
+            const roleData = userObject.roleId as { _id?: mongoose.Types.ObjectId; name?: string; permissions?: string[] } | null;
 
             return res.status(200).json({
                 success: true,
                 message: "User data retrieved successfully",
                 role: "user",
                 data: {
-                    ...existUser.toObject(),
+                    ...userObject,
+                    roleId: roleData?._id ?? userObject.roleId,
+                    roleName: roleData?.name ?? "user",
+                    permissions: roleData?.permissions ?? [],
                     clients: clients.map((client) => ({
                         id: client._id,
                         clientId: client.clientId,

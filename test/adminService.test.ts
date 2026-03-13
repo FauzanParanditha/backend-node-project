@@ -33,6 +33,7 @@ describe("Admin Service - Dashboard Analytics", () => {
             email: "analytic_user@test.com",
             fullName: "Analytic User",
             password: "hashedPassword123",
+            roleId: role._id,
             verified: true,
         });
 

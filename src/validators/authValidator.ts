@@ -22,6 +22,18 @@ export const updateAdminSchema = joi.object({
 
 export const updateUserSchema = joi.object({
     fullName: joi.string().max(100).required(),
+    email: joi
+        .string()
+        .min(1)
+        .max(64)
+        .required()
+        .email({
+            tlds: { allow: true },
+        }),
+    roleId: joi.string().required().messages({
+        "any.required": "Role is required",
+    }),
+    verified: joi.boolean().required(),
 });
 
 export const loginSchema = joi.object({
