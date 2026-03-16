@@ -4,13 +4,13 @@ This project demonstrates integrating **Paylabs** payment gateway into a **Node.
 
 ## Features
 
-- Payment gateway integration with **Paylabs**
-- Support for **QRIS** , **Virtual Account**, **Credit Card**, **E-Money**, **HTML-5** payments
-- MongoDB for storing transaction and order data
-- Robust API structure using Express
-- Modular code with controllers, services, model, and utilities
-- Request validation with **Joi**
-- Logging with **Winston**
+- Payment gateway integration with **Paylabs** (QRIS, VA, E-Wallet, CC)
+- Fully typed using **TypeScript** for strict compile-time safety
+- Robust testing ecosystem utilizing **Vitest** (Unit Tests & Mocks)
+- Multi-stage **Docker** pipeline for lightweight production builds
+- Request validation with **Joi** paired with self-documenting **Swagger** integrations
+- Real-time Activity Monitoring via **Discord Webhooks** (Crash Logs, Revenue, Security, API Health)
+- Scheduled 07:00 AM Cron reporting for executive revenue summaries
 
 ---
 
@@ -18,12 +18,16 @@ This project demonstrates integrating **Paylabs** payment gateway into a **Node.
 
 ```
 src/
+├── application/       # Core app configuration (DB, Logger, Web, Socket)
 ├── controllers/       # Route handler logic
-├── services/          # Business logic
+├── service/           # Business logic
 ├── models/            # MongoDB schemas
 ├── routes/            # API endpoints
-├── utils/             # Utility functions (e.g., helpers)
-└── index.js           # Main entry point
+├── validators/        # Joi validation schemas
+├── cron/              # Automated scheduled jobs
+├── scripts/           # Standalone utilities
+├── types/             # Shared TypeScript type definitions
+└── index.ts           # Main entry point
 ```
 
 ---
@@ -34,6 +38,7 @@ Before running the project, ensure you have the following installed:
 
 - **Node.js** (v20+ recommended)
 - **MongoDB**
+- **Docker** (optional, for containerized deployments)
 - **npm** or **yarn**
 
 ---
@@ -67,20 +72,41 @@ Before running the project, ensure you have the following installed:
 4. Seed database:
     ```bash
     npm run seed:all  #for all seed
-    npm run seed:availablePayments
-    npm run seed:client
-    npm run seed:ip
     ```
 
 ---
 
-## Usage
+## Usage (Local)
 
-1. Run the project:
+1. Build the TypeScript codebase and start the server:
 
     ```bash
+    npm run build
     npm start
     ```
+
+2. Alternatively, run the development server with Hot-Reload:
+
+    ```bash
+    npm run dev
+    ```
+
+3. Run the Vitest testing suite:
+
+    ```bash
+    npm run test
+    ```
+
+---
+
+## Usage (Docker Production)
+
+Build and deploy the highly optimized multi-stage container:
+
+```bash
+docker build -t pg-backend .
+docker run -p 5000:5000 --env-file .env pg-backend
+```
 
 2. Access the API at `http://localhost:5000`.
 

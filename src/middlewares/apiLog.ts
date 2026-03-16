@@ -1,0 +1,45 @@
+import type { NextFunction, Request, Response } from "express";
+import logger from "../application/logger.js";
+import ApiLog from "../models/apiLogModel.js";
+import { validateLog } from "../validators/apiLogValidator.js";
+
+const MAX_BODY_LENGTH = 10 * 1024;
+
+const apiLogger = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const logData: Record<string, unknown> = {
+        method: req.method,
+        endpoint: req.originalUrl,
+        headers: req.headers,
+        body:
+            req.body instanceof Buffer
+                ? req.body.toString("utf8") // Buffer => String
+                : req.body,
+        ipAddress: req.ip || req.socket.remoteAddress,
+        statusCode: null as number | null,
+    };
+
+    if (JSON.stringify(logData.body).length > MAX_BODY_LENGTH) {
+        logData.body = "***BODY TOO LARGE - TRUNCATED***";
+    }
+
+    res.on("finish", async () => {
+        logData.statusCode = res.statusCode;
+
+        const { error } = validateLog(logData);
+        if (!error) {
+            try {
+                await ApiLog.create(logData);
+                // logger.info("✅ API request logged successfully.");
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : String(err);
+                logger.error(`❌ Error saving API log: ${message}`);
+            }
+        } else {
+            logger.error(`❌ Log validation failed: ${error.details.map((e) => e.message)}`);
+        }
+    });
+
+    next();
+};
+
+export default apiLogger;

@@ -1,0 +1,217 @@
+import pkg from "bcryptjs";
+import { createHmac } from "crypto";
+import fs from "fs";
+import multer from "multer";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
+import { ResponseError } from "../error/responseError.js";
+import counterModel from "../models/counterModel.js";
+const { hash, compare } = pkg;
+
+// Define transaction limits
+interface TransactionLimit {
+    min: number;
+    max: number;
+}
+
+const transactionLimits: Record<string, TransactionLimit> = {
+    POS: { min: 50000, max: 1000000 },
+    DANABALANCE: { min: 10000, max: 20000000 },
+    OVOBALANCE: { min: 10000, max: 20000000 },
+    LINKAJABALANCE: { min: 10000, max: 20000000 },
+    SHOPEEBALANCE: { min: 10000, max: 20000000 },
+    GOPAYBALANCE: { min: 10000, max: 20000000 },
+    Indomaret: { min: 10000, max: 5000000 },
+    CreditCard: { min: 10000, max: 100000000 },
+    CreditCard_2DSecure: { min: 10000, max: 100000000 },
+    CreditCard_6Mos: { min: 10000, max: 100000000 },
+    CreditCard_12Mos: { min: 10000, max: 100000000 },
+    Indodana: { min: 10000, max: 50000000 },
+    Atome: { min: 10000, max: 50000000 },
+    Kredivo: { min: 10000, max: 50000000 },
+    Alfamart: { min: 10000, max: 2000000 },
+    BNIVA: { min: 10000, max: 100000000 },
+    BNCVA: { min: 10000, max: 100000000 },
+    BTNVA: { min: 10000, max: 100000000 },
+    OCBCVA: { min: 10000, max: 100000000 },
+    SinarmasVA: { min: 10000, max: 100000000 },
+    MandiriVA: { min: 10000, max: 1000000000 }, // up to 1 billion
+    INAVA: { min: 10000, max: 100000000 },
+    PermataVA: { min: 10000, max: 1000000000 }, // up to 1 billion
+    MaybankVA: { min: 10000, max: 100000000 },
+    DanamonVA: { min: 10000, max: 100000000 },
+    BRIVA: { min: 10000, max: 1000000000 }, // up to 1 billion
+    BCAVA: { min: 10000, max: 100000000 },
+    MuamalatVA: { min: 10000, max: 100000000 },
+    BSIVA: { min: 10000, max: 100000000 },
+    CIMBVA: { min: 15000, max: 100000000 },
+    QRIS: { min: 1000, max: 10000000 },
+    DEFAULT: { min: 10000, max: 1000000000 }, // up to 1 billion
+};
+
+export const doHash = (value: string, saltValue: number): Promise<string> => {
+    const result = hash(value, saltValue);
+    return result;
+};
+
+export const compareDoHash = (value: string, hashedValue: string): Promise<boolean> => {
+    const result = compare(value, hashedValue);
+    return result;
+};
+
+export const hmacProcess = (value: string, key: string): string => {
+    const result = createHmac("sha256", key).update(value).digest("hex");
+    return result;
+};
+
+export const escapeRegExp = (string: string): string => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+    destination: (_req, _file, cb) => {
+        cb(null, "./src/public/payment");
+    },
+    filename: (_req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    },
+});
+
+export const upload = multer({
+    storage,
+    fileFilter: (_req, file, cb) => {
+        const fileTypes = /jpeg|jpg|png/;
+        const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = fileTypes.test(file.mimetype);
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error("Only images are allowed"));
+        }
+    },
+});
+
+const __filename = fileURLToPath(import.meta.url);
+export const __dirname = dirname(__filename);
+
+// Ensure uploads directory exists
+export const ensureUploadsDirExists = (): void => {
+    const uploadsDir = path.join(__dirname, "../public");
+    if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir);
+    }
+};
+
+interface ProductItem {
+    id: string;
+    name: string;
+    price: number;
+    type: string;
+    quantity: number;
+    discount?: number;
+    domain?: string;
+}
+
+export const calculateTotal = (products: ProductItem[]): number => {
+    let total = 0;
+
+    products.forEach((product) => {
+        const productTotal = product.price * product.quantity;
+        const discountAmount = productTotal * ((product.discount ?? 0) / 100);
+        total += productTotal - discountAmount;
+    });
+
+    return total;
+};
+
+export const validateOrderProducts = async (
+    products: ProductItem[],
+    paymentType: string = "DEFAULT",
+    totalAmount: number,
+): Promise<{ itemsForDb: ProductItem[]; validProducts: Partial<ProductItem>[]; totalAmount: number }> => {
+    const validProducts: Partial<ProductItem>[] = [];
+    const itemsForDb: ProductItem[] = [];
+    let totalAmountProduct = 0;
+
+    // Ensure the payment type has defined transaction limits
+    const limits = transactionLimits[paymentType];
+    if (!limits) {
+        throw new ResponseError(400, `Unsupported payment type: ${paymentType}`);
+    }
+
+    if (!products) {
+        throw new ResponseError(400, "Product is empty");
+    }
+
+    for (const product of products) {
+        const productTotal = product.price * product.quantity;
+        totalAmountProduct += productTotal;
+
+        itemsForDb.push({ ...product });
+
+        validProducts.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            type: product.type,
+            quantity: product.quantity,
+        });
+    }
+
+    if (totalAmount != totalAmountProduct) {
+        throw new ResponseError(400, "Total Amount is not match");
+    }
+
+    // Validate totalAmount against the paymentType limits
+    if (totalAmount < limits.min || totalAmount > limits.max) {
+        throw new ResponseError(
+            400,
+            `Total amount must be between IDR ${limits.min.toLocaleString()} and IDR ${limits.max.toLocaleString()} for ${paymentType} payment method.`,
+        );
+    }
+
+    return { itemsForDb, validProducts, totalAmount };
+};
+
+function sanitizeClientId(clientId: string | undefined | null): string {
+    if (!clientId || typeof clientId !== "string" || clientId.trim() === "") {
+        return "GEN"; // fallback: Generic Client
+    }
+
+    return clientId.trim(); // Jika clientId ada, kembalikan apa adanya
+}
+
+export async function getNextSequence(clientId: string, dateString: string): Promise<number> {
+    const _id = `${clientId}${dateString}`;
+
+    const result = await counterModel.findOneAndUpdate(
+        { _id },
+        { $inc: { seq: 1 } },
+        { upsert: true, new: true }, // `new: true` = return document after update
+    );
+
+    return result.seq;
+}
+
+export async function generateOrderId(clientId: string): Promise<string> {
+    const sanitizedClientId = sanitizeClientId(clientId);
+    const formattedClientId = sanitizedClientId.replace("-", "").toUpperCase();
+
+    const now = new Date();
+    const datePart =
+        now.getFullYear().toString() +
+        String(now.getMonth() + 1).padStart(2, "0") +
+        String(now.getDate()).padStart(2, "0");
+
+    const seq = await getNextSequence(formattedClientId, datePart);
+    const paddedSeq = String(seq).padStart(4, "0"); // misal: 0001
+
+    return `${formattedClientId}${datePart}${paddedSeq}`;
+}
+
+export const normalizeIP = (ip: string | undefined): string => {
+    if (typeof ip !== "string") return ip ?? "";
+    return ip.startsWith("::ffff:") ? ip.slice(7) : ip;
+};
