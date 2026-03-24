@@ -8,7 +8,7 @@ import Order from "../models/orderModel.js";
 import User from "../models/userModel.js";
 import type { PaymentPartner } from "../types/express.js";
 import { encryptData } from "../utils/encryption.js";
-import { calculateTotal, escapeRegExp, generateOrderId, validateOrderProducts } from "../utils/helper.js";
+import { calculateTotal, escapeRegExp, generateOrderId, toObjectId, validateOrderProducts } from "../utils/helper.js";
 import type { OrderData } from "./paylabs.js";
 import { handlePaymentLink } from "./paylabs.js";
 
@@ -430,7 +430,7 @@ export const createOrderLink = async ({
 };
 
 export const order = async ({ id, userId }: { id: string; userId?: string }) => {
-    const result = await Order.findOne({ _id: id }).populate({
+    const result = await Order.findOne({ _id: toObjectId(id) }).populate({
         path: "clientId",
         model: "Client",
         select: "name active notifyUrl",
@@ -448,7 +448,7 @@ export const order = async ({ id, userId }: { id: string; userId?: string }) => 
 };
 
 export const editOrder = async ({ id, validatedOrder }: { id: string; validatedOrder: Record<string, any> }) => {
-    const result = await Order.findOne({ _id: id }).select("+paymentLink +paymentId");
+    const result = await Order.findOne({ _id: toObjectId(id) }).select("+paymentLink +paymentId");
 
     if (!result) throw new ResponseError(404, "Order does not exist!");
 

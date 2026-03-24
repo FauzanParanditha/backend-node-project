@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { ResponseError } from "../error/responseError.js";
 import "../models/roleModel.js";
 import User from "../models/userModel.js";
-import { compareDoHash, doHash, hmacProcess } from "../utils/helper.js";
+import { compareDoHash, doHash, hmacProcess, toObjectId } from "../utils/helper.js";
 import { generateForgotPasswordLink, sendForgotPasswordEmail, sendVerifiedEmail } from "./sendMail.js";
 
 const VERIFICATION_CODE_TTL_MS = 5 * 60 * 1000;
@@ -145,7 +145,7 @@ export const verifyVerificationCodeService = async ({ value }: { value: Record<s
 export const changePasswordService = async ({ value }: { value: Record<string, any> }) => {
     if (!value.verified) throw new ResponseError(400, "User not verified!");
 
-    const existUser = await User.findOne({ _id: value.userId }).select("+password");
+    const existUser = await User.findOne({ _id: toObjectId(value.userId) }).select("+password");
     if (!existUser) throw new ResponseError(404, "User does not exist!");
 
     const result = await compareDoHash(value.old_password, existUser.password as string);
@@ -159,7 +159,7 @@ export const changePasswordService = async ({ value }: { value: Record<string, a
 };
 
 export const changePasswordByAdminService = async ({ value }: { value: Record<string, any> }) => {
-    const existUser = await User.findOne({ _id: value.userId }).select("+password");
+    const existUser = await User.findOne({ _id: toObjectId(value.userId) }).select("+password");
     if (!existUser) throw new ResponseError(404, "User does not exist!");
 
     const result = await compareDoHash(value.old_password, existUser.password as string);

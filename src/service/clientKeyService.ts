@@ -3,7 +3,7 @@ import Admin from "../models/adminModel.js";
 import { ClientKeyModel } from "../models/clientKeyModel.js";
 import Client from "../models/clientModel.js";
 import type { ListQueryParams } from "../types/service.js";
-import { escapeRegExp } from "../utils/helper.js";
+import { escapeRegExp, toObjectId } from "../utils/helper.js";
 
 const getClientIdsByUserId = async (userId: string): Promise<string[]> => {
     const clients = await Client.find({ userIds: { $in: [userId] } }).select("+clientId");
@@ -83,7 +83,7 @@ export const createClient = async ({ value }: { value: Record<string, any> }) =>
     const existClient = await ClientKeyModel.findOne({ clientId: { $eq: value.clientId } });
     if (existClient) throw new ResponseError(400, "Client already exists!");
 
-    const verifiedAdmin = await Admin.findOne({ _id: value.adminId });
+    const verifiedAdmin = await Admin.findOne({ _id: toObjectId(value.adminId) });
     if (!verifiedAdmin?.verified) {
         throw new ResponseError(400, `Admin is not verified`);
     }
@@ -128,7 +128,7 @@ export const updateClient = async ({ id, value, userId }: { id: string; value: R
     if (!userId) {
         if (existClient.adminId.toString() != value.adminId) throw new ResponseError(401, "Unauthorized!");
 
-        const verifiedAdmin = await Admin.findOne({ _id: value.adminId });
+        const verifiedAdmin = await Admin.findOne({ _id: toObjectId(value.adminId) });
         if (!verifiedAdmin?.verified) {
             throw new ResponseError(400, `Admin is not verified`);
         }
@@ -153,7 +153,7 @@ export const deleteClient = async ({ id, adminId }: { id: string; adminId: strin
     const existClient = await ClientKeyModel.findOne({ _id: id });
     if (!existClient) throw new ResponseError(404, "Client does not exist!");
 
-    const verifiedAdmin = await Admin.findOne({ _id: adminId });
+    const verifiedAdmin = await Admin.findOne({ _id: toObjectId(adminId) });
     if (!verifiedAdmin?.verified) {
         throw new ResponseError(400, `Admin is not verified`);
     }

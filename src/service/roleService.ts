@@ -5,6 +5,7 @@ import Admin from "../models/adminModel.js";
 import Role from "../models/roleModel.js";
 import type { IRole } from "../models/roleModel.js";
 import { invalidateRoleCache } from "../middlewares/requirePermission.js";
+import { toObjectId } from "../utils/helper.js";
 
 /**
  * List all roles.
@@ -17,7 +18,7 @@ export const getAllRoles = async (): Promise<IRole[]> => {
  * Get a single role by ID.
  */
 export const getRoleById = async (id: string): Promise<IRole> => {
-    const role = await Role.findById(id).lean();
+    const role = await Role.findById(toObjectId(id)).lean();
     if (!role) throw new ResponseError(404, "Role not found");
     return role;
 };
@@ -49,7 +50,7 @@ export const updateRole = async (
     id: string,
     updates: { name?: string; description?: string; permissions?: Permission[] },
 ): Promise<IRole> => {
-    const role = await Role.findById(id);
+    const role = await Role.findById(toObjectId(id));
     if (!role) throw new ResponseError(404, "Role not found");
 
     // System roles cannot be renamed
@@ -80,7 +81,7 @@ export const updateRole = async (
  * Admins assigned to this role must be re-assigned first.
  */
 export const deleteRole = async (id: string): Promise<void> => {
-    const role = await Role.findById(id);
+    const role = await Role.findById(toObjectId(id));
     if (!role) throw new ResponseError(404, "Role not found");
 
     if (role.isSystem) {

@@ -8,7 +8,7 @@ import AvailablePayment from "../models/availablePaymentModel.js";
 import ClientAvailablePayment from "../models/clientAvailablePaymentModel.js";
 import Client from "../models/clientModel.js";
 import type { ListQueryParams } from "../types/service.js";
-import { escapeRegExp } from "../utils/helper.js";
+import { escapeRegExp, toObjectId } from "../utils/helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -106,7 +106,7 @@ export const createAvailablePayment = async ({ req, adminId }: { req: Request; a
     const existingAvailablePayment = await AvailablePayment.findOne({ name: { $eq: name } });
     if (existingAvailablePayment) throw new ResponseError(400, "Available Payment already exist!");
 
-    const verifiedAdmin = await Admin.findOne({ _id: adminId });
+    const verifiedAdmin = await Admin.findOne({ _id: toObjectId(adminId) });
     if (!verifiedAdmin?.verified) {
         throw new ResponseError(400, `Admin is not verified`);
     }
@@ -139,7 +139,7 @@ export const availablePayment = async ({ id, userId }: { id: string; userId?: st
         }
     }
 
-    const result = await AvailablePayment.findOne({ _id: id }).populate({
+    const result = await AvailablePayment.findOne({ _id: toObjectId(id) }).populate({
         path: "adminId",
         select: "email",
     });
@@ -158,14 +158,14 @@ export const updateAvailablePayment = async ({
     value: Record<string, any>;
     req: Request;
 }) => {
-    const existingAvailablePayment = await AvailablePayment.findById(id);
+    const existingAvailablePayment = await AvailablePayment.findById(toObjectId(id));
     if (!existingAvailablePayment) throw new ResponseError(404, "AvailablePayment does not exist!");
 
     if (existingAvailablePayment.adminId.toString() !== adminId) {
         throw new ResponseError(401, "Unauthorized!");
     }
 
-    const verifiedAdmin = await Admin.findById(adminId);
+    const verifiedAdmin = await Admin.findById(toObjectId(adminId));
     if (!verifiedAdmin?.verified) {
         throw new ResponseError(400, "Admin is not verified");
     }
@@ -226,12 +226,12 @@ export const updateAvailablePayment = async ({
 
 export const deleteAvailablepayment = async ({ id, adminId }: { id: string; adminId: string }) => {
     // Find the available payment by ID
-    const availablePayment = await AvailablePayment.findById(id);
+    const availablePayment = await AvailablePayment.findById(toObjectId(id));
     if (!availablePayment) throw new ResponseError(404, "Available payment does not exist!");
 
     if (availablePayment.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
 
-    const verifiedAdmin = await Admin.findOne({ _id: adminId });
+    const verifiedAdmin = await Admin.findOne({ _id: toObjectId(adminId) });
     if (!verifiedAdmin?.verified) {
         throw new ResponseError(400, `Admin is not verified`);
     }

@@ -5,7 +5,7 @@ import Order from "../models/orderModel.js";
 import Role from "../models/roleModel.js";
 import User from "../models/userModel.js";
 import type { ListQueryParams } from "../types/service.js";
-import { doHash, escapeRegExp } from "../utils/helper.js";
+import { doHash, escapeRegExp, toObjectId } from "../utils/helper.js";
 
 const serializeAdminWithRole = (admin: any) => {
     const plainAdmin = typeof admin.toObject === "function" ? admin.toObject() : admin;
@@ -81,13 +81,13 @@ export const registerAdmin = async ({
     const existAdmin = await Admin.findOne({ email: { $eq: sanitizedEmail } });
     if (existAdmin) throw new ResponseError(400, "Admin already exists!");
 
-    const verifiedAdmin = await Admin.findOne({ _id: adminId });
+    const verifiedAdmin = await Admin.findOne({ _id: toObjectId(adminId) });
     if (!verifiedAdmin?.verified) {
         throw new ResponseError(400, `Admin is not verified`);
     }
 
     // Validate that the role exists
-    const existRole = await Role.findById(roleId);
+    const existRole = await Role.findById(toObjectId(roleId));
     if (!existRole) throw new ResponseError(400, "Role does not exist!");
 
     const hashPassword = await doHash(password, 12);
@@ -98,7 +98,7 @@ export const registerAdmin = async ({
 };
 
 export const admin = async ({ id }: { id: string }) => {
-    const result = await Admin.findOne({ _id: id }).populate({ path: "roleId", select: "name" });
+    const result = await Admin.findOne({ _id: toObjectId(id) }).populate({ path: "roleId", select: "name" });
     if (!result) throw new ResponseError(404, "Admin does not exist!");
     return serializeAdminWithRole(result);
 };
@@ -112,10 +112,10 @@ export const updateAdmin = async ({
     value: Record<string, any>;
     adminId: string;
 }) => {
-    const existAdmin = await Admin.findOne({ _id: id });
+    const existAdmin = await Admin.findOne({ _id: toObjectId(id) });
     if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
-    const verifiedAdmin = await Admin.findOne({ _id: adminId });
+    const verifiedAdmin = await Admin.findOne({ _id: toObjectId(adminId) });
     if (!verifiedAdmin?.verified) {
         throw new ResponseError(400, `Admin is not verified`);
     }
@@ -134,7 +134,7 @@ export const updateAdmin = async ({
 
     // Update roleId if provided
     if (value.roleId) {
-        const roleExists = await Role.findById(value.roleId);
+        const roleExists = await Role.findById(toObjectId(value.roleId));
         if (!roleExists) throw new ResponseError(400, "Role does not exist!");
         existAdmin.roleId = value.roleId;
     }
@@ -144,10 +144,10 @@ export const updateAdmin = async ({
 };
 
 export const deleteAdminById = async (id: string, adminId: string) => {
-    const existAdmin = await Admin.findById(id);
+    const existAdmin = await Admin.findById(toObjectId(id));
     if (!existAdmin) throw new ResponseError(404, "Admin does not exist!");
 
-    const verifiedAdmin = await Admin.findOne({ _id: adminId });
+    const verifiedAdmin = await Admin.findOne({ _id: toObjectId(adminId) });
     if (!verifiedAdmin?.verified) {
         throw new ResponseError(400, `Admin is not verified`);
     }

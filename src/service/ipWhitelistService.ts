@@ -2,7 +2,7 @@ import { ResponseError } from "../error/responseError.js";
 import Admin from "../models/adminModel.js";
 import IPWhitelist from "../models/ipWhitelistModel.js";
 import type { ListQueryParams } from "../types/service.js";
-import { escapeRegExp } from "../utils/helper.js";
+import { escapeRegExp, toObjectId } from "../utils/helper.js";
 
 export const getAllIpWhitelists = async ({ query, limit, page, sort_by, sort, countOnly }: ListQueryParams) => {
     const filter: Record<string, unknown> = {};
@@ -56,7 +56,7 @@ export const createIpWhitelist = async ({ value }: { value: Record<string, any> 
     });
     if (existIpWhitelist) throw new ResponseError(400, `IpAddress ${value.ipAddress} already exist!`);
 
-    const verifiedAdmin = await Admin.findOne({ _id: value.adminId });
+    const verifiedAdmin = await Admin.findOne({ _id: toObjectId(value.adminId) });
     if (!verifiedAdmin?.verified) {
         throw new ResponseError(400, `Admin is not verified`);
     }
@@ -68,7 +68,7 @@ export const createIpWhitelist = async ({ value }: { value: Record<string, any> 
 };
 
 export const ipWhitelist = async ({ id }: { id: string }) => {
-    const result = await IPWhitelist.findOne({ _id: id }).populate({
+    const result = await IPWhitelist.findOne({ _id: toObjectId(id) }).populate({
         path: "adminId",
         select: "email",
     });
@@ -77,11 +77,11 @@ export const ipWhitelist = async ({ id }: { id: string }) => {
 };
 
 export const updateIpWhitelist = async ({ id, value }: { id: string; value: Record<string, any> }) => {
-    const existIpWhitelist = await IPWhitelist.findOne({ _id: id });
+    const existIpWhitelist = await IPWhitelist.findOne({ _id: toObjectId(id) });
     if (!existIpWhitelist) throw new ResponseError(404, "IpAddress does not exist!");
     if (existIpWhitelist.adminId.toString() != value.adminId) throw new ResponseError(401, "Unauthorized!");
 
-    const verifiedAdmin = await Admin.findOne({ _id: value.adminId });
+    const verifiedAdmin = await Admin.findOne({ _id: toObjectId(value.adminId) });
     if (!verifiedAdmin?.verified) {
         throw new ResponseError(400, `Admin is not verified`);
     }
@@ -102,12 +102,12 @@ export const updateIpWhitelist = async ({ id, value }: { id: string; value: Reco
 };
 
 export const deleteIpWhitelist = async ({ id, adminId }: { id: string; adminId: string }) => {
-    const existIpWhitelist = await IPWhitelist.findOne({ _id: id });
+    const existIpWhitelist = await IPWhitelist.findOne({ _id: toObjectId(id) });
     if (!existIpWhitelist) throw new ResponseError(404, "IpWhitelist does not exist!");
 
     if (existIpWhitelist.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
 
-    const verifiedAdmin = await Admin.findOne({ _id: adminId });
+    const verifiedAdmin = await Admin.findOne({ _id: toObjectId(adminId) });
     if (!verifiedAdmin?.verified) {
         throw new ResponseError(400, `Admin is not verified`);
     }

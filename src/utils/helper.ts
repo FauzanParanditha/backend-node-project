@@ -1,6 +1,7 @@
 import pkg from "bcryptjs";
 import { createHmac } from "crypto";
 import fs from "fs";
+import mongoose from "mongoose";
 import multer from "multer";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
@@ -66,6 +67,14 @@ export const hmacProcess = (value: string, key: string): string => {
 
 export const escapeRegExp = (string: string): string => {
     return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+export const toObjectId = (value: unknown): mongoose.Types.ObjectId => {
+    const str = String(value);
+    if (!mongoose.Types.ObjectId.isValid(str)) {
+        throw new ResponseError(400, "Invalid ID format");
+    }
+    return new mongoose.Types.ObjectId(str);
 };
 
 // Configure multer for image uploads

@@ -6,7 +6,7 @@ import { ResponseError } from "../error/responseError.js";
 import Category from "../models/categoryModel.js";
 import Product from "../models/productModel.js";
 import type { ListQueryParams } from "../types/service.js";
-import { escapeRegExp } from "../utils/helper.js";
+import { escapeRegExp, toObjectId } from "../utils/helper.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -83,7 +83,7 @@ export const createProduct = async ({ req, adminId }: { req: Request; adminId: s
 };
 
 export const product = async ({ id }: { id: string }) => {
-    const result = await Product.findOne({ _id: id }).populate({
+    const result = await Product.findOne({ _id: toObjectId(id) }).populate({
         path: "category",
         select: "name",
     });
@@ -102,7 +102,7 @@ export const updateProduct = async ({
     value: Record<string, any>;
     req: Request;
 }) => {
-    const existingProduct = await Product.findById(id);
+    const existingProduct = await Product.findById(toObjectId(id));
     if (!existingProduct) throw new ResponseError(404, "Product does not exist!");
 
     const category = value.category.trim();
@@ -144,7 +144,7 @@ export const updateProduct = async ({
 };
 
 export const deleteProduct = async ({ id, adminId }: { id: string; adminId: string }) => {
-    const product = await Product.findById(id);
+    const product = await Product.findById(toObjectId(id));
     if (!product) throw new ResponseError(404, "Product does not exist!");
 
     if (product.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");

@@ -1,7 +1,7 @@
 import { ResponseError } from "../error/responseError.js";
 import Category from "../models/categoryModel.js";
 import type { ListQueryParams } from "../types/service.js";
-import { escapeRegExp } from "../utils/helper.js";
+import { escapeRegExp, toObjectId } from "../utils/helper.js";
 
 export const getAllCategorys = async ({ query, limit, page, sort_by, sort, countOnly }: ListQueryParams) => {
     const filter: Record<string, unknown> = {};
@@ -64,7 +64,7 @@ export const createCategory = async ({ value }: { value: Record<string, any> }) 
 };
 
 export const category = async ({ id }: { id: string }) => {
-    const result = await Category.findOne({ _id: id }).populate({
+    const result = await Category.findOne({ _id: toObjectId(id) }).populate({
         path: "adminId",
         select: "email",
     });
@@ -73,7 +73,7 @@ export const category = async ({ id }: { id: string }) => {
 };
 
 export const updateCategory = async ({ id, value }: { id: string; value: Record<string, any> }) => {
-    const existCategory = await Category.findOne({ _id: id });
+    const existCategory = await Category.findOne({ _id: toObjectId(id) });
     if (!existCategory) throw new ResponseError(404, "Category does not exist!");
     if (existCategory.adminId.toString() != value.adminId) throw new ResponseError(401, "Unauthorized!");
 
@@ -90,7 +90,7 @@ export const updateCategory = async ({ id, value }: { id: string; value: Record<
 };
 
 export const deleteCategory = async ({ id, adminId }: { id: string; adminId: string }) => {
-    const existCategory = await Category.findOne({ _id: id });
+    const existCategory = await Category.findOne({ _id: toObjectId(id) });
     if (!existCategory) throw new ResponseError(404, "Category does not exist!");
 
     if (existCategory.adminId.toString() != adminId) throw new ResponseError(401, "Unauthorized!");
