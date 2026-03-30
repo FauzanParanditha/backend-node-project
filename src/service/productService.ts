@@ -135,7 +135,7 @@ export const updateProduct = async ({
         }
     }
 
-    await Product.findByIdAndUpdate(id, updateData, {
+    await Product.findByIdAndUpdate(toObjectId(id), updateData, {
         new: true,
         runValidators: true,
     });
@@ -157,6 +157,6 @@ export const deleteProduct = async ({ id, adminId }: { id: string; adminId: stri
         throw new ResponseError(400, "Failed to delete old image!");
     }
 
-    await Product.findByIdAndDelete(id);
+    await Product.findByIdAndDelete(toObjectId(id));
     return true;
 };

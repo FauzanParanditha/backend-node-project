@@ -3,7 +3,7 @@ import ClientAvailablePayment from "../models/clientAvailablePaymentModel.js";
 import Client from "../models/clientModel.js";
 
 const assertClientOwnership = async ({ clientId, userId }: { clientId: string; userId: string }) => {
-    const client = await Client.findOne({ clientId, userIds: { $in: [userId] } });
+    const client = await Client.findOne({ clientId: { $eq: clientId }, userIds: { $in: [userId] } });
     if (!client) throw new ResponseError(403, "Access forbidden");
     return client;
 };
@@ -11,7 +11,7 @@ const assertClientOwnership = async ({ clientId, userId }: { clientId: string; u
 export const getClientAvailablePayments = async ({ clientId, userId }: { clientId: string; userId: string }) => {
     await assertClientOwnership({ clientId, userId });
 
-    const items = await ClientAvailablePayment.find({ clientId })
+    const items = await ClientAvailablePayment.find({ clientId: { $eq: clientId } })
         .populate({
             path: "availablePaymentId",
             model: "AvailablePayment",
@@ -40,12 +40,12 @@ export const updateClientAvailablePayment = async ({
 }) => {
     await assertClientOwnership({ clientId, userId });
 
-    const existing = await ClientAvailablePayment.findOne({ clientId, availablePaymentId });
+    const existing = await ClientAvailablePayment.findOne({ clientId: { $eq: clientId }, availablePaymentId: { $eq: availablePaymentId } });
     if (!existing) throw new ResponseError(404, "Client available payment not found");
 
     // Prevent setting the last active method to false
     if (active === false && existing.active === true) {
-        const activeCount = await ClientAvailablePayment.countDocuments({ clientId, active: true });
+        const activeCount = await ClientAvailablePayment.countDocuments({ clientId: { $eq: clientId }, active: true });
         if (activeCount <= 1) {
             throw new ResponseError(
                 400,

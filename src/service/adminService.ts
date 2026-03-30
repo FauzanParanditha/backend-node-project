@@ -152,7 +152,7 @@ export const deleteAdminById = async (id: string, adminId: string) => {
         throw new ResponseError(400, `Admin is not verified`);
     }
 
-    await Admin.deleteOne({ _id: id });
+    await Admin.deleteOne({ _id: toObjectId(id) });
     return { success: true, message: "successfully deleted admin" };
 };
 
@@ -219,7 +219,7 @@ export const dashboard = async (params: DashboardParams = {}) => {
     const dateFilter = buildDashboardDateFilter(params);
     const orderFilter: Record<string, unknown> = {};
     if (dateFilter.updatedAt) orderFilter.updatedAt = dateFilter.updatedAt;
-    if (params.clientId) orderFilter.clientId = params.clientId;
+    if (params.clientId) orderFilter.clientId = { $eq: String(params.clientId) };
     if (params.status && VALID_STATUSES.includes(params.status)) orderFilter.paymentStatus = params.status;
 
     const successFilter = { ...orderFilter, ...(params.status ? {} : { paymentStatus: "paid" }) };
