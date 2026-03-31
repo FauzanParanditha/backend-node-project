@@ -5,7 +5,7 @@ import Order from "../src/models/orderModel.js";
 import Role from "../src/models/roleModel.js";
 import { ALL_PERMISSIONS } from "../src/constants/permissions.js";
 import User from "../src/models/userModel.js";
-import { dashboard } from "../src/service/adminService.js";
+import { dashboard, wibDateToUtc } from "../src/service/adminService.js";
 import { clearDatabase, closeMongo, setupMongo } from "./setup-test.js";
 
 describe("Admin Service - Dashboard Analytics", () => {
@@ -244,5 +244,12 @@ describe("Admin Service - Dashboard Analytics", () => {
 
         expect(result.byStatus["paid"].count).toBe(3);
         expect(result.byStatus["pending"].count).toBe(1);
+    });
+
+    it("should normalize WIB date overflow at month boundaries", () => {
+        const result = wibDateToUtc({ year: 2026, month: 3, day: 32 });
+
+        expect(Number.isNaN(result.getTime())).toBe(false);
+        expect(result.toISOString()).toBe("2026-03-31T17:00:00.000Z");
     });
 });

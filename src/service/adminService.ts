@@ -425,7 +425,7 @@ const toWibDateParts = (date: Date): WibDateParts => {
     };
 };
 
-const wibDateToUtc = ({
+export const wibDateToUtc = ({
     year,
     month,
     day,
@@ -439,7 +439,9 @@ const wibDateToUtc = ({
     hour?: number;
     minute?: number;
     second?: number;
-}): Date => new Date(`${year}-${pad2(month)}-${pad2(day)}T${pad2(hour)}:${pad2(minute)}:${pad2(second)}+07:00`);
+}): Date =>
+    // Use Date.UTC so month/day overflow (for example Mar 32 -> Apr 1) is normalized instead of becoming Invalid Date.
+    new Date(Date.UTC(year, month - 1, day, hour - 7, minute, second));
 
 const toWibDateLabel = (date: Date): string => {
     const { year, month, day } = toWibDateParts(date);
