@@ -114,7 +114,7 @@ export const client = async ({ id, userId }: { id: string; userId?: string }) =>
     return result;
 };
 
-export const updateClient = async ({ id, value, userId }: { id: string; value: Record<string, any>; userId?: string }) => {
+export const updateClient = async ({ id, value, userId, isSuperAdmin = false }: { id: string; value: Record<string, any>; userId?: string; isSuperAdmin?: boolean }) => {
     const filter: Record<string, unknown> = { _id: id };
 
     if (userId) {
@@ -126,7 +126,10 @@ export const updateClient = async ({ id, value, userId }: { id: string; value: R
     if (!existClient) throw new ResponseError(404, "Client does not exist!");
 
     if (!userId) {
-        if (existClient.adminId.toString() != value.adminId) throw new ResponseError(401, "Unauthorized!");
+        // Super admin dapat mengupdate record milik admin manapun
+        if (!isSuperAdmin && existClient.adminId.toString() != value.adminId) {
+            throw new ResponseError(401, "Unauthorized!");
+        }
 
         const verifiedAdmin = await Admin.findOne({ _id: toObjectId(value.adminId) });
         if (!verifiedAdmin?.verified) {

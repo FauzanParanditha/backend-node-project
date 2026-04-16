@@ -135,7 +135,7 @@ export const availablePayment = async (req: Request, res: Response, next: NextFu
 
 export const updateAvailablePayment = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { id } = req.params;
-    const { adminId } = req.admin!;
+    const { adminId, role } = req.admin!;
 
     try {
         const { error, value } = availablePaymentValidationSchema.validate(
@@ -155,6 +155,7 @@ export const updateAvailablePayment = async (req: Request, res: Response, next: 
             adminId,
             value,
             req,
+            isSuperAdmin: role === "super_admin",
         });
 
         const actor = getAdminActivityActor(req);
