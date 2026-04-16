@@ -31,6 +31,7 @@ export const jwtUnifiedMiddleware = (req: Request, res: Response, next: NextFunc
             ...adminVerified,
             role: (adminPayload.role as string) ?? "admin",
             roleId: adminPayload.roleId as string | undefined,
+            adminId: adminPayload.adminId as string | undefined,
         } as Express.Request["auth"];
         return next();
     } catch (error: unknown) {
