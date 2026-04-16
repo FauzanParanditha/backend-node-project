@@ -134,6 +134,7 @@ export const updateClientKey = async (req: Request, res: Response, next: NextFun
             const updatedClientKey = await clientKeyService.updateClient({
                 id,
                 value,
+                isSuperAdmin: role === "super_admin",
             });
 
             if (actor) {

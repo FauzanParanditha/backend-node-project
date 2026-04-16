@@ -152,16 +152,19 @@ export const updateAvailablePayment = async ({
     adminId,
     value,
     req,
+    isSuperAdmin = false,
 }: {
     id: string;
     adminId: string;
     value: Record<string, any>;
     req: Request;
+    isSuperAdmin?: boolean;
 }) => {
     const existingAvailablePayment = await AvailablePayment.findById(toObjectId(id));
     if (!existingAvailablePayment) throw new ResponseError(404, "AvailablePayment does not exist!");
 
-    if (existingAvailablePayment.adminId.toString() !== adminId) {
+    // Super admin dapat mengupdate payment milik admin manapun
+    if (!isSuperAdmin && existingAvailablePayment.adminId.toString() !== adminId) {
         throw new ResponseError(401, "Unauthorized!");
     }
 

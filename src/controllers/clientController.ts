@@ -153,6 +153,7 @@ export const updateClient = async (req: Request, res: Response, next: NextFuncti
             const updatedClient = await clientService.updateClient({
                 id,
                 value,
+                isSuperAdmin: role === "super_admin",
             });
 
             if (actor) {
