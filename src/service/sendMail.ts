@@ -2,9 +2,16 @@ import axios from "axios";
 import FormData from "form-data";
 import fs from "fs";
 import pkg from "handlebars";
+import path from "path";
+import { fileURLToPath } from "url";
 import logger from "../application/logger.js";
 import Email from "../models/emailModel.js";
 const { compile } = pkg;
+
+// Resolve template path relative to this file (works in both dev tsx and compiled dist/)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const EMAIL_TEMPLATE_PATH = path.resolve(__dirname, "../application/mail/email.html");
 
 interface MailData {
     to: string;
@@ -34,7 +41,7 @@ const encodeToBase64 = (html: string): string => Buffer.from(html).toString("bas
 // Send the forgot password email
 export const sendForgotPasswordEmail = async (url: string, emailTo: string, name: string): Promise<void> => {
     try {
-        const templateSource = fs.readFileSync("./src/application/mail/email.html", "utf8");
+        const templateSource = fs.readFileSync(EMAIL_TEMPLATE_PATH, "utf8");
         const template = compile(templateSource);
 
         const body = `  
@@ -70,7 +77,7 @@ export const sendForgotPasswordEmail = async (url: string, emailTo: string, name
 // Send the verify email
 export const sendVerifiedEmail = async (code: string, emailTo: string, name: string): Promise<void> => {
     try {
-        const templateSource = fs.readFileSync("./src/application/mail/email.html", "utf8");
+        const templateSource = fs.readFileSync(EMAIL_TEMPLATE_PATH, "utf8");
         const template = compile(templateSource);
 
         const body = `  

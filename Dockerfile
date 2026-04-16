@@ -29,6 +29,9 @@ RUN npm ci --omit=dev
 # Copy compiled artifacts from builder stage
 COPY --from=builder /app/dist ./dist
 
+# Copy static assets (mail templates) that are read at runtime
+COPY --from=builder /app/src/application/mail ./src/application/mail
+
 EXPOSE 5001
 
 CMD ["node", "dist/index.js"]
