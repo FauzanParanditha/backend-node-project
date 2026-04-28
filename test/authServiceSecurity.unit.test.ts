@@ -37,11 +37,16 @@ vi.mock("../src/service/sendMail.js", () => ({
     sendVerifiedEmail: vi.fn(),
 }));
 
-const createQuery = <T>(result: T) => ({
-    select: vi.fn().mockReturnValue({
-        populate: vi.fn().mockResolvedValue(result),
-    }),
-});
+const createQuery = <T>(result: T) => {
+    const query: Record<string, any> = {};
+    query.select = vi.fn().mockReturnValue(query);
+    query.populate = vi.fn().mockReturnValue(query);
+    query.then = (
+        onFulfilled: (value: T) => unknown,
+        onRejected?: (reason: unknown) => unknown,
+    ) => Promise.resolve(result).then(onFulfilled, onRejected);
+    return query;
+};
 
 describe("auth service security", () => {
     beforeEach(() => {
