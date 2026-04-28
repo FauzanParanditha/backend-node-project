@@ -131,8 +131,10 @@ dist
 yarn.lock
 
 uploads/
-rsakey.pem
-private-key.pem
-public-key.pem
-public.pem
+
+# Secrets & keys
+.key
+*.pem
+generated-keys/
+
 .DS_Store
