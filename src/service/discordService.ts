@@ -73,15 +73,31 @@ export const sendSecurityAlert = async (type: string, ip: string, details: strin
     });
 };
 
-export const sendPartnerApiErrorAlert = async (partner: string, endpoint: string, errorMsg: string) => {
+export const sendPartnerApiErrorAlert = async (
+    partner: string,
+    endpoint: string,
+    errorMsg: string,
+    requestBody?: Record<string, any>,
+) => {
+    const fields: Array<{ name: string; value: string; inline?: boolean }> = [
+        { name: "Target Endpoint", value: `\`${endpoint}\``, inline: false },
+        { name: "Message", value: `\`\`\`\n${errorMsg.substring(0, 800)}\n\`\`\``, inline: false },
+    ];
+
+    if (requestBody !== undefined) {
+        const bodyStr = JSON.stringify(requestBody, null, 2);
+        fields.push({
+            name: "Request Body",
+            value: `\`\`\`json\n${bodyStr.substring(0, 800)}\n\`\`\``,
+            inline: false,
+        });
+    }
+
     await sendDiscordAlert(process.env.DISCORD_WEBHOOK_URL_API_ERROR, {
         title: `⚠️ PARTNER API ERROR (${partner})`,
         description: `Gagal memanggil fungsi eksternal ke server ${partner}. Kasir klien mungkin terdampak!`,
         color: 16776960, // Yellow
-        fields: [
-            { name: "Target Endpoint", value: `\`${endpoint}\``, inline: false },
-            { name: "Message", value: `\`\`\`\n${errorMsg.substring(0, 800)}\n\`\`\``, inline: false },
-        ],
+        fields,
     });
 };
 
