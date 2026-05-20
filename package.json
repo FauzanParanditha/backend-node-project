@@ -10,7 +10,7 @@
         "seed:client": "node dist/seeds/seedClient.js.js",
         "seed:ip": "node dist/seeds/seedIpWhitelist.js",
         "seed:migrate-roles": "node dist/seeds/migrateAdminRoles.js",
-        "build": "tsc && cp -R src/application/mail dist/application/",
+        "build": "tsc && cp -R src/application/mail dist/application/ && cp -R src/public dist/",
         "typecheck": "tsc --noEmit",
         "format": "prettier --write .",
         "lint": "eslint . ",
