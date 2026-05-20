@@ -109,6 +109,27 @@ export const sendVerifiedEmail = async (code: string, emailTo: string, name: str
     }
 };
 
+// Log an email send attempt that was skipped before reaching the mail provider
+// (e.g. user not found, already verified, locked out). Keeps an audit trail in
+// the Email collection so support/security can see all attempts.
+export const logSkippedEmailAttempt = async (
+    email: string,
+    reason: string,
+    statusCode: string,
+): Promise<void> => {
+    try {
+        await Email.create({
+            email,
+            messages: { code: statusCode, reason },
+            statusCode,
+        });
+    } catch (error) {
+        logger.error(
+            `Error creating skipped email log: ${error instanceof Error ? error.message : String(error)}`,
+        );
+    }
+};
+
 // Send email using the configured mail service
 export const sendEmail = async (mailData: MailData): Promise<Record<string, unknown>> => {
     validateMailConfig(); // Validate mail configuration

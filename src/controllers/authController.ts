@@ -5,6 +5,7 @@ import User from "../models/userModel.js";
 import { logActivity } from "../service/activityLogService.js";
 import * as authService from "../service/authService.js";
 import * as authServiceUser from "../service/authServiceUser.js";
+import { logSkippedEmailAttempt } from "../service/sendMail.js";
 import Admin from "../models/adminModel.js";
 import { getAuthActivityActor } from "../utils/activityActor.js";
 import { isAdminRole } from "../utils/authRole.js";
@@ -115,6 +116,7 @@ export const sendVerificationCode = async (req: Request, res: Response, next: Ne
     } catch (error) {
         if (error instanceof ResponseError && [400, 404, 429].includes(error.status)) {
             logger.warn(`Masked send verification response: ${error.message}`);
+            logSkippedEmailAttempt(email, error.message, `skipped_${error.status}`).catch(() => {});
             return res.status(200).json({ success: true, message: PUBLIC_VERIFICATION_RESPONSE });
         }
         logger.error(`Error send verification code: ${(error as Error).message}`);
