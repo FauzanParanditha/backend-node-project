@@ -138,3 +138,9 @@ uploads/
 generated-keys/
 
 .DS_Store
+
+# Claude Code
+.claude/
+
+# Local tests
+test/
