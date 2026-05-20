@@ -73,15 +73,49 @@ export const sendSecurityAlert = async (type: string, ip: string, details: strin
     });
 };
 
-export const sendPartnerApiErrorAlert = async (partner: string, endpoint: string, errorMsg: string) => {
+const SENSITIVE_REQUEST_KEYS = new Set(["payer", "phoneNumber", "productInfo", "productName", "notifyUrl"]);
+
+const maskSensitive = (input: Record<string, any>): Record<string, any> => {
+    const clone: Record<string, any> = Array.isArray(input) ? [...input] : { ...input };
+    for (const key of Object.keys(clone)) {
+        if (SENSITIVE_REQUEST_KEYS.has(key)) {
+            clone[key] = "[REDACTED]";
+        } else if (clone[key] && typeof clone[key] === "object") {
+            clone[key] = maskSensitive(clone[key]);
+        }
+    }
+    return clone;
+};
+
+const truncateForDiscord = (text: string, max = 800): string =>
+    text.length > max ? `${text.substring(0, max)}\n... [truncated]` : text;
+
+export const sendPartnerApiErrorAlert = async (
+    partner: string,
+    endpoint: string,
+    errorMsg: string,
+    requestBody?: Record<string, any>,
+) => {
+    const fields: Array<{ name: string; value: string; inline?: boolean }> = [
+        { name: "Target Endpoint", value: `\`${endpoint}\``, inline: false },
+        { name: "Message", value: `\`\`\`\n${truncateForDiscord(errorMsg)}\n\`\`\``, inline: false },
+    ];
+
+    if (requestBody && Object.keys(requestBody).length > 0) {
+        const masked = maskSensitive(requestBody);
+        const bodyStr = JSON.stringify(masked, null, 2);
+        fields.push({
+            name: "Request Body",
+            value: `\`\`\`json\n${truncateForDiscord(bodyStr)}\n\`\`\``,
+            inline: false,
+        });
+    }
+
     await sendDiscordAlert(process.env.DISCORD_WEBHOOK_URL_API_ERROR, {
         title: `⚠️ PARTNER API ERROR (${partner})`,
         description: `Gagal memanggil fungsi eksternal ke server ${partner}. Kasir klien mungkin terdampak!`,
         color: 16776960, // Yellow
-        fields: [
-            { name: "Target Endpoint", value: `\`${endpoint}\``, inline: false },
-            { name: "Message", value: `\`\`\`\n${errorMsg.substring(0, 800)}\n\`\`\``, inline: false },
-        ],
+        fields,
     });
 };
 

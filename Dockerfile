@@ -32,6 +32,9 @@ COPY --from=builder /app/dist ./dist
 # Copy static assets (mail templates) that are read at runtime
 COPY --from=builder /app/src/application/mail ./dist/application/mail
 
+# Copy public assets (SVGs, images served via /public route) into dist/public
+COPY --from=builder /app/src/public ./dist/public
+
 EXPOSE 5001
 
 CMD ["node", "dist/index.js"]

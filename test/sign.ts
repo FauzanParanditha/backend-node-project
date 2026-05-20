@@ -4,19 +4,19 @@ import { generateTimestamp, minifyJson } from "../src/service/paylabs.js";
 
 const privateKeyPem: string = fs.readFileSync("./generated-keys/private-key.pem", "utf8");
 
-const httpMethod: string = "GET";
+const httpMethod: string = "POST";
 const endpointUrl: string = "/api/v1/order/create/link";
 const body: Record<string, any> = {
     items: [
         {
             id: "671f3ac",
-            price: "900000000",
+            price: "272727",
             quantity: 1,
             name: "sample sample",
             type: "sample sample",
         },
     ],
-    totalAmount: "900000000",
+    totalAmount: "272727",
     phoneNumber: "1234567890",
     paymentMethod: "paylabs",
 };

@@ -98,7 +98,9 @@ describe("public auth controller responses", () => {
     it("masks forgot-password send response for unknown email", async () => {
         const { sendForgotPassword } = await import("../src/controllers/authControllerUser.js");
 
-        adminFindOne.mockResolvedValueOnce(null);
+        adminFindOne.mockReturnValueOnce({
+            populate: vi.fn().mockResolvedValue(null),
+        });
         userFindOne.mockResolvedValueOnce(null);
 
         const req = { body: { email: "missing@test.com" }, ip: "127.0.0.1" } as any;

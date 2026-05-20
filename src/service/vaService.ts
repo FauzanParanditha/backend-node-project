@@ -16,6 +16,7 @@ export const createVa = async ({
     validatedProduct: Record<string, any>;
     partnerId: PaymentPartner;
 }) => {
+    let requestBody: Record<string, any> = {};
     try {
         const { validProducts, itemsForDb, totalAmount } = await validateOrderProducts(
             validatedProduct.items,
@@ -44,7 +45,7 @@ export const createVa = async ({
         const requestId = generateRequestId();
         const merchantTradeNo = generateMerchantTradeNo();
 
-        const requestBody = {
+        requestBody = {
             requestId,
             merchantId,
             ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
@@ -81,7 +82,7 @@ export const createVa = async ({
         if (!response.data || response.data.errCode !== "0") {
             const errMsg = response.data ? `error: ${response.data.errCode}` : "failed to create payment";
             logger.error(`Paylabs error: ${errMsg}`);
-            sendPartnerApiErrorAlert("Paylabs (VA)", "/payment/v2.1/va/create", errMsg).catch(console.error);
+            sendPartnerApiErrorAlert("Paylabs (VA)", "/payment/v2.1/va/create", errMsg, requestBody).catch(console.error);
             throw new ResponseError(400, errMsg);
         }
 
@@ -99,7 +100,7 @@ export const createVa = async ({
         return { response, result };
     } catch (error: any) {
         if (axios.isAxiosError(error)) {
-            sendPartnerApiErrorAlert("Paylabs Network (VA)", "/payment/v2.1/va/create", error.message).catch(
+            sendPartnerApiErrorAlert("Paylabs Network (VA)", "/payment/v2.1/va/create", error.message, requestBody).catch(
                 console.error,
             );
         }
