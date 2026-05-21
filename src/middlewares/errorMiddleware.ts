@@ -10,9 +10,13 @@ const errorMiddleware = async (err: Error, req: Request, res: Response, next: Ne
     }
 
     if (err instanceof ResponseError) {
+        // `errors` is kept alongside `message` for backward compatibility with
+        // older clients; new clients should read `message` and `code`.
         res.status(err.status)
             .json({
                 success: false,
+                ...(err.code ? { code: err.code } : {}),
+                message: err.message,
                 errors: err.message,
             })
             .end();
@@ -28,6 +32,8 @@ const errorMiddleware = async (err: Error, req: Request, res: Response, next: Ne
         res.status(500)
             .json({
                 success: false,
+                code: "INTERNAL_SERVER_ERROR",
+                message: "Internal Server Error",
                 errors: "Internal Server Error",
             })
             .end();
