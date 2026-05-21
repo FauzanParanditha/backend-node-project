@@ -163,12 +163,17 @@ export const verifyVerificationCode = async (req: Request, res: Response, next: 
                 message: error.details[0].message,
             });
         }
-        const existingUser = await User.findOne({ email: value.email.trim() });
-        if (!existingUser) {
+        const admin = await Admin.findOne({ email: value.email.trim() });
+        const user = admin ? null : await User.findOne({ email: value.email.trim() });
+
+        let message: string;
+        if (admin) {
+            message = await authService.verifyVerificationCodeService({ value });
+        } else if (user) {
+            message = await authServiceUser.verifyVerificationCodeService({ value });
+        } else {
             throw new ResponseError(400, PUBLIC_INVALID_CODE_RESPONSE);
         }
-
-        const message = await authServiceUser.verifyVerificationCodeService({ value });
 
         const actor = getAuthActivityActor(req);
         if (actor) {
