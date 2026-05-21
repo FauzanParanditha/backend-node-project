@@ -90,7 +90,7 @@ export const loginUnified = async ({
     }).select("+password").populate("roleId");
 
     if (existAdmin) {
-        if (!clientIP) throw new ResponseError(400, "Client IP not provided");
+        if (!clientIP) throw new ResponseError(400, "Client IP not provided", "CLIENT_IP_MISSING");
 
         const normalizedIP = normalizeIP(clientIP);
         const whitelistedIP = await IPWhitelist.findOne({
@@ -98,17 +98,17 @@ export const loginUnified = async ({
         });
 
         if (!whitelistedIP) {
-            throw new ResponseError(403, "Access forbidden");
+            throw new ResponseError(403, "Access forbidden", "IP_NOT_WHITELISTED");
         }
 
         const isValidPassword = await compareDoHash(password, existAdmin.password as string);
 
         if (!isValidPassword) {
-            throw new ResponseError(400, "Invalid email or password");
+            throw new ResponseError(400, "Invalid email or password", "INVALID_CREDENTIALS");
         }
 
         if (!existAdmin.verified) {
-            throw new ResponseError(403, "Account not verified. Please verify your account first.");
+            throw new ResponseError(403, "Account not verified. Please verify your account first.", "ACCOUNT_NOT_VERIFIED");
         }
 
         const populatedRole = existAdmin.roleId as any;
@@ -142,13 +142,13 @@ export const loginUnified = async ({
         email: { $eq: sanitizedEmail },
     }).select("+password").populate("roleId");
 
-    if (!existUser) throw new ResponseError(400, "Invalid email or password");
+    if (!existUser) throw new ResponseError(400, "Invalid email or password", "INVALID_CREDENTIALS");
 
     const isValidPassword = await compareDoHash(password, existUser.password as string);
-    if (!isValidPassword) throw new ResponseError(400, "Invalid email or password");
+    if (!isValidPassword) throw new ResponseError(400, "Invalid email or password", "INVALID_CREDENTIALS");
 
     if (!existUser.verified) {
-        throw new ResponseError(403, "Account not verified. Please verify your account first.");
+        throw new ResponseError(403, "Account not verified. Please verify your account first.", "ACCOUNT_NOT_VERIFIED");
     }
 
     const populatedRole = existUser.roleId as any;

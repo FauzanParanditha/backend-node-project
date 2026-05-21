@@ -116,7 +116,16 @@ export const sendVerificationCode = async (req: Request, res: Response, next: Ne
     const { email } = req.body;
 
     try {
-        await authServiceUser.sendVerificationCodeService(email);
+        const admin = await Admin.findOne({ email: email?.trim() });
+        const user = admin ? null : await User.findOne({ email: email?.trim() });
+
+        if (admin) {
+            await authService.sendVerificationCodeService(email);
+        } else if (user) {
+            await authServiceUser.sendVerificationCodeService(email);
+        } else {
+            throw new ResponseError(404, "User does not exist!");
+        }
 
         const actor = getAuthActivityActor(req);
         if (actor) {
