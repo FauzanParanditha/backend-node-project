@@ -1,7 +1,7 @@
 import type { Document } from "mongoose";
 import mongoose from "mongoose";
 
-export interface ICounter extends Document {
+export interface ICounter extends Document<string> {
     _id: string;
     seq: number;
 }
