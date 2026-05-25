@@ -9,17 +9,27 @@ interface DiscordEmbed {
     timestamp?: string;
 }
 
+const getEnvTag = (): string => {
+    const raw = (process.env.APP_ENV || process.env.NODE_ENV || "development").toUpperCase();
+    if (raw === "PRODUCTION") return "PROD";
+    if (raw === "DEVELOPMENT") return "DEV";
+    return raw;
+};
+
 export const sendDiscordAlert = async (webhookUrl: string | undefined, embed: DiscordEmbed) => {
     if (!webhookUrl) {
         logger.warn("Discord Webhook URL for this specific alert is not configured. Alert skipped.");
         return;
     }
 
+    const envTag = getEnvTag();
+
     try {
         await axios.post(webhookUrl, {
             embeds: [
                 {
                     ...embed,
+                    title: `[${envTag}] ${embed.title}`,
                     timestamp: new Date().toISOString(),
                 },
             ],
