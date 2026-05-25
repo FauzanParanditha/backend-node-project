@@ -11,7 +11,7 @@ import { toObjectId } from "../utils/helper.js";
  * List all roles.
  */
 export const getAllRoles = async (): Promise<IRole[]> => {
-    return Role.find().sort({ isSystem: -1, name: 1 }).lean();
+    return (await Role.find().sort({ isSystem: -1, name: 1 }).lean()) as unknown as IRole[];
 };
 
 /**
@@ -20,7 +20,7 @@ export const getAllRoles = async (): Promise<IRole[]> => {
 export const getRoleById = async (id: string): Promise<IRole> => {
     const role = await Role.findById(toObjectId(id)).lean();
     if (!role) throw new ResponseError(404, "Role not found");
-    return role;
+    return role as unknown as IRole;
 };
 
 /**

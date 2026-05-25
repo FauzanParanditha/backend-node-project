@@ -68,7 +68,7 @@ export const forwardCallback = async ({
             "x-request-id": requestId,
         } = response.headers;
 
-        if (!contentType?.toLowerCase().includes("application/json")) {
+        if (!contentType || !String(contentType).toLowerCase().includes("application/json")) {
             throw new ResponseError(400, "Invalid Content-Type header");
         }
         if (!timestamp || !signature || !requestId) {
@@ -255,7 +255,7 @@ export const forwardCallbackSnap = async ({
             "x-request-id": requestId,
         } = response.headers;
 
-        if (!contentType || !contentType.toLowerCase().includes("application/json")) {
+        if (!contentType || !String(contentType).toLowerCase().includes("application/json")) {
             throw new ResponseError(400, "Invalid Content-Type header");
         }
         if (!timestamp || !signature || !requestId) {
@@ -453,7 +453,7 @@ export const forwardCallbackSnapDelete = async ({
             "x-request-id": requestId,
         } = response.headers;
 
-        if (!contentType || !contentType.toLowerCase().includes("application/json")) {
+        if (!contentType || !String(contentType).toLowerCase().includes("application/json")) {
             throw new ResponseError(400, "Invalid Content-Type header");
         }
         if (!timestamp || !signature || !requestId) {
