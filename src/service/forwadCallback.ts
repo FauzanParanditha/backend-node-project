@@ -9,6 +9,8 @@ import FailedCallback from "../models/failedForwardModel.js";
 import Order from "../models/orderModel.js";
 import { logCallback } from "../utils/logCallback.js";
 import { validateCallback, validatePaymentVASNAP, validateSnapDelete } from "../validators/paymentValidator.js";
+import { logActivity } from "./activityLogService.js";
+import { sendForceRetryAlert } from "./discordService.js";
 import { generateHeadersForward, generateRequestId } from "./paylabs.js";
 
 interface ForwardCallbackParams {
@@ -16,6 +18,9 @@ interface ForwardCallbackParams {
     retryCount?: number;
     callbackId?: string;
 }
+
+const RETRY_INTERVALS = [5, 15, 30, 60, 300, 900, 1800] as const;
+const MAX_RETRY = RETRY_INTERVALS.length;
 
 const sendAlert = (message: string): void => {
     logger.warn(`Alert: ${message}`);
@@ -26,7 +31,7 @@ export const forwardCallback = async ({
     payload,
     retryCount = 0,
 }: ForwardCallbackParams): Promise<boolean | undefined> => {
-    const retryIntervals = [5, 15, 30, 60, 300, 900, 1800];
+    const retryIntervals = RETRY_INTERVALS;
 
     const logFailedCallback = async (
         payload: Record<string, unknown>,
@@ -212,7 +217,7 @@ export const forwardCallbackSnap = async ({
     payload,
     retryCount = 0,
 }: ForwardCallbackParams): Promise<boolean | undefined> => {
-    const retryIntervals = [5, 15, 30, 60, 300, 900, 1800];
+    const retryIntervals = RETRY_INTERVALS;
 
     const logFailedCallback = async (
         payload: Record<string, unknown>,
@@ -409,7 +414,7 @@ export const forwardCallbackSnapDelete = async ({
     payload,
     retryCount = 0,
 }: ForwardCallbackParams): Promise<boolean | undefined> => {
-    const retryIntervals = [5, 15, 30, 60, 300, 900, 1800];
+    const retryIntervals = RETRY_INTERVALS;
 
     const logFailedCallback = async (
         payload: Record<string, unknown>,
@@ -614,20 +619,64 @@ const markRetryFailed = async (callbackId: string, errDesc: string): Promise<voi
     await FailedCallback.updateOne({ _id: callbackId }, { $set: { status: "failed", errDesc } });
 };
 
-export const retryCallbackById = async (callbackId: string): Promise<boolean> => {
+interface ForceRetryActor {
+    actorId: string;
+    role: "admin" | "finance" | "super_admin";
+    email?: string;
+    ipAddress?: string;
+}
+
+export const retryCallbackById = async (
+    callbackId: string,
+    force = false,
+    actor?: ForceRetryActor,
+): Promise<boolean> => {
+    const update: Record<string, unknown> = { status: "processing" };
+    if (force) {
+        // Reset the counter so the next failure path has a full retry cycle
+        // again. errDesc is intentionally preserved so the prior failure
+        // context stays visible for investigation.
+        update.retryCount = 0;
+    }
+
+    // new:false returns the previous document so we can capture pre-force state
+    // for audit logging and Discord alerts before the counter gets reset.
     const failedCallback = await FailedCallback.findOneAndUpdate(
         { _id: callbackId, status: { $ne: "processing" } },
-        { $set: { status: "processing" } },
-        { new: true },
+        { $set: update },
+        { new: false },
     );
 
     if (!failedCallback) {
         throw new ResponseError(404, `Callback not found or already processing`);
     }
 
-    if (failedCallback.retryCount >= 5) {
+    if (!force && failedCallback.retryCount >= MAX_RETRY) {
         await FailedCallback.updateOne({ _id: callbackId }, { $set: { status: "dead" } });
         throw new ResponseError(410, "Max retry exceeded");
+    }
+
+    if (force && actor) {
+        // Fire-and-forget audit + alert; failures here should not block the retry.
+        logActivity({
+            actorId: actor.actorId,
+            role: actor.role,
+            action: "FORCE_RETRY_CALLBACK",
+            details: {
+                callbackId,
+                previousRetryCount: failedCallback.retryCount,
+                previousStatus: failedCallback.status,
+                previousErrDesc: failedCallback.errDesc ?? "",
+            },
+            ipAddress: actor.ipAddress,
+        }).catch((e) => logger.error(`Failed to log force retry activity: ${e.message}`));
+
+        sendForceRetryAlert(
+            callbackId,
+            actor.email ?? actor.actorId,
+            failedCallback.retryCount,
+            failedCallback.errDesc ?? "",
+        ).catch((e) => logger.error(`Failed to send force retry Discord alert: ${e.message}`));
     }
 
     logger.debug("FAILED CALLBACK PAYLOAD:", failedCallback.payload);

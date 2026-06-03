@@ -147,6 +147,25 @@ export const sendDailySummaryReport = async (
     });
 };
 
+export const sendForceRetryAlert = async (
+    callbackId: string,
+    adminEmail: string,
+    previousRetryCount: number,
+    previousErrDesc: string,
+) => {
+    await sendDiscordAlert(process.env.DISCORD_WEBHOOK_URL_SECURITY, {
+        title: "⚠️ FORCE RETRY: Dead Callback Reactivated",
+        description: `Admin memaksa retry pada callback yang sudah mencapai batas maksimum.`,
+        color: 16753920, // Orange
+        fields: [
+            { name: "Callback ID", value: `\`${callbackId}\``, inline: true },
+            { name: "Admin", value: `\`${adminEmail}\``, inline: true },
+            { name: "Previous Retry Count", value: `\`${previousRetryCount}\``, inline: true },
+            { name: "Previous Error", value: `\`\`\`\n${previousErrDesc.substring(0, 500) || "(none)"}\n\`\`\``, inline: false },
+        ],
+    });
+};
+
 export const sendAuthAlert = async (status: string, ip: string, email: string, reason: string) => {
     const isSuccess = status.toLowerCase().includes("success");
     await sendDiscordAlert(process.env.DISCORD_WEBHOOK_URL_AUTH, {
