@@ -7,6 +7,9 @@ interface LogCallbackParams {
     status: string;
     payload: Record<string, unknown>;
     response?: Record<string, unknown> | null;
+    statusCode?: number | null;
+    requestHeaders?: Record<string, unknown> | null;
+    responseHeaders?: Record<string, unknown> | null;
     errorMessage?: string | null;
     requestId?: string | null;
 }
@@ -18,6 +21,9 @@ export const logCallback = async ({
     status,
     payload,
     response = null,
+    statusCode = null,
+    requestHeaders = null,
+    responseHeaders = null,
     errorMessage = null,
     requestId = null,
 }: LogCallbackParams): Promise<void> => {
@@ -29,6 +35,9 @@ export const logCallback = async ({
             status,
             payload,
             response,
+            statusCode,
+            requestHeaders,
+            responseHeaders,
             errorMessage,
             requestId,
         });

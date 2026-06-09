@@ -8,6 +8,9 @@ export interface ICallbackLog extends Document {
     status: "success" | "failed" | "error";
     payload: Record<string, unknown>;
     response?: Record<string, unknown>;
+    statusCode?: number;
+    requestHeaders?: Record<string, unknown>;
+    responseHeaders?: Record<string, unknown>;
     errorMessage?: string;
     requestId?: string;
     createdAt: Date;
@@ -41,6 +44,15 @@ const callbackLogSchema = new mongoose.Schema<ICallbackLog>(
             required: true,
         },
         response: {
+            type: Object,
+        },
+        statusCode: {
+            type: Number,
+        },
+        requestHeaders: {
+            type: Object,
+        },
+        responseHeaders: {
             type: Object,
         },
         errorMessage: {

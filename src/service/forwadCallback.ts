@@ -124,6 +124,7 @@ export const forwardCallback = async ({
         const path = parsedUrl.pathname;
 
         const attemptCallback = async (retryAttempt: number): Promise<boolean | undefined> => {
+            let requestHeaders: Record<string, unknown> | undefined;
             try {
                 if (serverIsClosing) {
                     logger.warn("Server shutting down. Aborting retries.");
@@ -146,6 +147,7 @@ export const forwardCallback = async ({
                     0,
                     client.clientId!,
                 );
+                requestHeaders = responseHeaders as Record<string, unknown>;
 
                 const response = await axios.post(callbackUrl, payload, {
                     headers: responseHeaders as Record<string, string>,
@@ -162,11 +164,15 @@ export const forwardCallback = async ({
                     status: "success",
                     payload: JSON.parse(JSON.stringify(payload)),
                     response: response.data,
+                    statusCode: response.status,
+                    requestHeaders,
+                    responseHeaders: response.headers as Record<string, unknown>,
                     requestId: response.data.requestId,
                 });
                 return true;
             } catch (err: unknown) {
                 const error = err as Error;
+                const axiosErr = err as { response?: { status?: number; headers?: Record<string, unknown>; data?: Record<string, unknown> } };
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${error.message}`);
                 logger.error(`Stack Trace: ${error.stack}`);
 
@@ -195,8 +201,20 @@ export const forwardCallback = async ({
                         client._id as Types.ObjectId,
                         0,
                     );
+                    await logCallback({
+                        type: "outgoing",
+                        source: "system",
+                        target: "client",
+                        status: "failed",
+                        payload: JSON.parse(JSON.stringify(payload)),
+                        response: axiosErr.response?.data ?? null,
+                        statusCode: axiosErr.response?.status,
+                        requestHeaders,
+                        responseHeaders: axiosErr.response?.headers ?? null,
+                        errorMessage: error.message,
+                    });
                     sendAlert(`Failed to forward callback after ${retryAttempt + 1} attempts: ${error.message}`);
-                    return false;
+                    throw error;
                 }
             }
         };
@@ -319,6 +337,7 @@ export const forwardCallbackSnap = async ({
         const path = parsedUrl.pathname;
 
         const attemptCallback = async (retryAttempt: number): Promise<boolean | undefined> => {
+            let requestHeaders: Record<string, unknown> | undefined;
             try {
                 if (serverIsClosing) {
                     logger.warn("Server shutting down. Aborting retries.");
@@ -341,6 +360,7 @@ export const forwardCallbackSnap = async ({
                     0,
                     client.clientId!,
                 );
+                requestHeaders = responseHeaders as Record<string, unknown>;
 
                 const response = await axios.post(callbackUrl, payload, {
                     headers: responseHeaders as Record<string, string>,
@@ -357,12 +377,16 @@ export const forwardCallbackSnap = async ({
                     status: "success",
                     payload: JSON.parse(JSON.stringify(payload)),
                     response: response.data,
+                    statusCode: response.status,
+                    requestHeaders,
+                    responseHeaders: response.headers as Record<string, unknown>,
                     requestId: response.data.requestId,
                 });
 
                 return true;
             } catch (err: unknown) {
                 const error = err as Error;
+                const axiosErr = err as { response?: { status?: number; headers?: Record<string, unknown>; data?: Record<string, unknown> } };
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${error.message}`);
                 logger.error(`Stack Trace: ${error.stack}`);
 
@@ -391,7 +415,20 @@ export const forwardCallbackSnap = async ({
                         client._id as Types.ObjectId,
                         0,
                     );
+                    await logCallback({
+                        type: "outgoing",
+                        source: "system",
+                        target: "client",
+                        status: "failed",
+                        payload: JSON.parse(JSON.stringify(payload)),
+                        response: axiosErr.response?.data ?? null,
+                        statusCode: axiosErr.response?.status,
+                        requestHeaders,
+                        responseHeaders: axiosErr.response?.headers ?? null,
+                        errorMessage: error.message,
+                    });
                     sendAlert(`Failed to forward callback after ${retryAttempt + 1} attempts: ${error.message}`);
+                    throw error;
                 }
 
                 return false;
@@ -524,6 +561,7 @@ export const forwardCallbackSnapDelete = async ({
         const path = parsedUrl.pathname;
 
         const attemptCallback = async (retryAttempt: number): Promise<boolean | void> => {
+            let requestHeaders: Record<string, unknown> | undefined;
             try {
                 if (serverIsClosing) {
                     logger.warn("Server shutting down. Aborting retries.");
@@ -546,6 +584,7 @@ export const forwardCallbackSnapDelete = async ({
                     0,
                     client.clientId!,
                 );
+                requestHeaders = responseHeaders as Record<string, unknown>;
 
                 const response = await axios.post(callbackUrl, notificationData, {
                     headers: responseHeaders as Record<string, string>,
@@ -562,12 +601,16 @@ export const forwardCallbackSnapDelete = async ({
                     status: "success",
                     payload: JSON.parse(JSON.stringify(payload)),
                     response: response.data,
+                    statusCode: response.status,
+                    requestHeaders,
+                    responseHeaders: response.headers as Record<string, unknown>,
                     requestId: response.data.requestId,
                 });
 
                 return;
             } catch (err: unknown) {
                 const error = err as Error;
+                const axiosErr = err as { response?: { status?: number; headers?: Record<string, unknown>; data?: Record<string, unknown> } };
                 logger.error(`Attempt ${retryAttempt + 1} failed: ${error.message}`);
                 logger.error(`Stack Trace: ${error.stack}`);
 
@@ -596,7 +639,20 @@ export const forwardCallbackSnapDelete = async ({
                         client._id as Types.ObjectId,
                         0,
                     );
+                    await logCallback({
+                        type: "outgoing",
+                        source: "system",
+                        target: "client",
+                        status: "failed",
+                        payload: JSON.parse(JSON.stringify(payload)),
+                        response: axiosErr.response?.data ?? null,
+                        statusCode: axiosErr.response?.status,
+                        requestHeaders,
+                        responseHeaders: axiosErr.response?.headers ?? null,
+                        errorMessage: error.message,
+                    });
                     sendAlert(`Failed to forward callback after ${retryAttempt + 1} attempts: ${error.message}`);
+                    throw error;
                 }
 
                 return false;
