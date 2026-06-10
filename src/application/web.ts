@@ -60,6 +60,12 @@ web.set("trust proxy", 1);
 //     return trustedProxySet.has(normalizeIP(ip));
 // });
 
+// Block list check runs FIRST so blocked IPs short-circuit before CORS,
+// body parsers, or any other handler. Without this, a blocked IP whose
+// request is rejected by CORS still flows into the error pipeline and
+// re-triggers the suspicion tracker, creating a runaway loop of new
+// BlockedIP records for the same address. Fails open on internal error.
+web.use(blockedIpMiddleware);
 web.use(
     cors({
         origin: (origin, callback) => {
@@ -83,9 +89,6 @@ web.use(helmet());
 web.use(express.json());
 web.use(express.urlencoded({ extended: true }));
 web.use(apiLogger);
-// Block list check runs before route handlers so blocked IPs cannot reach
-// auth endpoints, rate limiters, or anything else. Fails open on error.
-web.use(blockedIpMiddleware);
 web.use(
     "/public",
     express.static(path.join(__dirname, "../public"), {

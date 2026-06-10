@@ -126,19 +126,26 @@ export const trackSuspiciousActivity = async (ip: string, params: TrackSuspiciou
     if (params.metadata?.path) entry.pathsTargeted.add(params.metadata.path);
 
     if (entry.points >= TRACKER_THRESHOLD) {
+        // Snapshot + delete the tracker BEFORE the async blockIp call so
+        // concurrent requests cannot pile up and trigger N parallel blocks
+        // while we are still awaiting the first one. (Race observed in prod:
+        // 19 BlockedIP docs created for the same IP within 46 seconds.)
         const breakdown = Array.from(entry.typeCounts.entries())
             .map(([type, count]) => `${type} x${count}`)
             .join(", ");
-
-        await blockIp({
+        const blockParams = {
             ipAddress: ip,
             reason: `AUTO_SUSPICIOUS: ${breakdown} [${entry.points}pt]`,
             failedAttempts: entry.points,
             windowMinutes: TRACKER_WINDOW_MS / 60000,
             emailsTargeted: Array.from(entry.emailsTargeted),
             pathsTargeted: Array.from(entry.pathsTargeted),
-        }).catch((e) => logger.error(`Failed to auto-block IP ${ip}: ${e.message}`));
+        };
         failTracker.delete(ip);
+
+        await blockIp(blockParams).catch((e) =>
+            logger.error(`Failed to auto-block IP ${ip}: ${e.message}`),
+        );
     }
 };
 
@@ -159,6 +166,17 @@ interface BlockIpParams {
 }
 
 export const blockIp = async (params: BlockIpParams): Promise<IBlockedIP> => {
+    // Defense-in-depth: if there is already an active block for this IP, do
+    // NOT create a second one. The auto-block path is already guarded by the
+    // tracker-delete-before-await pattern, but a parallel manual block call
+    // (or a stale tracker entry surviving across restart) could still race.
+    const existingActive = await BlockedIP.findOne({ ipAddress: params.ipAddress, isActive: true }).lean();
+    if (existingActive) {
+        activeBlockCache.set(params.ipAddress, existingActive as unknown as IBlockedIP);
+        logger.info(`Skip duplicate block for ${params.ipAddress} (already active offense #${existingActive.offenseCount})`);
+        return existingActive as unknown as IBlockedIP;
+    }
+
     const previousOffenses = await BlockedIP.countDocuments({ ipAddress: params.ipAddress });
     const offenseCount = previousOffenses + 1;
 
