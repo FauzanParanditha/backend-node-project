@@ -12,6 +12,7 @@ import { ResponseError } from "../error/responseError.js";
 import apiLogger from "../middlewares/apiLog.js";
 import { blockedIpMiddleware } from "../middlewares/blockedIpMiddleware.js";
 import { errorMiddleware } from "../middlewares/errorMiddleware.js";
+import { notFoundMiddleware } from "../middlewares/notFoundMiddleware.js";
 import { jwtUnifiedMiddleware } from "../middlewares/jwtUnified.js";
 import Admin from "../models/adminModel.js";
 import Client from "../models/clientModel.js";
@@ -281,5 +282,10 @@ web.get("/me", jwtUnifiedMiddleware, (async (req: any, res: any, next: any) => {
         next(error);
     }
 }) as any);
+
+// 404 catch-all: must come AFTER all route handlers, BEFORE errorMiddleware.
+// Detects scanner probes (.php / wp-admin / suite-api / etc.) and feeds the
+// suspicious-activity tracker so persistent scanners get IP-blocked.
+web.use(notFoundMiddleware);
 
 web.use(errorMiddleware);

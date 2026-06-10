@@ -9,8 +9,17 @@ import { sendIpBlockedAlert } from "./discordService.js";
 // ---------------------------------------------------------------------------
 
 const TRACKER_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
-const TRACKER_THRESHOLD = 20; // fails within window -> block
+const TRACKER_THRESHOLD = 20; // points within window -> block
 const TRACKER_CLEANUP_MS = 60 * 1000; // sweep stale entries every minute
+
+// Per-event point values. Tuned so 4 scanner hits OR 10 CORS rejections OR
+// 20 failed logins (or any mixture) trips the 20-point threshold.
+export const SUSPICION_POINTS = {
+    FAILED_LOGIN: 1,
+    CORS_REJECTION: 2,
+    SCANNER_PATH: 5,
+} as const;
+export type SuspicionType = keyof typeof SUSPICION_POINTS;
 
 // Escalating block durations by offense count.
 const BLOCK_DURATIONS_MS: Array<number | null> = [
@@ -24,20 +33,22 @@ const BLOCK_DURATIONS_MS: Array<number | null> = [
 // In-memory tracker for failed login attempts per IP
 // ---------------------------------------------------------------------------
 
-interface IpFailTracker {
-    count: number;
-    firstFailAt: number;
-    lastFailAt: number;
+interface IpSuspicionTracker {
+    points: number;
+    firstSeenAt: number;
+    lastSeenAt: number;
+    typeCounts: Map<SuspicionType, number>;
     emailsTargeted: Set<string>;
+    pathsTargeted: Set<string>;
 }
 
-const failTracker = new Map<string, IpFailTracker>();
+const failTracker = new Map<string, IpSuspicionTracker>();
 
 // Periodic cleanup so old tracker entries do not accumulate.
 setInterval(() => {
     const cutoff = Date.now() - TRACKER_WINDOW_MS;
     for (const [ip, entry] of failTracker) {
-        if (entry.lastFailAt < cutoff) failTracker.delete(ip);
+        if (entry.lastSeenAt < cutoff) failTracker.delete(ip);
     }
 }, TRACKER_CLEANUP_MS).unref();
 
@@ -82,36 +93,58 @@ export const isIpBlocked = async (ip: string): Promise<IBlockedIP | null> => {
     return block;
 };
 
-export const trackFailedLogin = async (ip: string, email?: string): Promise<void> => {
+interface TrackSuspiciousParams {
+    type: SuspicionType;
+    metadata?: { email?: string; path?: string };
+}
+
+export const trackSuspiciousActivity = async (ip: string, params: TrackSuspiciousParams): Promise<void> => {
     if (!ip) return;
     const now = Date.now();
-    let entry = failTracker.get(ip);
+    const points = SUSPICION_POINTS[params.type];
 
-    // Reset the entry if its window has expired
-    if (entry && now - entry.firstFailAt > TRACKER_WINDOW_MS) {
+    let entry = failTracker.get(ip);
+    if (entry && now - entry.firstSeenAt > TRACKER_WINDOW_MS) {
         entry = undefined;
     }
-
     if (!entry) {
-        entry = { count: 0, firstFailAt: now, lastFailAt: now, emailsTargeted: new Set() };
+        entry = {
+            points: 0,
+            firstSeenAt: now,
+            lastSeenAt: now,
+            typeCounts: new Map(),
+            emailsTargeted: new Set(),
+            pathsTargeted: new Set(),
+        };
         failTracker.set(ip, entry);
     }
 
-    entry.count += 1;
-    entry.lastFailAt = now;
-    if (email) entry.emailsTargeted.add(email);
+    entry.points += points;
+    entry.lastSeenAt = now;
+    entry.typeCounts.set(params.type, (entry.typeCounts.get(params.type) ?? 0) + 1);
+    if (params.metadata?.email) entry.emailsTargeted.add(params.metadata.email);
+    if (params.metadata?.path) entry.pathsTargeted.add(params.metadata.path);
 
-    if (entry.count >= TRACKER_THRESHOLD) {
+    if (entry.points >= TRACKER_THRESHOLD) {
+        const breakdown = Array.from(entry.typeCounts.entries())
+            .map(([type, count]) => `${type} x${count}`)
+            .join(", ");
+
         await blockIp({
             ipAddress: ip,
-            reason: "AUTO_BRUTEFORCE",
-            failedAttempts: entry.count,
+            reason: `AUTO_SUSPICIOUS: ${breakdown} [${entry.points}pt]`,
+            failedAttempts: entry.points,
             windowMinutes: TRACKER_WINDOW_MS / 60000,
             emailsTargeted: Array.from(entry.emailsTargeted),
+            pathsTargeted: Array.from(entry.pathsTargeted),
         }).catch((e) => logger.error(`Failed to auto-block IP ${ip}: ${e.message}`));
-        // Reset tracker so we do not re-trigger immediately
         failTracker.delete(ip);
     }
+};
+
+// Backward-compat wrapper for the existing login controller call site.
+export const trackFailedLogin = async (ip: string, email?: string): Promise<void> => {
+    return trackSuspiciousActivity(ip, { type: "FAILED_LOGIN", metadata: { email } });
 };
 
 interface BlockIpParams {
@@ -120,6 +153,7 @@ interface BlockIpParams {
     failedAttempts?: number;
     windowMinutes?: number;
     emailsTargeted?: string[];
+    pathsTargeted?: string[];
     blockedBy?: Types.ObjectId; // for manual blocks
     durationMs?: number; // override automatic duration
 }
@@ -145,6 +179,7 @@ export const blockIp = async (params: BlockIpParams): Promise<IBlockedIP> => {
             failedAttempts: params.failedAttempts,
             windowMinutes: params.windowMinutes,
             emailsTargeted: params.emailsTargeted,
+            pathsTargeted: params.pathsTargeted,
             blockedBy: params.blockedBy?.toString(),
         },
         isActive: true,
@@ -160,6 +195,7 @@ export const blockIp = async (params: BlockIpParams): Promise<IBlockedIP> => {
         failedAttempts: params.failedAttempts ?? 0,
         windowMinutes: params.windowMinutes ?? 0,
         emailsTargeted: params.emailsTargeted ?? [],
+        pathsTargeted: params.pathsTargeted ?? [],
     }).catch((e) => logger.error(`Failed to send IP blocked Discord alert: ${e.message}`));
 
     logger.warn(`IP auto-blocked: ${params.ipAddress} (offense ${offenseCount}, until ${blockedUntil ?? "permanent"})`);

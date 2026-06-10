@@ -155,8 +155,9 @@ export const sendIpBlockedAlert = async (params: {
     failedAttempts: number;
     windowMinutes: number;
     emailsTargeted: string[];
+    pathsTargeted?: string[];
 }) => {
-    const { ipAddress, reason, offenseCount, blockedUntil, failedAttempts, windowMinutes, emailsTargeted } = params;
+    const { ipAddress, reason, offenseCount, blockedUntil, failedAttempts, windowMinutes, emailsTargeted, pathsTargeted } = params;
     const durationLabel = blockedUntil
         ? `until ${blockedUntil.toISOString()}`
         : "PERMANENT (requires manual unblock)";
@@ -170,13 +171,22 @@ export const sendIpBlockedAlert = async (params: {
             { name: "IP Address", value: `\`${ipAddress}\``, inline: true },
             { name: "Offense Count", value: `\`${offenseCount}\``, inline: true },
             { name: "Reason", value: `\`${reason}\``, inline: false },
-            { name: "Failed Attempts", value: `${failedAttempts} in ${windowMinutes} minutes`, inline: true },
+            { name: "Suspicious Events", value: `${failedAttempts} points in ${windowMinutes} minutes`, inline: true },
             { name: "Block Duration", value: durationLabel, inline: false },
-            {
-                name: "Sample Emails Targeted",
-                value: emailsTargeted.length > 0 ? emailsTargeted.slice(0, 10).map((e) => `\`${e}\``).join(", ") : "(none)",
-                inline: false,
-            },
+            ...(emailsTargeted.length > 0
+                ? [{
+                      name: "Sample Emails Targeted",
+                      value: emailsTargeted.slice(0, 10).map((e) => `\`${e}\``).join(", "),
+                      inline: false,
+                  }]
+                : []),
+            ...(pathsTargeted && pathsTargeted.length > 0
+                ? [{
+                      name: "Sample Paths Targeted",
+                      value: pathsTargeted.slice(0, 10).map((p) => `\`${p}\``).join(", "),
+                      inline: false,
+                  }]
+                : []),
         ],
     });
 };
