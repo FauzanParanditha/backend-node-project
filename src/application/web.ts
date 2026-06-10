@@ -13,6 +13,7 @@ import apiLogger from "../middlewares/apiLog.js";
 import { blockedIpMiddleware } from "../middlewares/blockedIpMiddleware.js";
 import { errorMiddleware } from "../middlewares/errorMiddleware.js";
 import { notFoundMiddleware } from "../middlewares/notFoundMiddleware.js";
+import { suspiciousRequestMiddleware } from "../middlewares/suspiciousRequestMiddleware.js";
 import { jwtUnifiedMiddleware } from "../middlewares/jwtUnified.js";
 import Admin from "../models/adminModel.js";
 import Client from "../models/clientModel.js";
@@ -66,6 +67,12 @@ web.set("trust proxy", 1);
 // re-triggers the suspicion tracker, creating a runaway loop of new
 // BlockedIP records for the same address. Fails open on internal error.
 web.use(blockedIpMiddleware);
+
+// Scanner / exploit signal detection. Runs early so probes that would
+// otherwise hit a real route returning 200 (like "/?pum_action=...") are
+// still counted as suspicious. Fires-and-forgets the tracker and passes
+// the request through unchanged.
+web.use(suspiciousRequestMiddleware);
 web.use(
     cors({
         origin: (origin, callback) => {
@@ -163,11 +170,9 @@ web.use("/api/v1", paymentRouter);
 web.use("/api/v1", userRouter);
 
 web.get("/", (_req, res) => {
-    const dbStatus = mongoose.connection.readyState === 1 ? "connected" : "disconnected";
-    res.json({
-        message: "Hello World!",
-        connection: dbStatus,
-    });
+    // Minimal liveness endpoint. Intentionally does not leak DB connection
+    // state or any other internal signal that helps fingerprint the service.
+    res.json({ message: "ok" });
 });
 
 // test purpose only
