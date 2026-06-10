@@ -147,6 +147,50 @@ export const sendDailySummaryReport = async (
     });
 };
 
+export const sendIpBlockedAlert = async (params: {
+    ipAddress: string;
+    reason: string;
+    offenseCount: number;
+    blockedUntil: Date | null;
+    failedAttempts: number;
+    windowMinutes: number;
+    emailsTargeted: string[];
+    pathsTargeted?: string[];
+}) => {
+    const { ipAddress, reason, offenseCount, blockedUntil, failedAttempts, windowMinutes, emailsTargeted, pathsTargeted } = params;
+    const durationLabel = blockedUntil
+        ? `until ${blockedUntil.toISOString()}`
+        : "PERMANENT (requires manual unblock)";
+    const offenseLabel = ["1st", "2nd", "3rd"][offenseCount - 1] ?? `${offenseCount}th`;
+
+    await sendDiscordAlert(process.env.DISCORD_WEBHOOK_URL_SECURITY, {
+        title: "🚫 IP Auto-Blocked",
+        description: `IP address blocked due to suspicious authentication activity (${offenseLabel} offense).`,
+        color: 15158332, // Red
+        fields: [
+            { name: "IP Address", value: `\`${ipAddress}\``, inline: true },
+            { name: "Offense Count", value: `\`${offenseCount}\``, inline: true },
+            { name: "Reason", value: `\`${reason}\``, inline: false },
+            { name: "Suspicious Events", value: `${failedAttempts} points in ${windowMinutes} minutes`, inline: true },
+            { name: "Block Duration", value: durationLabel, inline: false },
+            ...(emailsTargeted.length > 0
+                ? [{
+                      name: "Sample Emails Targeted",
+                      value: emailsTargeted.slice(0, 10).map((e) => `\`${e}\``).join(", "),
+                      inline: false,
+                  }]
+                : []),
+            ...(pathsTargeted && pathsTargeted.length > 0
+                ? [{
+                      name: "Sample Paths Targeted",
+                      value: pathsTargeted.slice(0, 10).map((p) => `\`${p}\``).join(", "),
+                      inline: false,
+                  }]
+                : []),
+        ],
+    });
+};
+
 export const sendForceRetryAlert = async (
     callbackId: string,
     adminEmail: string,

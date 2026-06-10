@@ -74,6 +74,10 @@ export const PERMISSIONS = {
 
     // ── Developers ─────────────────────────────────────────────
     DEVELOPER_DOCS_READ: "developer_docs:read",
+
+    // ── Blocked IPs ─────────────────────────────────────────────
+    BLOCKED_IP_LIST: "blocked_ip:list",
+    BLOCKED_IP_MANAGE: "blocked_ip:manage",
 } as const;
 
 /** Union type of all permission string values */

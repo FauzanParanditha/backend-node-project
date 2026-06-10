@@ -10,7 +10,9 @@ import { fileURLToPath } from "url";
 import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
 import apiLogger from "../middlewares/apiLog.js";
+import { blockedIpMiddleware } from "../middlewares/blockedIpMiddleware.js";
 import { errorMiddleware } from "../middlewares/errorMiddleware.js";
+import { notFoundMiddleware } from "../middlewares/notFoundMiddleware.js";
 import { jwtUnifiedMiddleware } from "../middlewares/jwtUnified.js";
 import Admin from "../models/adminModel.js";
 import Client from "../models/clientModel.js";
@@ -58,6 +60,12 @@ web.set("trust proxy", 1);
 //     return trustedProxySet.has(normalizeIP(ip));
 // });
 
+// Block list check runs FIRST so blocked IPs short-circuit before CORS,
+// body parsers, or any other handler. Without this, a blocked IP whose
+// request is rejected by CORS still flows into the error pipeline and
+// re-triggers the suspicion tracker, creating a runaway loop of new
+// BlockedIP records for the same address. Fails open on internal error.
+web.use(blockedIpMiddleware);
 web.use(
     cors({
         origin: (origin, callback) => {
@@ -277,5 +285,10 @@ web.get("/me", jwtUnifiedMiddleware, (async (req: any, res: any, next: any) => {
         next(error);
     }
 }) as any);
+
+// 404 catch-all: must come AFTER all route handlers, BEFORE errorMiddleware.
+// Detects scanner probes (.php / wp-admin / suite-api / etc.) and feeds the
+// suspicious-activity tracker so persistent scanners get IP-blocked.
+web.use(notFoundMiddleware);
 
 web.use(errorMiddleware);
