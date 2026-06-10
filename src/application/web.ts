@@ -10,6 +10,7 @@ import { fileURLToPath } from "url";
 import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
 import apiLogger from "../middlewares/apiLog.js";
+import { blockedIpMiddleware } from "../middlewares/blockedIpMiddleware.js";
 import { errorMiddleware } from "../middlewares/errorMiddleware.js";
 import { jwtUnifiedMiddleware } from "../middlewares/jwtUnified.js";
 import Admin from "../models/adminModel.js";
@@ -81,6 +82,9 @@ web.use(helmet());
 web.use(express.json());
 web.use(express.urlencoded({ extended: true }));
 web.use(apiLogger);
+// Block list check runs before route handlers so blocked IPs cannot reach
+// auth endpoints, rate limiters, or anything else. Fails open on error.
+web.use(blockedIpMiddleware);
 web.use(
     "/public",
     express.static(path.join(__dirname, "../public"), {

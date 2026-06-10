@@ -147,6 +147,40 @@ export const sendDailySummaryReport = async (
     });
 };
 
+export const sendIpBlockedAlert = async (params: {
+    ipAddress: string;
+    reason: string;
+    offenseCount: number;
+    blockedUntil: Date | null;
+    failedAttempts: number;
+    windowMinutes: number;
+    emailsTargeted: string[];
+}) => {
+    const { ipAddress, reason, offenseCount, blockedUntil, failedAttempts, windowMinutes, emailsTargeted } = params;
+    const durationLabel = blockedUntil
+        ? `until ${blockedUntil.toISOString()}`
+        : "PERMANENT (requires manual unblock)";
+    const offenseLabel = ["1st", "2nd", "3rd"][offenseCount - 1] ?? `${offenseCount}th`;
+
+    await sendDiscordAlert(process.env.DISCORD_WEBHOOK_URL_SECURITY, {
+        title: "🚫 IP Auto-Blocked",
+        description: `IP address blocked due to suspicious authentication activity (${offenseLabel} offense).`,
+        color: 15158332, // Red
+        fields: [
+            { name: "IP Address", value: `\`${ipAddress}\``, inline: true },
+            { name: "Offense Count", value: `\`${offenseCount}\``, inline: true },
+            { name: "Reason", value: `\`${reason}\``, inline: false },
+            { name: "Failed Attempts", value: `${failedAttempts} in ${windowMinutes} minutes`, inline: true },
+            { name: "Block Duration", value: durationLabel, inline: false },
+            {
+                name: "Sample Emails Targeted",
+                value: emailsTargeted.length > 0 ? emailsTargeted.slice(0, 10).map((e) => `\`${e}\``).join(", ") : "(none)",
+                inline: false,
+            },
+        ],
+    });
+};
+
 export const sendForceRetryAlert = async (
     callbackId: string,
     adminEmail: string,

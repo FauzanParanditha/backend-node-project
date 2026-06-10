@@ -15,6 +15,12 @@ import {
     getAllEmailLog,
     getAllFailedCallbackLog,
 } from "../controllers/apiLogController.js";
+import {
+    forceBlock,
+    getIpHistory,
+    listBlocked,
+    unblock,
+} from "../controllers/blockedIpController.js";
 import { retryCallback } from "../controllers/retryCallbackController.js";
 import { PERMISSIONS } from "../constants/permissions.js";
 import { jwtMiddlewareAdmin } from "../middlewares/admin_jwt.js";
@@ -39,6 +45,12 @@ router.get("/activitylogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LO
 
 // Retry
 router.post("/retry/callback/:id", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_RETRY), retryCallback);
+
+// Blocked IPs
+router.get("/blocked-ips", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.BLOCKED_IP_LIST), listBlocked);
+router.get("/blocked-ips/:ip", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.BLOCKED_IP_LIST), getIpHistory);
+router.post("/blocked-ips/:ip/unblock", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.BLOCKED_IP_MANAGE), unblock);
+router.post("/blocked-ips/:ip/block", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.BLOCKED_IP_MANAGE), forceBlock);
 
 // Dashboard (unified: admin sees all, user sees scoped)
 router.get("/dashboard", jwtUnifiedMiddleware, dashboard);

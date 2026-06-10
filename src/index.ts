@@ -4,6 +4,7 @@ import { connectDB } from "./application/db.js";
 import logger, { flushLogsAndExit } from "./application/logger.js";
 import { web } from "./application/web.js";
 import { wss } from "./application/websocket_server.js";
+import { refreshBlockCache } from "./service/blockedIpService.js";
 
 dotenv.config();
 
@@ -24,6 +25,12 @@ const server = web.listen(process.env.PORT, async () => {
     await connectDB();
     logger.info(`App running on port: ${process.env.PORT}`);
     logger.info(`Running in ${process.env.NODE_ENV} mode`);
+
+    // Pre-warm the active block cache so the very first request after start
+    // does not pay a DB round-trip for the most common case (no block).
+    await refreshBlockCache().catch((e) =>
+        logger.error(`Failed to refresh block cache on startup: ${(e as Error).message}`),
+    );
 
     if (process.env.ENABLE_CRON === "true") {
         try {
