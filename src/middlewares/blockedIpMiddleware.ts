@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import logger from "../application/logger.js";
+import BlockedRequestLog from "../models/blockedRequestLogModel.js";
 import { isIpBlocked } from "../service/blockedIpService.js";
 
 export const blockedIpMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -15,6 +16,18 @@ export const blockedIpMiddleware = async (req: Request, res: Response, next: Nex
             next();
             return;
         }
+
+        // Fire-and-forget log so we can still see what URLs a blocked IP is
+        // probing after the block. apiLogger does not run for blocked IPs
+        // (it sits behind this middleware) so without this we lose all
+        // post-block visibility into attacker behavior.
+        BlockedRequestLog.create({
+            ipAddress: ip,
+            method: req.method,
+            endpoint: req.originalUrl,
+            userAgent: req.get("user-agent"),
+            blockId: block._id,
+        }).catch((e: Error) => logger.error(`BlockedRequestLog write failed: ${e.message}`));
 
         const until = block.blockedUntil ? new Date(block.blockedUntil).toISOString() : "permanent";
         res.status(403).json({

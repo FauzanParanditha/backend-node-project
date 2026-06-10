@@ -17,7 +17,9 @@ import {
 } from "../controllers/apiLogController.js";
 import {
     forceBlock,
+    getIpEndpointStats,
     getIpHistory,
+    getIpRequestLog,
     listBlocked,
     unblock,
 } from "../controllers/blockedIpController.js";
@@ -49,6 +51,8 @@ router.post("/retry/callback/:id", jwtMiddlewareAdmin, requirePermission(PERMISS
 // Blocked IPs
 router.get("/blocked-ips", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.BLOCKED_IP_LIST), listBlocked);
 router.get("/blocked-ips/:ip", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.BLOCKED_IP_LIST), getIpHistory);
+router.get("/blocked-ips/:ip/requests", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.BLOCKED_IP_LIST), getIpRequestLog);
+router.get("/blocked-ips/:ip/endpoints", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.BLOCKED_IP_LIST), getIpEndpointStats);
 router.post("/blocked-ips/:ip/unblock", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.BLOCKED_IP_MANAGE), unblock);
 router.post("/blocked-ips/:ip/block", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.BLOCKED_IP_MANAGE), forceBlock);
 
