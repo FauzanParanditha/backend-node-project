@@ -49,6 +49,16 @@ const QUERY_PATTERNS: RegExp[] = [
     /[?&]author=\d/i, // WP user enumeration via ?author=N
 ];
 
+// Recon signals: API documentation endpoints. Hitting these is NOT
+// blocked (they may be legitimate developer traffic) but it counts as
+// soft suspicion - integrators usually hit them once during onboarding,
+// not as part of a broader sweep.
+const RECON_PATTERNS: RegExp[] = [
+    /^\/swagger\.json/i,
+    /^\/api-docs/i,
+    /^\/redoc/i,
+];
+
 // Exploit attempt signals - path traversal, XSS, command injection, etc.
 // Distinct from scanner pattern because intent is exploitation, not recon.
 const EXPLOIT_PATTERNS: RegExp[] = [
@@ -73,14 +83,28 @@ export const isSuspiciousRequest = (url: string): boolean => {
     );
 };
 
+export const isReconRequest = (url: string): boolean => RECON_PATTERNS.some((re) => re.test(url));
+
 export const suspiciousRequestMiddleware = (req: Request, _res: Response, next: NextFunction): void => {
     const url = req.originalUrl;
-    if (req.ip && isSuspiciousRequest(url)) {
+    if (!req.ip) {
+        next();
+        return;
+    }
+
+    if (isSuspiciousRequest(url)) {
         logger.warn(`Suspicious request from ${req.ip}: ${req.method} ${url}`);
         trackSuspiciousActivity(req.ip, {
             type: "SCANNER_PATH",
             metadata: { path: url },
         }).catch((e) => logger.error(`trackSuspicious (suspiciousRequest) error: ${(e as Error).message}`));
+    } else if (isReconRequest(url)) {
+        // Soft suspicion - 1pt only. A solo recon hit will not trigger
+        // anything; one alongside actual scanner probes raises the score.
+        trackSuspiciousActivity(req.ip, {
+            type: "RECON_PROBE",
+            metadata: { path: url },
+        }).catch((e) => logger.error(`trackSuspicious (recon) error: ${(e as Error).message}`));
     }
     next();
 };

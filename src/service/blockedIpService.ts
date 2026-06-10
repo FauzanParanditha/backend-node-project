@@ -14,7 +14,11 @@ const TRACKER_CLEANUP_MS = 60 * 1000; // sweep stale entries every minute
 
 // Per-event point values. Tuned so 4 scanner hits OR 10 CORS rejections OR
 // 20 failed logins (or any mixture) trips the 20-point threshold.
+// RECON_PROBE is the lightest signal because legit integrators do hit the
+// docs - one visit alone should never trigger anything, but it composes
+// with other suspicion when the same IP is also probing scanner patterns.
 export const SUSPICION_POINTS = {
+    RECON_PROBE: 1,
     FAILED_LOGIN: 1,
     CORS_REJECTION: 2,
     SCANNER_PATH: 5,
