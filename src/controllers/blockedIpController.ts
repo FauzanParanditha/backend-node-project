@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
+import BlockedRequestLog from "../models/blockedRequestLogModel.js";
 import {
     blockIp,
     getBlockedIpHistory,
@@ -55,6 +56,53 @@ export const unblock = async (req: Request, res: Response, next: NextFunction): 
         return res.status(200).json({ success: true, message: "IP unblocked", data: result });
     } catch (error) {
         logger.error(`Error unblocking IP: ${(error as Error).message}`);
+        next(error);
+    }
+};
+
+export const getIpRequestLog = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+    const { ip } = req.params;
+    if (!ip) {
+        return res.status(400).json({ success: false, message: "IP address is required" });
+    }
+    try {
+        const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 100));
+        const items = await BlockedRequestLog.find({ ipAddress: ip })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .lean();
+        return res.status(200).json({ success: true, message: "Blocked request log", data: items });
+    } catch (error) {
+        logger.error(`Error getting IP request log: ${(error as Error).message}`);
+        next(error);
+    }
+};
+
+export const getIpEndpointStats = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+    const { ip } = req.params;
+    if (!ip) {
+        return res.status(400).json({ success: false, message: "IP address is required" });
+    }
+    try {
+        // Aggregate unique endpoints + how many times each was probed by this IP.
+        // Useful for picking new scanner patterns: paths the attacker tries most.
+        const stats = await BlockedRequestLog.aggregate([
+            { $match: { ipAddress: ip } },
+            {
+                $group: {
+                    _id: { endpoint: "$endpoint", method: "$method" },
+                    count: { $sum: 1 },
+                    firstSeen: { $min: "$createdAt" },
+                    lastSeen: { $max: "$createdAt" },
+                    userAgents: { $addToSet: "$userAgent" },
+                },
+            },
+            { $sort: { count: -1 } },
+            { $limit: 200 },
+        ]);
+        return res.status(200).json({ success: true, message: "Endpoint stats", data: stats });
+    } catch (error) {
+        logger.error(`Error getting IP endpoint stats: ${(error as Error).message}`);
         next(error);
     }
 };
