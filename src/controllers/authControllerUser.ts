@@ -11,6 +11,7 @@ import { sendAuthAlert, sendAuthAlertDebounced } from "../service/discordService
 import { logSkippedEmailAttempt } from "../service/sendMail.js";
 import { getAuthActivityActor, resolveActivityActor } from "../utils/activityActor.js";
 import { isAdminRole } from "../utils/authRole.js";
+import { clearAuthCookie, setAuthCookie } from "../utils/authCookie.js";
 import {
     acceptCodeSchema,
     acceptFPCodeSchema,
@@ -50,13 +51,10 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
             clientIP: req.ip,
         });
 
-        if (role === "user") {
-            res.cookie("Authorization", "Bearer " + token, {
-                expires: new Date(Date.now() + expiresIn * 1000),
-                httpOnly: process.env.NODE_ENV === "production",
-                secure: process.env.NODE_ENV === "production",
-            });
-        }
+        // HttpOnly cookie for all roles — the access token is no longer stored
+        // in client-readable storage. Attributes (HttpOnly/Secure/SameSite/
+        // Domain) are centralized in utils/authCookie.
+        setAuthCookie(res, token, expiresIn);
 
         sendAuthAlert("Successful Login", req.ip || "Unknown IP", email, `Successfully logged in as **${role}**`).catch(
             console.error,
@@ -120,7 +118,8 @@ export const logout = async (req: Request, res: Response): Promise<any> => {
         }).catch(console.error);
     }
 
-    res.clearCookie("Authorization").status(200).json({
+    clearAuthCookie(res);
+    res.status(200).json({
         success: true,
         message: "logout is successfully",
     });

@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "crypto";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
@@ -93,7 +94,7 @@ web.use(
 );
 web.use("/api/v1/order/webhook/paylabs", express.raw({ type: "application/json" }));
 web.use(helmet());
-// web.use(cookieParser());
+web.use(cookieParser());
 web.use(express.json());
 web.use(express.urlencoded({ extended: true }));
 web.use(apiLogger);
