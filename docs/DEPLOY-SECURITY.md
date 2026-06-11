@@ -50,13 +50,16 @@ HMAC=$(openssl rand -hex 32)
 # Turunkan .env dari ConfigMap lama
 kubectl -n dev get configmap d-payhub-be-env -o jsonpath='{.data.\.env}' > be.env
 
-# Timpa kunci + seeder
-sed -i '/^ENCRYPTION_KEY=/d;/^HMAC_KEY=/d;/^SEED_ADMIN_EMAIL=/d;/^SEED_ADMIN_PASSWORD=/d' be.env
+# Timpa kunci + seeder + cookie domain
+sed -i '/^ENCRYPTION_KEY=/d;/^HMAC_KEY=/d;/^SEED_ADMIN_EMAIL=/d;/^SEED_ADMIN_PASSWORD=/d;/^COOKIE_DOMAIN=/d' be.env
 {
   echo "ENCRYPTION_KEY=$ENC"
   echo "HMAC_KEY=$HMAC"
   echo "SEED_ADMIN_EMAIL=<email-admin>"
   echo "SEED_ADMIN_PASSWORD=<password-kuat>"
+  # WAJIB: parent domain bersama agar cookie auth dibaca FE & BE.
+  # Kosong/salah = middleware FE me-redirect semua orang ke login (lockout).
+  echo "COOKIE_DOMAIN=.pandi.id"
 } >> be.env
 
 # Pastikan FRONTEND_URL ada (dipakai untuk bikin payment link)
@@ -104,6 +107,24 @@ kubectl -n dev logs deploy/d-payhub-fe --tail=50 | grep -iE 'error|ENCRYPTION_KE
 Lalu programmer/QA tes alur payment: create order → `/payment` → process →
 bayar (sandbox) → `/payment/success` → cancel. Semua mulus = lolos.
 
+### Verifikasi auth cookie + proteksi route (#5/#1)
+```bash
+# Login harus mengeset cookie HttpOnly bernama Authorization, Domain=.pandi.id
+curl -s -i -X POST https://api-dev-ppnd.pandi.id/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"<email>","password":"<password>"}' | grep -i 'set-cookie'
+# harap: Set-Cookie: Authorization=Bearer%20...; Domain=.pandi.id; Path=/;
+#        HttpOnly; Secure; SameSite=Lax
+```
+Di browser (dev.dashboard.pg.pandi.id):
+- DevTools → Application → Local Storage: **tidak ada token** (hanya `_auth_present` + role/permissions).
+- DevTools → Application → Cookies: `Authorization` ada, ber-flag HttpOnly + domain `.pandi.id`.
+- Saat login, buka `/dashboard/...` → tampil. **Incognito / hapus cookie** → otomatis redirect ke `/auth/login` (bukti `middleware.ts` jalan).
+- Logout → cookie `Authorization` hilang; akses `/dashboard/...` redirect ke login.
+
+> Kalau setelah login semua orang malah dilempar ke `/auth/login`, hampir pasti
+> `COOKIE_DOMAIN` salah/kosong → cookie tak terbaca oleh host dashboard.
+
 ### Verifikasi BE auth-hardening (opsional)
 ```bash
 # Rate limit: percobaan login ke-6 dalam 10 menit dari IP sama harus 429
@@ -129,6 +150,11 @@ kubectl -n dev rollout undo deploy/d-payhub-be
 ```
 
 ## Catatan penting
+- **`COOKIE_DOMAIN` (mis. `.pandi.id`) WAJIB di-set di BE** sebelum deploy FE
+  cookie-auth. Kosong/salah → cookie host-only → `middleware.ts` FE me-redirect
+  semua orang ke login (lockout). Set juga di lingkungan prod (parent domain prod).
+- **Build FE wajib lulus** (`yarn build`) sebelum deploy — perubahan auth FE tidak
+  bisa di-typecheck di luar CI.
 - `ENCRYPTION_KEY`/`HMAC_KEY` **wajib identik** di kedua Secret.
 - Payment link `?q=` lama (kunci lama) jadi invalid setelah rotate — wajar; lakukan saat trafik rendah.
 - `NEXT_PUBLIC_*` di FE adalah **build-time** (di-inject CI saat build image), **bukan** dari Secret runtime ini.
