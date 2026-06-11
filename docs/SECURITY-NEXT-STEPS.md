@@ -51,13 +51,11 @@ Integrator eksternal butuh referensi endpoint **klien saja** (tanpa admin/intern
 - [ ] `[FE]` (opsional, nilai rendah) Kurangi detail model RBAC yang terkirim ke client bila memungkinkan tanpa memecah UI.
 
 ## 5b. Dependency audit `[BE]`
-Catatan: percobaan `npm audit fix` di-**revert** karena dijalankan dengan npm 11
-(lokal) sementara CI/Docker (node:20-alpine) memakai **npm 10.8.2** → lockfile
-jadi tak sinkron dan `npm ci` gagal (`Missing: yaml@2.9.0 from lock file`).
-- [ ] Jalankan ulang audit fix **dengan npm versi yang sama dengan CI** (mis. di
-      dalam container node:20, atau `npx npm@10.8.2 audit fix`), lalu verifikasi
-      `npx npm@10.8.2 ci --dry-run` lolos sebelum commit. Alternatif: standarkan
-      versi npm (tambah `engines`/`packageManager`) atau naikkan npm CI ke 11.
+- [x] Non-breaking patches diterapkan **dengan npm 10.8.2** (cocok CI) — minimatch
+      (HIGH), ajv, brace-expansion, yaml — diverifikasi `npx npm@10.8.2 ci --dry-run`.
+- [ ] **Aturan:** selalu jalankan `npm audit fix`/edit lockfile dengan npm versi
+      CI (10.x). npm 11 menulis lock yang ditolak `npm ci` npm 10. Pertimbangkan
+      standarkan via `packageManager`/`engines` atau naikkan npm CI ke 11.
 
 Sisa yang butuh breaking change & pengujian:
 - [ ] `joi` 17 → 18 (advisory: RangeError pada input recursive `link()`). Cek validator (`authValidator`, dll) tak pakai `link()`; upgrade + tes seluruh validasi.
