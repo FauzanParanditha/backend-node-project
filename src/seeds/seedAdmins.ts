@@ -30,12 +30,19 @@ const seedAdmins = async () => {
         await Admin.deleteMany();
         logger.info("Cleared existing admins");
 
-        const hashPassword = await doHash("Pandi@123", 12);
+        // Credentials must come from the environment — never hardcode them.
+        const seedEmail = process.env.SEED_ADMIN_EMAIL;
+        const seedPassword = process.env.SEED_ADMIN_PASSWORD;
+        if (!seedEmail || !seedPassword) {
+            throw new Error("SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD env vars are required to seed the super admin");
+        }
+
+        const hashPassword = await doHash(seedPassword, 12);
         // Seed admin data
         const adminData = [
             {
                 fullName: "Super Admin",
-                email: "fauzan@pandi.id",
+                email: seedEmail,
                 password: hashPassword,
                 roleId: superAdminRole._id,
             },
