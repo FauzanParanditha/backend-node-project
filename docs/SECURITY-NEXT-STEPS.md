@@ -50,9 +50,16 @@ Integrator eksternal butuh referensi endpoint **klien saja** (tanpa admin/intern
 - [ ] `[BE]` (opsional) Tinjau apakah perlu memperketat limiter per-endpoint sensitif lain.
 - [ ] `[FE]` (opsional, nilai rendah) Kurangi detail model RBAC yang terkirim ke client bila memungkinkan tanpa memecah UI.
 
-## 5b. Dependency audit — sisa yang butuh breaking change `[BE]`
-`npm audit` non-breaking sudah diterapkan (minimatch HIGH + ajv/brace-expansion/yaml).
-Sisa 3 moderate butuh major upgrade & pengujian:
+## 5b. Dependency audit `[BE]`
+Catatan: percobaan `npm audit fix` di-**revert** karena dijalankan dengan npm 11
+(lokal) sementara CI/Docker (node:20-alpine) memakai **npm 10.8.2** → lockfile
+jadi tak sinkron dan `npm ci` gagal (`Missing: yaml@2.9.0 from lock file`).
+- [ ] Jalankan ulang audit fix **dengan npm versi yang sama dengan CI** (mis. di
+      dalam container node:20, atau `npx npm@10.8.2 audit fix`), lalu verifikasi
+      `npx npm@10.8.2 ci --dry-run` lolos sebelum commit. Alternatif: standarkan
+      versi npm (tambah `engines`/`packageManager`) atau naikkan npm CI ke 11.
+
+Sisa yang butuh breaking change & pengujian:
 - [ ] `joi` 17 → 18 (advisory: RangeError pada input recursive `link()`). Cek validator (`authValidator`, dll) tak pakai `link()`; upgrade + tes seluruh validasi.
 - [ ] `uuid` (via `exceljs`): `audit fix --force` malah **men-downgrade** exceljs 4→3 — jangan. Opsi: tunggu exceljs rilis dengan uuid baru, atau `overrides` uuid (uji kompat). Risiko nyata rendah (vuln hanya saat `buf` di-pass ke uuid v3/v5/v6).
 - [ ] (kebersihan) Hapus `yarn.lock` yang stale di BE — deploy pakai `npm ci` (package-lock.json), yarn.lock cuma bikin bingung/drift.
