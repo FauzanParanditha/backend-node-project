@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
@@ -122,20 +123,55 @@ const limiter = rateLimit({
 });
 web.use(limiter);
 
-// Swagger UI
-web.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-web.get("/swagger.json", (_req, res) => {
-    res.json(swaggerSpec);
-});
+// ---------------------------------------------------------------------------
+// API docs (Swagger UI / ReDoc) — INTERNAL tooling only.
+// The raw spec exposes every endpoint (incl. admin), so it must never be
+// public. Disabled entirely in production; on non-prod it is optionally
+// protected by HTTP Basic Auth when SWAGGER_USER/SWAGGER_PASS are set.
+// External payment integrators use the curated Developer Docs in the
+// dashboard (gated by the developer_docs:read permission), not this spec.
+// ---------------------------------------------------------------------------
+const docsEnabled = process.env.NODE_ENV !== "production";
+if (docsEnabled) {
+    const docsPaths = ["/api-docs", "/swagger.json", "/redoc"];
+    const docsUser = process.env.SWAGGER_USER;
+    const docsPass = process.env.SWAGGER_PASS;
 
-// ReDoc
-web.use((_req, res, next) => {
-    res.setHeader("Content-Security-Policy", "script-src 'self' https://cdn.redoc.ly; worker-src 'self' blob:");
-    next();
-});
+    if (docsUser && docsPass) {
+        const safeEqual = (a: string, b: string): boolean => {
+            const bufA = Buffer.from(a);
+            const bufB = Buffer.from(b);
+            return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+        };
 
-web.get("/redoc", (_req, res) => {
-    res.send(`
+        const docsAuthGuard: express.RequestHandler = (req, res, next) => {
+            const [scheme, encoded] = (req.headers.authorization || "").split(" ");
+            if (scheme === "Basic" && encoded) {
+                const decoded = Buffer.from(encoded, "base64").toString();
+                const sep = decoded.indexOf(":");
+                const user = sep === -1 ? decoded : decoded.slice(0, sep);
+                const pass = sep === -1 ? "" : decoded.slice(sep + 1);
+                if (safeEqual(user, docsUser) && safeEqual(pass, docsPass)) {
+                    return next();
+                }
+            }
+            res.set("WWW-Authenticate", 'Basic realm="API Docs"');
+            res.status(401).send("Authentication required");
+        };
+
+        web.use(docsPaths, docsAuthGuard);
+    }
+
+    // Swagger UI
+    web.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+    web.get("/swagger.json", (_req, res) => {
+        res.json(swaggerSpec);
+    });
+
+    // ReDoc — relax CSP only on the docs response so the Redoc CDN bundle loads
+    web.get("/redoc", (_req, res) => {
+        res.setHeader("Content-Security-Policy", "script-src 'self' https://cdn.redoc.ly; worker-src 'self' blob:");
+        res.send(`
         <!DOCTYPE html>
         <html>
         <head>
@@ -151,7 +187,8 @@ web.get("/redoc", (_req, res) => {
         </body>
         </html>
     `);
-});
+    });
+}
 
 //route
 web.use("/api/v1/auth", authRouterUser);
