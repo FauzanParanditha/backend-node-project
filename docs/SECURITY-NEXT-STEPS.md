@@ -50,6 +50,13 @@ Integrator eksternal butuh referensi endpoint **klien saja** (tanpa admin/intern
 - [ ] `[BE]` (opsional) Tinjau apakah perlu memperketat limiter per-endpoint sensitif lain.
 - [ ] `[FE]` (opsional, nilai rendah) Kurangi detail model RBAC yang terkirim ke client bila memungkinkan tanpa memecah UI.
 
+## 5b. Dependency audit — sisa yang butuh breaking change `[BE]`
+`npm audit` non-breaking sudah diterapkan (minimatch HIGH + ajv/brace-expansion/yaml).
+Sisa 3 moderate butuh major upgrade & pengujian:
+- [ ] `joi` 17 → 18 (advisory: RangeError pada input recursive `link()`). Cek validator (`authValidator`, dll) tak pakai `link()`; upgrade + tes seluruh validasi.
+- [ ] `uuid` (via `exceljs`): `audit fix --force` malah **men-downgrade** exceljs 4→3 — jangan. Opsi: tunggu exceljs rilis dengan uuid baru, atau `overrides` uuid (uji kompat). Risiko nyata rendah (vuln hanya saat `buf` di-pass ke uuid v3/v5/v6).
+- [ ] (kebersihan) Hapus `yarn.lock` yang stale di BE — deploy pakai `npm ci` (package-lock.json), yarn.lock cuma bikin bingung/drift.
+
 ## 6. Pengulangan untuk PRODUCTION
 Setelah `dev` terbukti & di-merge ke `master`:
 - [ ] `[OPS]` Ulangi seluruh `DEPLOY-SECURITY.md` untuk prod dengan **kunci & COOKIE_DOMAIN prod sendiri** (jangan pakai nilai dev).
