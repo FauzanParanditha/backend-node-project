@@ -5,10 +5,17 @@ const getVerificationKey = (ip: string | undefined, email: unknown): string => {
     return `${ip ?? "unknown"}:${normalizedEmail}`;
 };
 
-// Strict limiter for authentication endpints to prevent brute force (5 requests per 10 minutes)
+// Strict limiter for authentication endpoints to prevent brute force.
+// Key is IP+email so an attacker probing many different emails from one IP
+// cannot exhaust the limit for any single legit user, and a legit user
+// behind a shared NAT cannot accidentally lock out their colleagues.
+// 5 attempts per 10 minutes per (IP, email) pair is enough for honest
+// typo recovery but cuts attacker probe rate by 50% compared to the
+// previous IP-only limit of 10.
 export const loginLimiter = rateLimit({
     windowMs: 10 * 60 * 1000, // 10 minutes
-    max: 10,
+    max: 5,
+    keyGenerator: (req) => getVerificationKey(req.ip, req.body?.email),
     message: { success: false, message: "Too many login attempts, please try again after 10 minutes" },
     standardHeaders: true,
     legacyHeaders: false,

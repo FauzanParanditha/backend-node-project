@@ -74,6 +74,20 @@ export const loginAdmin = async ({ email, password }: { email: string; password:
     };
 };
 
+// Constant-time guard: when no user/admin matches the supplied email we still
+// burn approximately one bcrypt(cost=12) compare so the response time matches
+// the path where the user exists and the password is just wrong. Without this,
+// an attacker can enumerate which emails are registered by measuring timing
+// (~5ms vs ~100ms). Lazy-initialized so we pay the one-time hash cost only
+// on the first login attempt.
+let DUMMY_BCRYPT_HASH: string | null = null;
+const dummyTimingCompare = async (password: string): Promise<void> => {
+    if (!DUMMY_BCRYPT_HASH) {
+        DUMMY_BCRYPT_HASH = await doHash(crypto.randomBytes(16).toString("hex"), 12);
+    }
+    await compareDoHash(password, DUMMY_BCRYPT_HASH);
+};
+
 export const loginUnified = async ({
     email,
     password,
@@ -142,7 +156,10 @@ export const loginUnified = async ({
         email: { $eq: sanitizedEmail },
     }).select("+password").populate("roleId");
 
-    if (!existUser) throw new ResponseError(400, "Invalid email or password", "INVALID_CREDENTIALS");
+    if (!existUser) {
+        await dummyTimingCompare(password);
+        throw new ResponseError(400, "Invalid email or password", "INVALID_CREDENTIALS");
+    }
 
     const isValidPassword = await compareDoHash(password, existUser.password as string);
     if (!isValidPassword) throw new ResponseError(400, "Invalid email or password", "INVALID_CREDENTIALS");

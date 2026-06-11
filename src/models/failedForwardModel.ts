@@ -1,6 +1,8 @@
 import type { Document, Types } from "mongoose";
 import mongoose from "mongoose";
 
+export type FailedCallbackStatus = "pending" | "processing" | "failed" | "dead" | "completed";
+
 export interface IFailedCallback extends Document {
     payload: Record<string, unknown>;
     callbackUrl: string;
@@ -8,7 +10,7 @@ export interface IFailedCallback extends Document {
     errDesc?: string;
     clientId: Types.ObjectId;
     nextRetryAt: Date;
-    status: "pending" | "completed";
+    status: FailedCallbackStatus;
     lastTriedAt?: Date;
     lastError?: string;
     createdAt: Date;
@@ -23,7 +25,16 @@ const failedCallbackSchema = new mongoose.Schema<IFailedCallback>(
         errDesc: { type: String },
         clientId: { type: mongoose.Schema.Types.ObjectId, ref: "Client", required: true },
         nextRetryAt: { type: Date, required: true },
-        status: { type: String, enum: ["pending", "completed"], default: "pending" },
+        // Enum aligned with the values the retry/forward code actually writes:
+        // pending (initial / scheduled), processing (admin retry running),
+        // failed (one attempt finished but more retries remain),
+        // dead (retryCount >= MAX_RETRY, requires force-retry to revive),
+        // completed (success, document is normally deleted instead).
+        status: {
+            type: String,
+            enum: ["pending", "processing", "failed", "dead", "completed"],
+            default: "pending",
+        },
         lastTriedAt: { type: Date },
         lastError: { type: String },
     },

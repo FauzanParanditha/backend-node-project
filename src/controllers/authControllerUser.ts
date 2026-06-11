@@ -7,7 +7,7 @@ import { logActivity } from "../service/activityLogService.js";
 import * as authService from "../service/authService.js";
 import * as authServiceUser from "../service/authServiceUser.js";
 import { trackFailedLogin } from "../service/blockedIpService.js";
-import { sendAuthAlert } from "../service/discordService.js";
+import { sendAuthAlert, sendAuthAlertDebounced } from "../service/discordService.js";
 import { logSkippedEmailAttempt } from "../service/sendMail.js";
 import { getAuthActivityActor, resolveActivityActor } from "../utils/activityActor.js";
 import { isAdminRole } from "../utils/authRole.js";
@@ -28,8 +28,11 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     try {
         const { error } = loginSchema.validate({ email, password });
         if (error) {
-            sendAuthAlert("Failed Login (Validation)", req.ip || "Unknown IP", email, error.details[0].message).catch(
-                console.error,
+            sendAuthAlertDebounced(
+                "Failed Login (Validation)",
+                req.ip || "Unknown IP",
+                email,
+                error.details[0].message,
             );
             return res.status(400).json({ success: false, message: error.details[0].message });
         }
@@ -88,8 +91,11 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
             },
         });
     } catch (error) {
-        sendAuthAlert("Failed Login (Credentials)", req.ip || "Unknown IP", email, (error as Error).message).catch(
-            console.error,
+        sendAuthAlertDebounced(
+            "Failed Login (Credentials)",
+            req.ip || "Unknown IP",
+            email,
+            (error as Error).message,
         );
         // Track for IP-level brute-force auto-block. Fire-and-forget; failures
         // here must never override the original login error sent to the user.
