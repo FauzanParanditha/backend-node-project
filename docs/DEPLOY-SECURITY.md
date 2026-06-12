@@ -3,7 +3,7 @@
 Acuan untuk merilis perubahan keamanan dari branch `dev` ke cluster.
 
 - **FE** (`payment-aggregator-frontend` / `dashboard-node`) → `dev.dashboard.pg.pandi.id`
-- **BE** (`payment-aggregator-backend` / `backend-node-project`) → `api-dev-ppnd.pandi.id`
+- **BE** (`payment-aggregator-backend` / `backend-node-project`) → `dev.api.pg.pandi.id`
 - **Namespace:** `dev` · **Deployment:** `d-payhub-fe`, `d-payhub-be`
 
 > Manifest FE ada di repo frontend (`deploy/d-pa-fe.yml`), manifest BE ada di
@@ -59,7 +59,7 @@ sed -i '/^ENCRYPTION_KEY=/d;/^HMAC_KEY=/d;/^SEED_ADMIN_EMAIL=/d;/^SEED_ADMIN_PAS
   echo "SEED_ADMIN_PASSWORD=<password-kuat>"
   # WAJIB: parent domain bersama agar cookie auth dibaca FE & BE.
   # Kosong/salah = middleware FE me-redirect semua orang ke login (lockout).
-  echo "COOKIE_DOMAIN=.pandi.id"
+  echo "COOKIE_DOMAIN=.pg.pandi.id"
 } >> be.env
 
 # Pastikan FRONTEND_URL ada (dipakai untuk bikin payment link)
@@ -110,16 +110,16 @@ bayar (sandbox) → `/payment/success` → cancel. Semua mulus = lolos.
 
 ### Verifikasi auth cookie + proteksi route (#5/#1)
 ```bash
-# Login harus mengeset cookie HttpOnly bernama Authorization, Domain=.pandi.id
-curl -s -i -X POST https://api-dev-ppnd.pandi.id/api/v1/auth/login \
+# Login harus mengeset cookie HttpOnly bernama Authorization, Domain=.pg.pandi.id
+curl -s -i -X POST https://dev.api.pg.pandi.id/api/v1/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"<email>","password":"<password>"}' | grep -i 'set-cookie'
-# harap: Set-Cookie: Authorization=Bearer%20...; Domain=.pandi.id; Path=/;
+# harap: Set-Cookie: Authorization=Bearer%20...; Domain=.pg.pandi.id; Path=/;
 #        HttpOnly; Secure; SameSite=Lax
 ```
 Di browser (dev.dashboard.pg.pandi.id):
 - DevTools → Application → Local Storage: **tidak ada token** (hanya `_auth_present` + role/permissions).
-- DevTools → Application → Cookies: `Authorization` ada, ber-flag HttpOnly + domain `.pandi.id`.
+- DevTools → Application → Cookies: `Authorization` ada, ber-flag HttpOnly + domain `.pg.pandi.id`.
 - Saat login, buka `/dashboard/...` → tampil. **Incognito / hapus cookie** → otomatis redirect ke `/auth/login` (bukti `middleware.ts` jalan).
 - Logout → cookie `Authorization` hilang; akses `/dashboard/...` redirect ke login.
 
@@ -131,7 +131,7 @@ Di browser (dev.dashboard.pg.pandi.id):
 # Rate limit: percobaan login ke-6 dalam 10 menit dari IP sama harus 429
 for i in $(seq 1 6); do
   curl -s -o /dev/null -w "%{http_code}\n" -X POST \
-    https://api-dev-ppnd.pandi.id/api/v1/auth/login \
+    https://dev.api.pg.pandi.id/api/v1/auth/login \
     -H 'Content-Type: application/json' -d '{"email":"x@x.id","password":"salah"}'
 done
 ```
@@ -151,7 +151,7 @@ kubectl -n dev rollout undo deploy/d-payhub-be
 ```
 
 ## Catatan penting
-- **`COOKIE_DOMAIN` (mis. `.pandi.id`) WAJIB di-set di BE** sebelum deploy FE
+- **`COOKIE_DOMAIN` (mis. `.pg.pandi.id`) WAJIB di-set di BE** sebelum deploy FE
   cookie-auth. Kosong/salah → cookie host-only → `middleware.ts` FE me-redirect
   semua orang ke login (lockout). Set juga di lingkungan prod (parent domain prod).
 - **Build FE wajib lulus** (`yarn build`) sebelum deploy — perubahan auth FE tidak

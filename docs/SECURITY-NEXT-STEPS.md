@@ -10,7 +10,7 @@ Legenda: `[BE]` backend repo · `[FE]` frontend repo · `[OPS]` DevOps/infra.
 ## 0. Gerbang prasyarat (harus hijau dulu)
 - [ ] `dev` ter-deploy lewat runbook; payment flow, cookie-auth, middleware, seeder, rate-limit semua lolos.
 - [ ] `ENCRYPTION_KEY`/`HMAC_KEY` sudah **di-rotate** & identik di Secret FE/BE.
-- [ ] `COOKIE_DOMAIN=.pandi.id` terpasang; login set cookie HttpOnly dan token TIDAK ada di localStorage.
+- [ ] `COOKIE_DOMAIN=.pg.pandi.id` terpasang; login set cookie HttpOnly dan token TIDAK ada di localStorage.
 - [ ] Password `fauzan@pandi.id` (atau `SEED_ADMIN_EMAIL`) sudah diganti dari nilai seeder.
 
 ---
@@ -19,7 +19,7 @@ Legenda: `[BE]` backend repo · `[FE]` frontend repo · `[OPS]` DevOps/infra.
 Cookie-auth (#5) membuat request mutating rentan CSRF; `SameSite=Lax` memitigasi
 lintas-site tapi tidak lintas-subdomain `pandi.id`. Tambahkan double-submit token.
 
-- [ ] `[BE]` Saat login, set cookie **non-HttpOnly** `csrf_token` (random 32 byte), `SameSite=Lax`, `Domain=.pandi.id`.
+- [ ] `[BE]` Saat login, set cookie **non-HttpOnly** `csrf_token` (random 32 byte), `SameSite=Lax`, `Domain=.pg.pandi.id`.
 - [ ] `[BE]` Middleware CSRF untuk method mutating (POST/PUT/PATCH/DELETE): bandingkan header `X-CSRF-Token` dengan cookie `csrf_token` (constant-time). Tolak 403 bila tak cocok.
 - [ ] `[BE]` Kecualikan endpoint server-to-server (webhook Paylabs/Xendit — sudah pakai signature) dari proteksi CSRF.
 - [ ] `[FE]` Axios request interceptor: baca cookie `csrf_token`, pasang header `X-CSRF-Token` untuk method mutating.
