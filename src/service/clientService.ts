@@ -87,6 +87,7 @@ export const createClient = async ({ value }: { value: Record<string, any> }) =>
         name: value.name,
         clientId,
         notifyUrl: value.notifyUrl,
+        frameOrigins: value.frameOrigins ?? [],
         active: value.active,
         userIds: value.userIds,
         adminId: value.adminId,
@@ -176,6 +177,10 @@ export const updateClient = async ({ id, value, userId, isSuperAdmin = false }: 
     existClient.name = value.name;
     existClient.notifyUrl = value.notifyUrl;
     existClient.active = value.active;
+    // Only overwrite when provided, so older forms don't wipe registered origins.
+    if (value.frameOrigins !== undefined) {
+        existClient.frameOrigins = value.frameOrigins;
+    }
 
     if (!userId) {
         const existingUsers = await User.find({ _id: { $in: value.userIds } });
