@@ -404,6 +404,12 @@ export const createOrderLink = async ({
             throw new ResponseError(404, "No valid products found to create the order");
         }
 
+        // Embed the merchant's allowed iframe origins INSIDE the encrypted (and
+        // HMAC-protected) payload, so the payment page can set a per-order CSP
+        // `frame-ancestors` that only this merchant's site can frame. Tamper-proof.
+        const client = await Client.findOne({ clientId: partnerId.clientId });
+        const frameOrigins = client?.frameOrigins ?? [];
+
         const orderData = {
             items: itemsForDb,
             totalAmount,
@@ -411,6 +417,7 @@ export const createOrderLink = async ({
             payer: partnerId.name,
             paymentMethod: validatedOrder.paymentMethod,
             clientId: partnerId.clientId,
+            ...(frameOrigins.length ? { frameOrigins } : {}),
             ...(validatedOrder.paymentType && { paymentType: validatedOrder.paymentType }),
             ...(validatedOrder.storeId && { storeId: validatedOrder.storeId }),
             expired: Math.floor(dayjs().add(30, "minute").valueOf() / 1000),

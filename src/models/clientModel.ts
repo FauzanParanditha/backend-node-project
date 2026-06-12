@@ -6,6 +6,10 @@ export interface IClient extends Document {
     active: boolean;
     clientId?: string;
     notifyUrl?: string;
+    // Origins (scheme+host) allowed to embed this merchant's hosted payment
+    // page in an iframe, e.g. ["https://merchant-a.com"]. Used to build a
+    // per-order CSP `frame-ancestors` so only the merchant's site can frame it.
+    frameOrigins?: string[];
     userIds: Types.ObjectId[];
     adminId: Types.ObjectId;
     createdAt: Date;
@@ -31,6 +35,10 @@ const clientSchema = new mongoose.Schema<IClient>(
         notifyUrl: {
             type: String,
             // required: true,
+        },
+        frameOrigins: {
+            type: [String],
+            default: [],
         },
         userIds: [
             {
