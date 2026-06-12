@@ -42,8 +42,10 @@ router.delete("/admin/:id", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.AD
 // Logs
 router.get("/apilogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_API), getAllApiLog);
 router.get("/emaillogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_EMAIL), getAllEmailLog);
-router.get("/callbacklogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_CALLBACK), getAllCallbackLog);
-router.get("/callbacklogs/:id", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_CALLBACK), getCallbackLogById);
+// Unified middleware so client (merchant) users can view their OWN callback
+// logs too — the controller scopes non-admin requests to the user's clients.
+router.get("/callbacklogs", jwtUnifiedMiddleware, requirePermission(PERMISSIONS.LOG_CALLBACK), getAllCallbackLog);
+router.get("/callbacklogs/:id", jwtUnifiedMiddleware, requirePermission(PERMISSIONS.LOG_CALLBACK), getCallbackLogById);
 router.get("/failed-callbacklogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_CALLBACK), getAllFailedCallbackLog);
 router.get("/activitylogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_ACTIVITY), getAllActivityLog);
 

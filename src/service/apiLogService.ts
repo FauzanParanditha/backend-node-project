@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import ApiLog from "../models/apiLogModel.js";
 import CallbackLog from "../models/callbackLogModel.js";
+import Client from "../models/clientModel.js";
 import EmailLog from "../models/emailLogModel.js";
 import FailedCallback from "../models/failedForwardModel.js";
 import type { ListQueryParams } from "../types/service.js";
@@ -92,11 +93,24 @@ export const getAllEmailLogs = async ({ query, limit, page, sort_by, sort, count
     };
 };
 
-export const getAllCallbackLogs = async ({ query, limit, page, sort_by, sort, countOnly, clientId }: ListQueryParams) => {
+export const getAllCallbackLogs = async ({
+    query,
+    limit,
+    page,
+    sort_by,
+    sort,
+    countOnly,
+    clientId,
+    userId,
+}: ListQueryParams & { userId?: string }) => {
     const filter: Record<string, any> = {};
 
-    // Scope to a single client when provided (e.g. clients may only see their own logs)
-    if (clientId && mongoose.isValidObjectId(clientId)) {
+    if (userId) {
+        // Merchant user: restrict to logs of THEIR clients only.
+        const clients = await Client.find({ userIds: { $in: [userId] } }).select("_id");
+        filter["clientId"] = { $in: clients.map((c) => c._id) };
+    } else if (clientId && mongoose.isValidObjectId(clientId)) {
+        // Admin filtering by a specific client.
         filter["clientId"] = new mongoose.Types.ObjectId(clientId);
     }
 
@@ -141,15 +155,21 @@ export const getAllCallbackLogs = async ({ query, limit, page, sort_by, sort, co
     };
 };
 
-export const getCallbackLogById = async (id: string, clientId?: string) => {
+export const getCallbackLogById = async (
+    id: string,
+    { clientId, userId }: { clientId?: string; userId?: string } = {},
+) => {
     if (!mongoose.isValidObjectId(id)) {
         return null;
     }
 
     const filter: Record<string, any> = { _id: id };
 
-    // When scoped to a client, only return the log if it belongs to that client
-    if (clientId && mongoose.isValidObjectId(clientId)) {
+    if (userId) {
+        // Merchant user: only return the log if it belongs to one of their clients.
+        const clients = await Client.find({ userIds: { $in: [userId] } }).select("_id");
+        filter["clientId"] = { $in: clients.map((c) => c._id) };
+    } else if (clientId && mongoose.isValidObjectId(clientId)) {
         filter["clientId"] = new mongoose.Types.ObjectId(clientId);
     }
 
