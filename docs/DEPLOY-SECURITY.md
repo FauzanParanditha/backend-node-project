@@ -69,14 +69,15 @@ kubectl -n dev create secret generic d-payhub-be-env \
   --from-file=.env=./be.env --dry-run=client -o yaml | kubectl apply -f -
 ```
 
-## Langkah 3 — Secret FRONTEND (`d-payhub-fe-env`) — kunci NILAI SAMA
+## Langkah 3 — Secret FRONTEND (`d-payhub-fe-env`) — HANYA 2 kunci, NILAI SAMA dgn BE
+FE runtime hanya butuh `ENCRYPTION_KEY` & `HMAC_KEY` (dipakai `/api/encrypt` &
+`/api/payment`). `NEXT_PUBLIC_*`/`SERVER_API_URL` = build-time (di-inject CI),
+`PARTNER_ID` cuma di contoh dokumentasi, `PRIVATE_KEY` tidak dipakai — jangan
+taruh di sini.
 ```bash
 kubectl -n dev create secret generic d-payhub-fe-env \
   --from-literal=ENCRYPTION_KEY="$ENC" \
   --from-literal=HMAC_KEY="$HMAC" \
-  --from-literal=PARTNER_ID='<value>' \
-  --from-literal=SERVER_API_URL='<value>' \
-  --from-file=PRIVATE_KEY=./private-key.pem \
   --dry-run=client -o yaml | kubectl apply -f -
 ```
 
