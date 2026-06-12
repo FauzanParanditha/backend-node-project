@@ -7,10 +7,19 @@ import { normalizeIP } from "../utils/helper.js";
 
 export const jwtMiddlewareAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        // 🔐 Ambil token HANYA dari Authorization header
-        const authHeader = req.headers.authorization;
+        // 🔐 Ambil token dari Authorization header ATAU HttpOnly cookie.
+        // Dashboard kini auth via cookie (tak lagi kirim header Bearer), jadi
+        // harus dukung keduanya — selaras dengan jwtUnified/jwt middleware.
+        let rawToken: string | undefined;
+        if (req.headers.authorization?.startsWith("Bearer ")) {
+            rawToken = req.headers.authorization;
+        } else if (req.headers.client === "not-browser") {
+            rawToken = req.headers.authorization;
+        } else {
+            rawToken = req.cookies?.["Authorization"] as string | undefined;
+        }
 
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        if (!rawToken || !rawToken.startsWith("Bearer ")) {
             res.status(401).json({
                 success: false,
                 message: "Unauthorized",
@@ -18,7 +27,7 @@ export const jwtMiddlewareAdmin = async (req: Request, res: Response, next: Next
             return;
         }
 
-        const token = authHeader.split(" ")[1];
+        const token = rawToken.split(" ")[1];
 
         // 🔑 Verify JWT
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_ADMIN_PRIVATE_KEY as string) as JwtPayload;
