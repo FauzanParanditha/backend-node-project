@@ -14,6 +14,7 @@ import {
     getAllCallbackLog,
     getAllEmailLog,
     getAllFailedCallbackLog,
+    getCallbackLogById,
 } from "../controllers/apiLogController.js";
 import {
     forceBlock,
@@ -42,6 +43,7 @@ router.delete("/admin/:id", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.AD
 router.get("/apilogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_API), getAllApiLog);
 router.get("/emaillogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_EMAIL), getAllEmailLog);
 router.get("/callbacklogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_CALLBACK), getAllCallbackLog);
+router.get("/callbacklogs/:id", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_CALLBACK), getCallbackLogById);
 router.get("/failed-callbacklogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_CALLBACK), getAllFailedCallbackLog);
 router.get("/activitylogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_ACTIVITY), getAllActivityLog);
 

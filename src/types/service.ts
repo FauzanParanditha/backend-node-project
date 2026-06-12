@@ -6,6 +6,7 @@ export interface ListQueryParams {
     sort_by?: string;
     sort?: number | string;
     countOnly?: boolean;
+    clientId?: string;
 }
 
 /** Headers returned by Paylabs/internal services for res.set() */

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import ApiLog from "../models/apiLogModel.js";
 import CallbackLog from "../models/callbackLogModel.js";
 import EmailLog from "../models/emailLogModel.js";
@@ -91,8 +92,13 @@ export const getAllEmailLogs = async ({ query, limit, page, sort_by, sort, count
     };
 };
 
-export const getAllCallbackLogs = async ({ query, limit, page, sort_by, sort, countOnly }: ListQueryParams) => {
+export const getAllCallbackLogs = async ({ query, limit, page, sort_by, sort, countOnly, clientId }: ListQueryParams) => {
     const filter: Record<string, any> = {};
+
+    // Scope to a single client when provided (e.g. clients may only see their own logs)
+    if (clientId && mongoose.isValidObjectId(clientId)) {
+        filter["clientId"] = new mongoose.Types.ObjectId(clientId);
+    }
 
     // Apply search term if provided
     if (query && query.trim()) {
@@ -114,6 +120,7 @@ export const getAllCallbackLogs = async ({ query, limit, page, sort_by, sort, co
     }
 
     const callbackLogs = await CallbackLog.find(filter)
+        .populate("clientId", "name clientId")
         .sort({ [sortField]: sortValue } as Record<string, 1 | -1>)
         .limit(limitNum)
         .skip(skip)
@@ -132,6 +139,21 @@ export const getAllCallbackLogs = async ({ query, limit, page, sort_by, sort, co
             recordsOnPage: callbackLogs.length,
         },
     };
+};
+
+export const getCallbackLogById = async (id: string, clientId?: string) => {
+    if (!mongoose.isValidObjectId(id)) {
+        return null;
+    }
+
+    const filter: Record<string, any> = { _id: id };
+
+    // When scoped to a client, only return the log if it belongs to that client
+    if (clientId && mongoose.isValidObjectId(clientId)) {
+        filter["clientId"] = new mongoose.Types.ObjectId(clientId);
+    }
+
+    return CallbackLog.findOne(filter).populate("clientId", "name clientId").exec();
 };
 
 export const getAllFailedCallbackLogs = async ({ query, limit, page, sort_by, sort, countOnly }: ListQueryParams) => {

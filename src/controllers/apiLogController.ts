@@ -84,6 +84,7 @@ export const getAllCallbackLog = async (req: Request, res: Response, next: NextF
         sort_by = "_id",
         sort = -1,
         countOnly = false,
+        clientId = "",
     } = req.query as Record<string, any>;
 
     try {
@@ -94,6 +95,7 @@ export const getAllCallbackLog = async (req: Request, res: Response, next: NextF
             sort_by,
             sort,
             countOnly,
+            clientId,
         });
 
         if (countOnly) {
@@ -108,6 +110,31 @@ export const getAllCallbackLog = async (req: Request, res: Response, next: NextF
         });
     } catch (error) {
         logger.error(`Error fetching callback logs: ${(error as Error).message}`);
+        next(error);
+    }
+};
+
+export const getCallbackLogById = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+    const { id } = req.params;
+    const { clientId = "" } = req.query as Record<string, any>;
+
+    try {
+        const callbackLog = await apiLogService.getCallbackLogById(id, clientId);
+
+        if (!callbackLog) {
+            return res.status(404).json({
+                success: false,
+                message: "Callback log not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Callback log detail",
+            data: callbackLog,
+        });
+    } catch (error) {
+        logger.error(`Error fetching callback log detail: ${(error as Error).message}`);
         next(error);
     }
 };
