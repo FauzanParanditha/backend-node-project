@@ -2,7 +2,7 @@ import type { Types } from "mongoose";
 import logger from "../application/logger.js";
 import BlockedIP from "../models/blockedIpModel.js";
 import type { IBlockedIP } from "../models/blockedIpModel.js";
-import { sendIpBlockedAlert } from "./discordService.js";
+import { sendDistributedAttackAlert, sendIpBlockedAlert } from "./discordService.js";
 
 // ---------------------------------------------------------------------------
 // Tunables
@@ -55,6 +55,66 @@ setInterval(() => {
         if (entry.lastSeenAt < cutoff) failTracker.delete(ip);
     }
 }, TRACKER_CLEANUP_MS).unref();
+
+// ---------------------------------------------------------------------------
+// Per-email distributed-attack tracker
+// ---------------------------------------------------------------------------
+// Complements the per-IP tracker above. The per-IP tracker catches one IP
+// sweeping many emails; this catches the opposite shape - many IPs targeting
+// a single email (botnet brute force). Fires a one-shot Discord alert when
+// the distinct-IP count crosses a threshold within the window.
+
+const EMAIL_ATTACK_THRESHOLD_IPS = 3; // distinct IPs in window before alert
+const EMAIL_ATTACK_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
+interface EmailAttackTracker {
+    ips: Set<string>;
+    attempts: number;
+    firstSeenAt: number;
+    lastSeenAt: number;
+    alerted: boolean; // one-shot per window
+}
+
+const emailAttackTracker = new Map<string, EmailAttackTracker>();
+
+setInterval(() => {
+    const cutoff = Date.now() - EMAIL_ATTACK_WINDOW_MS;
+    for (const [email, entry] of emailAttackTracker) {
+        if (entry.lastSeenAt < cutoff) emailAttackTracker.delete(email);
+    }
+}, TRACKER_CLEANUP_MS).unref();
+
+export const trackEmailAttack = (email: string, ip: string): void => {
+    if (!email || !ip) return;
+    const key = email.trim().toLowerCase();
+    const now = Date.now();
+
+    let entry = emailAttackTracker.get(key);
+    if (entry && now - entry.firstSeenAt > EMAIL_ATTACK_WINDOW_MS) {
+        entry = undefined; // window expired, start fresh
+    }
+    if (!entry) {
+        entry = { ips: new Set(), attempts: 0, firstSeenAt: now, lastSeenAt: now, alerted: false };
+        emailAttackTracker.set(key, entry);
+    }
+
+    entry.ips.add(ip);
+    entry.attempts += 1;
+    entry.lastSeenAt = now;
+
+    if (!entry.alerted && entry.ips.size >= EMAIL_ATTACK_THRESHOLD_IPS) {
+        entry.alerted = true;
+        const windowSeconds = Math.max(1, Math.round((entry.lastSeenAt - entry.firstSeenAt) / 1000));
+        sendDistributedAttackAlert({
+            email: key,
+            distinctIps: Array.from(entry.ips),
+            attempts: entry.attempts,
+            windowSeconds,
+        }).catch((e) =>
+            logger.error(`Failed to send distributed attack alert: ${(e as Error).message}`),
+        );
+    }
+};
 
 // ---------------------------------------------------------------------------
 // In-memory cache of active blocks (synced on block/unblock/expiry)

@@ -6,7 +6,7 @@ import User from "../models/userModel.js";
 import { logActivity } from "../service/activityLogService.js";
 import * as authService from "../service/authService.js";
 import * as authServiceUser from "../service/authServiceUser.js";
-import { trackFailedLogin } from "../service/blockedIpService.js";
+import { trackEmailAttack, trackFailedLogin } from "../service/blockedIpService.js";
 import { sendAuthAlert, sendAuthAlertDebounced } from "../service/discordService.js";
 import { logSkippedEmailAttempt } from "../service/sendMail.js";
 import { getAuthActivityActor, resolveActivityActor } from "../utils/activityActor.js";
@@ -95,12 +95,16 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
             email,
             (error as Error).message,
         );
-        // Track for IP-level brute-force auto-block. Fire-and-forget; failures
+        // Track for IP-level brute-force auto-block AND for per-email
+        // distributed attack detection. Both are fire-and-forget; failures
         // here must never override the original login error sent to the user.
         if (req.ip) {
             trackFailedLogin(req.ip, email).catch((e) =>
                 logger.error(`trackFailedLogin error: ${(e as Error).message}`),
             );
+            if (email) {
+                trackEmailAttack(email, req.ip);
+            }
         }
         logger.error(`Error login: ${(error as Error).message}`);
         next(error);

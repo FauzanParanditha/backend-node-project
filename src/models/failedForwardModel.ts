@@ -43,5 +43,19 @@ const failedCallbackSchema = new mongoose.Schema<IFailedCallback>(
     },
 );
 
+// Partial TTL index: auto-delete documents with status "dead" 30 days after
+// their last update. Other statuses (pending/processing/failed/completed) are
+// untouched so the cleanup never racks an in-flight retry. The cron job in
+// src/cron/cron.ts is responsible for surfacing stuck "processing" records
+// before this index ever sees them.
+failedCallbackSchema.index(
+    { updatedAt: 1 },
+    {
+        expireAfterSeconds: 30 * 24 * 60 * 60,
+        partialFilterExpression: { status: "dead" },
+        name: "dead_callback_ttl",
+    },
+);
+
 const FailedCallback = mongoose.model<IFailedCallback>("FailedCallback", failedCallbackSchema);
 export default FailedCallback;

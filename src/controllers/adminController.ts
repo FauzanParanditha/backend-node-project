@@ -4,6 +4,7 @@ import { ResponseError } from "../error/responseError.js";
 import User from "../models/userModel.js";
 import { logActivity } from "../service/activityLogService.js";
 import * as adminService from "../service/adminService.js";
+import { unlockAccount } from "../service/authService.js";
 import { getAdminActivityActor } from "../utils/activityActor.js";
 import { isAdminRole } from "../utils/authRole.js";
 import { registerSchema, updateAdminSchema } from "../validators/authValidator.js";
@@ -311,3 +312,46 @@ export const dashboardChart = async (req: Request, res: Response, next: NextFunc
         next(error);
     }
 };
+
+const handleUnlockLogin = (accountType: "admin" | "user") =>
+    async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({ success: false, message: "Account id is required" });
+        }
+        try {
+            const result = await unlockAccount(accountType, id);
+            if (!result) {
+                throw new ResponseError(404, `${accountType} not found`);
+            }
+
+            const actor = getAdminActivityActor(req);
+            if (actor) {
+                logActivity({
+                    actorId: actor.actorId,
+                    role: actor.role,
+                    action: "UNLOCK_LOGIN",
+                    details: {
+                        accountType,
+                        accountId: id,
+                        accountEmail: result.email,
+                        previousAttempts: result.previousAttempts,
+                        previousLockedUntil: result.previousLockedUntil,
+                    },
+                    ipAddress: req.ip,
+                }).catch(console.error);
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: `${accountType} login lock cleared`,
+                data: result,
+            });
+        } catch (error) {
+            logger.error(`Error unlocking ${accountType}: ${(error as Error).message}`);
+            next(error);
+        }
+    };
+
+export const unlockAdminLogin = handleUnlockLogin("admin");
+export const unlockUserLogin = handleUnlockLogin("user");

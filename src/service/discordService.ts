@@ -191,6 +191,56 @@ export const sendIpBlockedAlert = async (params: {
     });
 };
 
+export const sendDistributedAttackAlert = async (params: {
+    email: string;
+    distinctIps: string[];
+    attempts: number;
+    windowSeconds: number;
+}) => {
+    const { email, distinctIps, attempts, windowSeconds } = params;
+    await sendDiscordAlert(process.env.DISCORD_WEBHOOK_URL_SECURITY, {
+        title: "🌐 Distributed Brute-Force Attack Detected",
+        description: `Multiple IPs are targeting a single account - this looks like a coordinated/botnet attack.`,
+        color: 15158332, // Red
+        fields: [
+            { name: "Target Email", value: `\`${email}\``, inline: true },
+            { name: "Distinct IPs", value: `\`${distinctIps.length}\``, inline: true },
+            { name: "Total Attempts", value: `\`${attempts}\``, inline: true },
+            { name: "Time Window", value: `${windowSeconds}s`, inline: true },
+            {
+                name: "Sample IPs",
+                value: distinctIps.slice(0, 10).map((ip) => `\`${ip}\``).join(", "),
+                inline: false,
+            },
+        ],
+    });
+};
+
+export const sendAccountLockAlert = async (params: {
+    accountType: "admin" | "user";
+    email: string;
+    attempts: number;
+    lockedUntil: number;
+    permanent: boolean;
+}) => {
+    const { accountType, email, attempts, lockedUntil, permanent } = params;
+    const durationLabel = permanent
+        ? "PERMANENT (requires manual unlock)"
+        : `until ${new Date(lockedUntil).toISOString()}`;
+
+    await sendDiscordAlert(process.env.DISCORD_WEBHOOK_URL_SECURITY, {
+        title: "🔒 Account Locked",
+        description: `An account has been auto-locked after repeated failed login attempts.`,
+        color: 16753920, // Orange
+        fields: [
+            { name: "Account Type", value: `\`${accountType}\``, inline: true },
+            { name: "Email", value: `\`${email}\``, inline: true },
+            { name: "Failed Attempts", value: `\`${attempts}\``, inline: true },
+            { name: "Lock Duration", value: durationLabel, inline: false },
+        ],
+    });
+};
+
 export const sendForceRetryAlert = async (
     callbackId: string,
     adminEmail: string,
