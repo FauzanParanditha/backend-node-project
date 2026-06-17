@@ -1,7 +1,7 @@
 import type { AxiosLikeError } from "../types/service.js";
 import type { NextFunction, Request, Response } from "express";
 import logger from "../application/logger.js";
-import { forwardCallbackSnap, forwardCallbackSnapDelete } from "../service/forwadCallback.js";
+import { forwardCallbackSnap, forwardCallbackSnapDelete } from "../service/forwardCallback.js";
 import { verifySignature } from "../service/paylabs.js";
 import * as vaSnapService from "../service/vaSnapService.js";
 import { logCallback } from "../utils/logCallback.js";

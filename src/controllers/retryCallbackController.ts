@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import logger from "../application/logger.js";
 import Admin from "../models/adminModel.js";
-import * as forwardCallbackService from "../service/forwadCallback.js";
+import * as forwardCallbackService from "../service/forwardCallback.js";
 import { getAdminActivityActor } from "../utils/activityActor.js";
 
 export const retryCallback = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
@@ -29,20 +29,22 @@ export const retryCallback = async (req: Request, res: Response, next: NextFunct
     }
 
     try {
-        // Call the function to retry the callback
-        const success = await forwardCallbackService.retryCallbackById(callbackId, force, actor);
+        // The retry is queued and runs in the background - the response
+        // ships within milliseconds instead of waiting up to ~52 minutes
+        // for the internal retry sequence to complete. Final outcome is
+        // visible asynchronously via CallbackLog (success) or the
+        // FailedCallback document status (failed -> retry pending,
+        // dead -> max retry exceeded).
+        const result = await forwardCallbackService.retryCallbackById(callbackId, force, actor);
 
-        if (success) {
-            return res
-                .status(200)
-                .json({ success: true, message: `Successfully retried callback with ID: ${callbackId}` });
-        } else {
-            return res
-                .status(202)
-                .json({ success: false, message: `Retry failed. Callback will be retried again later.` });
-        }
+        return res.status(202).json({
+            success: true,
+            message: `Retry queued. Final result will appear in callback logs.`,
+            data: result,
+        });
     } catch (error) {
-        // Handle any errors that occurred during the retry process
+        // Validation failures (404 not-found, 410 max-retry-exceeded) still
+        // surface synchronously and propagate to the standard error middleware.
         logger.error(`Error retrying callback: ${(error as Error).message}`);
         next(error);
     }

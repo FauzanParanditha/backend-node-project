@@ -88,6 +88,7 @@ export const createClient = async ({ value }: { value: Record<string, any> }) =>
         clientId,
         notifyUrl: value.notifyUrl,
         frameOrigins: value.frameOrigins ?? [],
+        requireSignedAck: value.requireSignedAck ?? false,
         active: value.active,
         userIds: value.userIds,
         adminId: value.adminId,
@@ -180,6 +181,9 @@ export const updateClient = async ({ id, value, userId, isSuperAdmin = false }: 
     // Only overwrite when provided, so older forms don't wipe registered origins.
     if (value.frameOrigins !== undefined) {
         existClient.frameOrigins = value.frameOrigins;
+    }
+    if (value.requireSignedAck !== undefined) {
+        existClient.requireSignedAck = value.requireSignedAck;
     }
 
     if (!userId) {

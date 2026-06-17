@@ -11,6 +11,7 @@ export const clientSchema = joi.object({
     name: joi.string().max(100).required(),
     notifyUrl: joi.string().uri().allow(null, "").optional(),
     frameOrigins: frameOriginsSchema,
+    requireSignedAck: joi.boolean().optional(),
     userIds: joi.array().items(joi.string()).required(),
     active: joi.boolean().optional(),
     adminId: joi.string().required(),
@@ -21,5 +22,6 @@ export const clientUserUpdateSchema = joi.object({
     name: joi.string().max(100).required(),
     notifyUrl: joi.string().uri().allow(null, "").optional(),
     frameOrigins: frameOriginsSchema,
+    requireSignedAck: joi.boolean().optional(),
     active: joi.boolean().optional(),
 });
