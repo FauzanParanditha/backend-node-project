@@ -26,5 +26,5 @@ const ipWhitelistSchema = new mongoose.Schema<IIPWhitelist>(
     },
 );
 
-const IPWhitelist = mongoose.model<IIPWhitelist>("IPWhitelist", ipWhitelistSchema);
+const IPWhitelist = (mongoose.models.IPWhitelist as mongoose.Model<IIPWhitelist>) || mongoose.model<IIPWhitelist>("IPWhitelist", ipWhitelistSchema);
 export default IPWhitelist;

@@ -34,5 +34,5 @@ const blockedIpSchema = new mongoose.Schema<IBlockedIP>(
 
 blockedIpSchema.index({ ipAddress: 1, isActive: 1 });
 
-const BlockedIP = mongoose.model<IBlockedIP>("BlockedIP", blockedIpSchema);
+const BlockedIP = (mongoose.models.BlockedIP as mongoose.Model<IBlockedIP>) || mongoose.model<IBlockedIP>("BlockedIP", blockedIpSchema);
 export default BlockedIP;

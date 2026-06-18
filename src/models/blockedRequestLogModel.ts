@@ -28,8 +28,7 @@ blockedRequestLogSchema.index({ ipAddress: 1, createdAt: -1 });
 // a sustained attack. Adjust if forensic retention requirements change.
 blockedRequestLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
 
-const BlockedRequestLog = mongoose.model<IBlockedRequestLog>(
-    "BlockedRequestLog",
-    blockedRequestLogSchema,
-);
+const BlockedRequestLog =
+    (mongoose.models.BlockedRequestLog as mongoose.Model<IBlockedRequestLog>) ||
+    mongoose.model<IBlockedRequestLog>("BlockedRequestLog", blockedRequestLogSchema);
 export default BlockedRequestLog;

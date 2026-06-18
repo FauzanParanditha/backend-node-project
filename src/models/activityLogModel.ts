@@ -41,6 +41,6 @@ const activityLogSchema = new mongoose.Schema<IActivityLog>(
 activityLogSchema.index({ actorId: 1, action: 1 });
 activityLogSchema.index({ createdAt: -1 });
 
-const ActivityLog = mongoose.model<IActivityLog>("ActivityLog", activityLogSchema);
+const ActivityLog = (mongoose.models.ActivityLog as mongoose.Model<IActivityLog>) || mongoose.model<IActivityLog>("ActivityLog", activityLogSchema);
 
 export default ActivityLog;

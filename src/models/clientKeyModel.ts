@@ -38,4 +38,6 @@ const ClientKeySchema = new mongoose.Schema<IClientKey>(
     },
 );
 
-export const ClientKeyModel = mongoose.model<IClientKey>("ClientKey", ClientKeySchema);
+export const ClientKeyModel =
+    (mongoose.models.ClientKey as mongoose.Model<IClientKey>) ||
+    mongoose.model<IClientKey>("ClientKey", ClientKeySchema);

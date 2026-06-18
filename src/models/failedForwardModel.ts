@@ -57,5 +57,5 @@ failedCallbackSchema.index(
     },
 );
 
-const FailedCallback = mongoose.model<IFailedCallback>("FailedCallback", failedCallbackSchema);
+const FailedCallback = (mongoose.models.FailedCallback as mongoose.Model<IFailedCallback>) || mongoose.model<IFailedCallback>("FailedCallback", failedCallbackSchema);
 export default FailedCallback;

@@ -73,5 +73,5 @@ const callbackLogSchema = new mongoose.Schema<ICallbackLog>(
     },
 );
 
-const CallbackLog = mongoose.model<ICallbackLog>("CallbackLog", callbackLogSchema);
+const CallbackLog = (mongoose.models.CallbackLog as mongoose.Model<ICallbackLog>) || mongoose.model<ICallbackLog>("CallbackLog", callbackLogSchema);
 export default CallbackLog;

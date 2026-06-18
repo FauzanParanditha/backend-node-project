@@ -686,5 +686,5 @@ orderSchema.pre("save", function (next) {
     next();
 });
 
-const Order = mongoose.model<IOrder>("Order", orderSchema);
+const Order = (mongoose.models.Order as mongoose.Model<IOrder>) || mongoose.model<IOrder>("Order", orderSchema);
 export default Order;

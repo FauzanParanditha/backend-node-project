@@ -37,8 +37,7 @@ const clientAvailablePaymentSchema = new mongoose.Schema<IClientAvailablePayment
 
 clientAvailablePaymentSchema.index({ clientId: 1, availablePaymentId: 1 }, { unique: true });
 
-const ClientAvailablePayment = mongoose.model<IClientAvailablePayment>(
-    "ClientAvailablePayment",
-    clientAvailablePaymentSchema,
-);
+const ClientAvailablePayment =
+    (mongoose.models.ClientAvailablePayment as mongoose.Model<IClientAvailablePayment>) ||
+    mongoose.model<IClientAvailablePayment>("ClientAvailablePayment", clientAvailablePaymentSchema);
 export default ClientAvailablePayment;
