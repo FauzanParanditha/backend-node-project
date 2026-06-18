@@ -7,6 +7,17 @@ import User from "../models/userModel.js";
 import type { ListQueryParams } from "../types/service.js";
 import { doHash, escapeRegExp, toObjectId } from "../utils/helper.js";
 
+// Permanent login lock is stored as Number.MAX_SAFE_INTEGER (see authService).
+const PERMANENT_LOCK_MARKER = Number.MAX_SAFE_INTEGER;
+
+// Derive a small, FE-friendly lock summary so the dashboard does not need to
+// know the sentinel value or compare timestamps itself.
+const deriveLoginLock = (lockedUntil: number | null | undefined) => {
+    if (lockedUntil == null) return { loginLocked: false, loginLockPermanent: false };
+    if (lockedUntil === PERMANENT_LOCK_MARKER) return { loginLocked: true, loginLockPermanent: true };
+    return { loginLocked: Date.now() < lockedUntil, loginLockPermanent: false };
+};
+
 const serializeAdminWithRole = (admin: any) => {
     const plainAdmin = typeof admin.toObject === "function" ? admin.toObject() : admin;
     const populatedRole = plainAdmin.roleId;
@@ -17,6 +28,9 @@ const serializeAdminWithRole = (admin: any) => {
         roleId: populatedRole && typeof populatedRole === "object" ? populatedRole._id : plainAdmin.roleId,
         role: roleName,
         roleName,
+        loginAttempts: plainAdmin.loginAttempts ?? 0,
+        loginLockedUntil: plainAdmin.loginLockedUntil ?? null,
+        ...deriveLoginLock(plainAdmin.loginLockedUntil),
     };
 };
 
@@ -42,6 +56,7 @@ export const getAllAdmins = async ({ query, limit, page, sort_by, sort, countOnl
     }
 
     const admins = await Admin.find(filter)
+        .select("+loginAttempts +loginLockedUntil")
         .populate({ path: "roleId", select: "name" })
         .sort({ [sortField]: sortValue as 1 | -1 })
         .limit(limitNum)

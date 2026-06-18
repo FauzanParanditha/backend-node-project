@@ -5,6 +5,15 @@ import User from "../models/userModel.js";
 import type { ListQueryParams } from "../types/service.js";
 import { doHash, escapeRegExp, toObjectId } from "../utils/helper.js";
 
+// Permanent login lock is stored as Number.MAX_SAFE_INTEGER (see authService).
+const PERMANENT_LOCK_MARKER = Number.MAX_SAFE_INTEGER;
+
+const deriveLoginLock = (lockedUntil: number | null | undefined) => {
+    if (lockedUntil == null) return { loginLocked: false, loginLockPermanent: false };
+    if (lockedUntil === PERMANENT_LOCK_MARKER) return { loginLocked: true, loginLockPermanent: true };
+    return { loginLocked: Date.now() < lockedUntil, loginLockPermanent: false };
+};
+
 const serializeUserWithRole = (user: any) => {
     const plainUser = typeof user.toObject === "function" ? user.toObject() : user;
     const populatedRole = plainUser.roleId;
@@ -17,6 +26,9 @@ const serializeUserWithRole = (user: any) => {
         role: roleName,
         roleName,
         permissions,
+        loginAttempts: plainUser.loginAttempts ?? 0,
+        loginLockedUntil: plainUser.loginLockedUntil ?? null,
+        ...deriveLoginLock(plainUser.loginLockedUntil),
     };
 };
 
@@ -42,6 +54,7 @@ export const getAllUsers = async ({ query, limit, page, sort_by, sort, countOnly
     }
 
     const users = await User.find(filter)
+        .select("+loginAttempts +loginLockedUntil")
         .populate({ path: "roleId", select: "name permissions" })
         .sort({ [sortField]: sortValue as 1 | -1 })
         .limit(limitNum)

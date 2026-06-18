@@ -176,7 +176,17 @@ export const getCallbackLogById = async (
     return CallbackLog.findOne(filter).populate("clientId", "name clientId").exec();
 };
 
-export const getAllFailedCallbackLogs = async ({ query, limit, page, sort_by, sort, countOnly }: ListQueryParams) => {
+const FAILED_CALLBACK_STATUSES = ["pending", "processing", "failed", "dead", "completed"];
+
+export const getAllFailedCallbackLogs = async ({
+    query,
+    limit,
+    page,
+    sort_by,
+    sort,
+    countOnly,
+    status,
+}: ListQueryParams) => {
     try {
         const limitNum = Math.max(1, Number(limit) || 10);
         const pageNum = Math.max(1, Number(page) || 1);
@@ -189,6 +199,12 @@ export const getAllFailedCallbackLogs = async ({ query, limit, page, sort_by, so
                 { email: { $regex: searchTerm, $options: "i" } },
                 { "client.name": { $regex: searchTerm, $options: "i" } }, // Adjust field names
             ];
+        }
+
+        // Optional status filter. Ignored when absent or "all"; invalid values
+        // are silently dropped so a bad query param cannot break the listing.
+        if (status && status !== "all" && FAILED_CALLBACK_STATUSES.includes(status)) {
+            matchStage["status"] = status;
         }
 
         const aggregationPipeline: any[] = [

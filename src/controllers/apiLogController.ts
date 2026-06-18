@@ -159,6 +159,7 @@ export const getAllFailedCallbackLog = async (req: Request, res: Response, next:
         sort_by = "_id",
         sort = -1,
         countOnly = false,
+        status = "",
     } = req.query as Record<string, any>;
 
     try {
@@ -169,6 +170,7 @@ export const getAllFailedCallbackLog = async (req: Request, res: Response, next:
             sort_by,
             sort,
             countOnly,
+            status,
         });
 
         if (countOnly) {
