@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import logger from "../application/logger.js";
+import { formatExpiredIso } from "../service/paylabs.js";
 import * as vaService from "../service/vaService.js";
 import { orderSchema, vaStaticSchema } from "../validators/orderValidator.js";
 
@@ -17,7 +18,7 @@ export const createVA = async (req: Request, res: Response, next: NextFunction):
         res.status(200).json({
             success: true,
             virtualAccountNo: response.data.vaCode,
-            paymentExpired: response.data.expiredTime,
+            paymentExpired: formatExpiredIso(response.data.expiredTime),
             paymentId: response.data.merchantTradeNo,
             totalAmount: response.data.amount,
             storeId: response.data.storeId,

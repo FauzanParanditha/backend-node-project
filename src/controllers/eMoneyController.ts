@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import logger from "../application/logger.js";
+import { formatExpiredIso } from "../service/paylabs.js";
 import * as eMoneyService from "../service/eMoneyService.js";
 import { orderSchema, refundSchema } from "../validators/orderValidator.js";
 
@@ -20,7 +21,7 @@ export const createEMoney = async (req: Request, res: Response, next: NextFuncti
         res.status(200).json({
             success: true,
             paymentActions: response.data.paymentActions,
-            paymentExpired: response.data.expiredTime,
+            paymentExpired: formatExpiredIso(response.data.expiredTime),
             paymentId: response.data.merchantTradeNo,
             totalAmount: response.data.amount,
             storeId: response.data.storeId,

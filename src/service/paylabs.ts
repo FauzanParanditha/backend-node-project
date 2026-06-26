@@ -535,6 +535,16 @@ export const convertToDate = (paymentExpired: string | number): Date | null => {
     return null;
 };
 
+// Normalize a provider expiry value (Paylabs compact `yyyyMMddHHmmss` WIB, ISO, or epoch)
+// into an unambiguous ISO-8601 string carrying the +07:00 offset, for client-facing responses.
+// Storage keeps the raw provider value (`yyyyMMddHHmmss`); only the API/iframe payload is normalized.
+export const formatExpiredIso = (paymentExpired?: string | number | null): string | null => {
+    if (paymentExpired === undefined || paymentExpired === null || paymentExpired === "") return null;
+    const d = convertToDate(paymentExpired);
+    if (!d) return null;
+    return dayjs(d).tz("Asia/Jakarta").format(); // e.g. 2026-06-26T12:00:00+07:00
+};
+
 export const convertToDateOld = (paymentExpired: string): Date | null => {
     if (typeof paymentExpired === "string" && paymentExpired.length === 19 && paymentExpired.includes("T")) {
         // ISO 8601 format: 2024-11-08T11:20:45+07:00

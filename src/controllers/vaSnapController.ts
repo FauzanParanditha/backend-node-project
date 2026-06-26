@@ -2,7 +2,7 @@ import type { AxiosLikeError } from "../types/service.js";
 import type { NextFunction, Request, Response } from "express";
 import logger from "../application/logger.js";
 import { forwardCallbackSnap, forwardCallbackSnapDelete } from "../service/forwardCallback.js";
-import { verifySignature } from "../service/paylabs.js";
+import { formatExpiredIso, verifySignature } from "../service/paylabs.js";
 import * as vaSnapService from "../service/vaSnapService.js";
 import { logCallback } from "../utils/logCallback.js";
 import { orderSchema } from "../validators/orderValidator.js";
@@ -27,7 +27,7 @@ export const createVASNAP = async (req: Request, res: Response): Promise<any> =>
             customerNo: response!.data.virtualAccountData.customerNo,
             virtualAccountNo: response!.data.virtualAccountData.virtualAccountNo,
             totalAmount: response!.data.virtualAccountData.totalAmount.value,
-            paymentExpired: response!.data.virtualAccountData.expiredDate,
+            paymentExpired: formatExpiredIso(response!.data.virtualAccountData.expiredDate),
             paymentId: response!.data.virtualAccountData.trxId,
             storeId: response!.data.virtualAccountData.additionalInfo.storeId,
             orderId: result.orderId,
