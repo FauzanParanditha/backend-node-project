@@ -26,19 +26,30 @@ export const orderSchema = joi.object({
     storeId: joi.string().optional(),
     expire: joi.number().min(1).max(1440).optional(),
     paymentType: joi.string().required(),
-});
+})
+    // Silently drop fields that are not part of the order payload. The merchant
+    // dashboard / embedded iframe sometimes carries client-level config
+    // (e.g. frameOrigins, requireSignedAck) into the create-order request;
+    // those are read server-side from the Client record, never from the body,
+    // so we ignore extras instead of rejecting the whole order. Required and
+    // typed fields are still enforced.
+    .prefs({ stripUnknown: true });
 
-export const vaStaticSchema = joi.object({
-    phoneNumber: joi
-        .string()
-        .pattern(/^\+?[0-9]+$/)
-        .min(10)
-        .max(15)
-        .required(),
-    paymentMethod: joi.string().required(),
-    storeId: joi.string().optional(),
-    paymentType: joi.string().required(),
-});
+export const vaStaticSchema = joi
+    .object({
+        phoneNumber: joi
+            .string()
+            .pattern(/^\+?[0-9]+$/)
+            .min(10)
+            .max(15)
+            .required(),
+        paymentMethod: joi.string().required(),
+        storeId: joi.string().optional(),
+        paymentType: joi.string().required(),
+    })
+    // Drop client-level config (frameOrigins, requireSignedAck) the iframe may
+    // carry into the request; those are read server-side from the Client.
+    .prefs({ stripUnknown: true });
 
 export const orderLinkSchema = joi.object({
     items: joi
@@ -65,15 +76,20 @@ export const orderLinkSchema = joi.object({
     paymentMethod: joi.string().required(),
     storeId: joi.string().optional(),
     paymentType: joi.string().optional(),
-});
+})
+    // Drop client-level config (frameOrigins, requireSignedAck) the dashboard
+    // may carry into the payment-link request; read server-side from the Client.
+    .prefs({ stripUnknown: true });
 
 export const paymentSNAPSchema = joi.object({
     customerNo: joi.string().required(),
 });
 
-export const refundSchema = joi.object({
-    reason: joi.string().required(),
-});
+export const refundSchema = joi
+    .object({
+        reason: joi.string().required(),
+    })
+    .prefs({ stripUnknown: true });
 
 export const deleteSNAPSchema = joi.object({
     partnerServiceId: joi.string().required().max(8),

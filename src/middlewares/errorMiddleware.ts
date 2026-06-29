@@ -19,6 +19,12 @@ const isClientBodyParserError = (err: Error & { type?: string; status?: number }
 // (or a scanner), not a server bug.
 const isCorsRejection = (err: Error): boolean => /not allowed by cors/i.test(err.message);
 
+// Joi throws a ValidationError (from validateAsync / validate with throwing
+// presence) when request payloads fail schema checks. These are client errors
+// (400), not server errors — they must not return 500 or page on-call.
+const isJoiValidationError = (err: Error & { isJoi?: boolean; name?: string }): boolean =>
+    err.isJoi === true || err.name === "ValidationError";
+
 const errorMiddleware = async (err: Error, req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (!err) {
         next();
@@ -47,6 +53,18 @@ const errorMiddleware = async (err: Error, req: Request, res: Response, next: Ne
                 code: "MALFORMED_REQUEST",
                 message: "Malformed request body",
                 errors: "Malformed request body",
+            })
+            .end();
+    } else if (isJoiValidationError(err)) {
+        // Schema validation failure — surface the joi message as a 400 and skip
+        // the Discord critical-error alert (these are caller mistakes, not bugs).
+        logger.warn(`[400] Validation error at ${req.originalUrl}: ${err.message}`);
+        res.status(400)
+            .json({
+                success: false,
+                code: "VALIDATION_ERROR",
+                message: err.message,
+                errors: err.message,
             })
             .end();
     } else if (isCorsRejection(err)) {
