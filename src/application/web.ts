@@ -94,6 +94,15 @@ web.use(
 );
 web.use("/api/v1/order/webhook/paylabs", express.raw({ type: "application/json" }));
 web.use(helmet());
+// Keep the API (and any error/docs HTML) out of search indexes. Header form
+// covers every response type; the robots.txt below tells crawlers to stay out.
+web.use((_req, res, next) => {
+    res.setHeader("X-Robots-Tag", "noindex, nofollow");
+    next();
+});
+web.get("/robots.txt", (_req, res) => {
+    res.type("text/plain").send("User-agent: *\nDisallow: /\n");
+});
 web.use(cookieParser());
 web.use(express.json());
 web.use(express.urlencoded({ extended: true }));
