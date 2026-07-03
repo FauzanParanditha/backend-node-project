@@ -150,3 +150,7 @@ generated-keys/
 
 # Local tests
 test/
+
+# Internal security runbook — leaks exact detection thresholds / lockout tiers /
+# scanner patterns that would help an attacker evade. Keep out of the repo.
+docs/SMOKE-TEST.md
