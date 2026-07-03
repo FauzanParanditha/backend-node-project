@@ -31,6 +31,17 @@ export const SUSPICION_POINTS = {
 } as const;
 export type SuspicionType = keyof typeof SUSPICION_POINTS;
 
+// Email-spray bonus: a single IP that fails login against many DIFFERENT
+// emails in the window is enumerating/spraying, not a real user fat-fingering
+// one password. Once the distinct-email count reaches SPRAY_EMAIL_THRESHOLD,
+// each further failed login earns SPRAY_BONUS_POINTS on top of its base point,
+// so a spray crosses the block threshold fast (e.g. 10 distinct emails ->
+// ~4pt for the last several hits -> block around the 8th email) while a normal
+// user hitting one or two accounts never triggers it. Only applies to
+// FAILED_LOGIN.
+const SPRAY_EMAIL_THRESHOLD = 5;
+const SPRAY_BONUS_POINTS = 3;
+
 // Escalating block durations by offense count.
 const BLOCK_DURATIONS_MS: Array<number | null> = [
     1 * 60 * 60 * 1000, // 1st: 1 hour
@@ -189,11 +200,20 @@ export const trackSuspiciousActivity = async (ip: string, params: TrackSuspiciou
         failTracker.set(ip, entry);
     }
 
-    entry.points += points;
     entry.lastSeenAt = now;
     entry.typeCounts.set(params.type, (entry.typeCounts.get(params.type) ?? 0) + 1);
     if (params.metadata?.email) entry.emailsTargeted.add(params.metadata.email);
     if (params.metadata?.path) entry.pathsTargeted.add(params.metadata.path);
+
+    // Base points, plus an email-spray bonus for FAILED_LOGIN once this IP has
+    // targeted enough distinct emails in the window (many-emails-from-one-IP
+    // enumeration — the per-(IP,email) rate limiter never triggers for it since
+    // each email is fresh, so base 1pt alone would need 20 attempts).
+    let effectivePoints = points;
+    if (params.type === "FAILED_LOGIN" && entry.emailsTargeted.size >= SPRAY_EMAIL_THRESHOLD) {
+        effectivePoints += SPRAY_BONUS_POINTS;
+    }
+    entry.points += effectivePoints;
 
     if (entry.points >= TRACKER_THRESHOLD) {
         // Snapshot + delete the tracker BEFORE the async blockIp call so
