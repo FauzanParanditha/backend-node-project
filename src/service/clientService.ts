@@ -87,6 +87,9 @@ export const createClient = async ({ value }: { value: Record<string, any> }) =>
         name: value.name,
         clientId,
         notifyUrl: value.notifyUrl,
+        // Always store as an array; an empty/blank value clears all origins.
+        frameOrigins: Array.isArray(value.frameOrigins) ? value.frameOrigins : [],
+        requireSignedAck: value.requireSignedAck ?? false,
         active: value.active,
         userIds: value.userIds,
         adminId: value.adminId,
@@ -176,6 +179,14 @@ export const updateClient = async ({ id, value, userId, isSuperAdmin = false }: 
     existClient.name = value.name;
     existClient.notifyUrl = value.notifyUrl;
     existClient.active = value.active;
+    // Only overwrite when provided, so older forms don't wipe registered
+    // origins. Normalize to an array: a blank textarea ("") clears all origins.
+    if (value.frameOrigins !== undefined) {
+        existClient.frameOrigins = Array.isArray(value.frameOrigins) ? value.frameOrigins : [];
+    }
+    if (value.requireSignedAck !== undefined) {
+        existClient.requireSignedAck = value.requireSignedAck;
+    }
 
     if (!userId) {
         const existingUsers = await User.find({ _id: { $in: value.userIds } });

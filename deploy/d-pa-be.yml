@@ -19,9 +19,12 @@ spec:
         env: dev
     spec:
       volumes:
+        # Env holds secrets (DB URI, mail/Xendit keys, JWT private keys, seed
+        # admin creds) — backed by a Secret, not a ConfigMap. Still mounted as
+        # /app/.env so dotenv keeps working without code changes.
         - name: payhub-be-env
-          configMap:
-            name: d-payhub-be-env
+          secret:
+            secretName: d-payhub-be-env
             items:
               - key: .env
                 path: .env

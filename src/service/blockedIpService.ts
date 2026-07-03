@@ -2,7 +2,7 @@ import type { Types } from "mongoose";
 import logger from "../application/logger.js";
 import BlockedIP from "../models/blockedIpModel.js";
 import type { IBlockedIP } from "../models/blockedIpModel.js";
-import { sendIpBlockedAlert } from "./discordService.js";
+import { sendDistributedAttackAlert, sendIpBlockedAlert } from "./discordService.js";
 
 // ---------------------------------------------------------------------------
 // Tunables
@@ -20,10 +20,27 @@ const TRACKER_CLEANUP_MS = 60 * 1000; // sweep stale entries every minute
 export const SUSPICION_POINTS = {
     RECON_PROBE: 1,
     FAILED_LOGIN: 1,
+    // A request that trips a strict auth rate limiter is a stronger signal than
+    // a single failed login: it means the caller already blew past the allowed
+    // attempts for that (IP, email). Weighted so a persistent hammer on one
+    // endpoint eventually crosses the block threshold even when the per-account
+    // rate limiter keeps returning 429.
+    RATE_LIMIT: 2,
     CORS_REJECTION: 2,
     SCANNER_PATH: 5,
 } as const;
 export type SuspicionType = keyof typeof SUSPICION_POINTS;
+
+// Email-spray bonus: a single IP that fails login against many DIFFERENT
+// emails in the window is enumerating/spraying, not a real user fat-fingering
+// one password. Once the distinct-email count reaches SPRAY_EMAIL_THRESHOLD,
+// each further failed login earns SPRAY_BONUS_POINTS on top of its base point,
+// so a spray crosses the block threshold fast (e.g. 10 distinct emails ->
+// ~4pt for the last several hits -> block around the 8th email) while a normal
+// user hitting one or two accounts never triggers it. Only applies to
+// FAILED_LOGIN.
+const SPRAY_EMAIL_THRESHOLD = 5;
+const SPRAY_BONUS_POINTS = 3;
 
 // Escalating block durations by offense count.
 const BLOCK_DURATIONS_MS: Array<number | null> = [
@@ -55,6 +72,66 @@ setInterval(() => {
         if (entry.lastSeenAt < cutoff) failTracker.delete(ip);
     }
 }, TRACKER_CLEANUP_MS).unref();
+
+// ---------------------------------------------------------------------------
+// Per-email distributed-attack tracker
+// ---------------------------------------------------------------------------
+// Complements the per-IP tracker above. The per-IP tracker catches one IP
+// sweeping many emails; this catches the opposite shape - many IPs targeting
+// a single email (botnet brute force). Fires a one-shot Discord alert when
+// the distinct-IP count crosses a threshold within the window.
+
+const EMAIL_ATTACK_THRESHOLD_IPS = 3; // distinct IPs in window before alert
+const EMAIL_ATTACK_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
+interface EmailAttackTracker {
+    ips: Set<string>;
+    attempts: number;
+    firstSeenAt: number;
+    lastSeenAt: number;
+    alerted: boolean; // one-shot per window
+}
+
+const emailAttackTracker = new Map<string, EmailAttackTracker>();
+
+setInterval(() => {
+    const cutoff = Date.now() - EMAIL_ATTACK_WINDOW_MS;
+    for (const [email, entry] of emailAttackTracker) {
+        if (entry.lastSeenAt < cutoff) emailAttackTracker.delete(email);
+    }
+}, TRACKER_CLEANUP_MS).unref();
+
+export const trackEmailAttack = (email: string, ip: string): void => {
+    if (!email || !ip) return;
+    const key = email.trim().toLowerCase();
+    const now = Date.now();
+
+    let entry = emailAttackTracker.get(key);
+    if (entry && now - entry.firstSeenAt > EMAIL_ATTACK_WINDOW_MS) {
+        entry = undefined; // window expired, start fresh
+    }
+    if (!entry) {
+        entry = { ips: new Set(), attempts: 0, firstSeenAt: now, lastSeenAt: now, alerted: false };
+        emailAttackTracker.set(key, entry);
+    }
+
+    entry.ips.add(ip);
+    entry.attempts += 1;
+    entry.lastSeenAt = now;
+
+    if (!entry.alerted && entry.ips.size >= EMAIL_ATTACK_THRESHOLD_IPS) {
+        entry.alerted = true;
+        const windowSeconds = Math.max(1, Math.round((entry.lastSeenAt - entry.firstSeenAt) / 1000));
+        sendDistributedAttackAlert({
+            email: key,
+            distinctIps: Array.from(entry.ips),
+            attempts: entry.attempts,
+            windowSeconds,
+        }).catch((e) =>
+            logger.error(`Failed to send distributed attack alert: ${(e as Error).message}`),
+        );
+    }
+};
 
 // ---------------------------------------------------------------------------
 // In-memory cache of active blocks (synced on block/unblock/expiry)
@@ -123,11 +200,20 @@ export const trackSuspiciousActivity = async (ip: string, params: TrackSuspiciou
         failTracker.set(ip, entry);
     }
 
-    entry.points += points;
     entry.lastSeenAt = now;
     entry.typeCounts.set(params.type, (entry.typeCounts.get(params.type) ?? 0) + 1);
     if (params.metadata?.email) entry.emailsTargeted.add(params.metadata.email);
     if (params.metadata?.path) entry.pathsTargeted.add(params.metadata.path);
+
+    // Base points, plus an email-spray bonus for FAILED_LOGIN once this IP has
+    // targeted enough distinct emails in the window (many-emails-from-one-IP
+    // enumeration — the per-(IP,email) rate limiter never triggers for it since
+    // each email is fresh, so base 1pt alone would need 20 attempts).
+    let effectivePoints = points;
+    if (params.type === "FAILED_LOGIN" && entry.emailsTargeted.size >= SPRAY_EMAIL_THRESHOLD) {
+        effectivePoints += SPRAY_BONUS_POINTS;
+    }
+    entry.points += effectivePoints;
 
     if (entry.points >= TRACKER_THRESHOLD) {
         // Snapshot + delete the tracker BEFORE the async blockIp call so
@@ -251,16 +337,30 @@ export const unblockIp = async (
     return block;
 };
 
+// Escape user input before using it in a RegExp so a search term like "1.2."
+// (dots are regex metachars) matches literally instead of as "any char".
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 export const listBlockedIps = async ({
     activeOnly = true,
     limit = 50,
     page = 1,
+    search = "",
 }: {
     activeOnly?: boolean;
     limit?: number;
     page?: number;
+    search?: string;
 }) => {
-    const filter = activeOnly ? { isActive: true } : {};
+    const filter: Record<string, unknown> = activeOnly ? { isActive: true } : {};
+
+    // Partial, case-insensitive IP search (e.g. "149.56" matches
+    // "149.56.111.46"). Trimmed; blank search is ignored.
+    const term = search.trim();
+    if (term) {
+        filter.ipAddress = { $regex: escapeRegExp(term), $options: "i" };
+    }
+
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
         BlockedIP.find(filter).sort({ blockedAt: -1 }).skip(skip).limit(limit).lean(),

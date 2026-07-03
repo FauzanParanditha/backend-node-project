@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import logger from "../application/logger.js";
-import { forwardCallback } from "../service/forwadCallback.js";
+import { forwardCallback } from "../service/forwardCallback.js";
+import { formatExpiredIso } from "../service/paylabs.js";
 import * as qrisService from "../service/qrisService.js";
 import { logCallback } from "../utils/logCallback.js";
 import { orderSchema } from "../validators/orderValidator.js";
@@ -21,7 +22,7 @@ export const createQris = async (req: Request, res: Response, next: NextFunction
             success: true,
             qrCode: response.data.qrCode,
             qrUrl: response.data.qrisUrl,
-            paymentExpired: response.data.expiredTime,
+            paymentExpired: formatExpiredIso(response.data.expiredTime),
             paymentId: response.data.merchantTradeNo,
             totalAmount: response.data.amount,
             storeId: response.data.storeId,

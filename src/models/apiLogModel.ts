@@ -31,6 +31,6 @@ apiLogSchema.index({ createdAt: -1 });
 apiLogSchema.index({ endpoint: 1, createdAt: -1 });
 apiLogSchema.index({ endpoint: 1 }, { collation: { locale: "en", strength: 2 } });
 
-const ApiLog = mongoose.model<IApiLog>("ApiLog", apiLogSchema);
+const ApiLog = (mongoose.models.ApiLog as mongoose.Model<IApiLog>) || mongoose.model<IApiLog>("ApiLog", apiLogSchema);
 
 export default ApiLog;

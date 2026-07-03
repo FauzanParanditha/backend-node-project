@@ -1,4 +1,4 @@
-import type { Document } from "mongoose";
+import type { Document, Types } from "mongoose";
 import mongoose from "mongoose";
 
 export interface ICallbackLog extends Document {
@@ -6,6 +6,7 @@ export interface ICallbackLog extends Document {
     source: "paylabs" | "system";
     target: "system" | "client" | "internal";
     status: "success" | "failed" | "error";
+    clientId?: Types.ObjectId;
     payload: Record<string, unknown>;
     response?: Record<string, unknown>;
     statusCode?: number;
@@ -39,6 +40,11 @@ const callbackLogSchema = new mongoose.Schema<ICallbackLog>(
             enum: ["success", "failed", "error"],
             required: true,
         },
+        clientId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Client",
+            index: true,
+        },
         payload: {
             type: Object,
             required: true,
@@ -67,5 +73,5 @@ const callbackLogSchema = new mongoose.Schema<ICallbackLog>(
     },
 );
 
-const CallbackLog = mongoose.model<ICallbackLog>("CallbackLog", callbackLogSchema);
+const CallbackLog = (mongoose.models.CallbackLog as mongoose.Model<ICallbackLog>) || mongoose.model<ICallbackLog>("CallbackLog", callbackLogSchema);
 export default CallbackLog;

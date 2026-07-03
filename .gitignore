@@ -79,6 +79,12 @@ web_modules/
 .env.production.local
 .env.local
 
+# real k8s secret manifests — only *.example.yml templates may be committed
+deploy/*secret*.yml
+!deploy/*secret*.example.yml
+deploy/*secret*.yaml
+!deploy/*secret*.example.yaml
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
@@ -144,3 +150,7 @@ generated-keys/
 
 # Local tests
 test/
+
+# Internal security runbook — leaks exact detection thresholds / lockout tiers /
+# scanner patterns that would help an attacker evade. Keep out of the repo.
+docs/SMOKE-TEST.md

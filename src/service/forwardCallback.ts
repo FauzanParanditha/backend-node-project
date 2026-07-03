@@ -11,7 +11,7 @@ import { logCallback } from "../utils/logCallback.js";
 import { validateCallback, validatePaymentVASNAP, validateSnapDelete } from "../validators/paymentValidator.js";
 import { logActivity } from "./activityLogService.js";
 import { sendForceRetryAlert } from "./discordService.js";
-import { generateHeadersForward, generateRequestId } from "./paylabs.js";
+import { generateHeadersForward, generateRequestId, verifyClientAckSignature } from "./paylabs.js";
 
 interface ForwardCallbackParams {
     payload: Record<string, unknown>;
@@ -21,6 +21,35 @@ interface ForwardCallbackParams {
 
 const RETRY_INTERVALS = [5, 15, 30, 60, 300, 900, 1800] as const;
 const MAX_RETRY = RETRY_INTERVALS.length;
+
+// Opt-in cryptographic verification of the merchant's ack signature.
+// Only runs when the Client has `requireSignedAck: true`; otherwise the
+// presence check inside validateResponse() is the only signature gate.
+// Throws ResponseError on failure so the caller treats it as a retryable
+// attempt failure (same as a 5xx from the merchant).
+type AckVerifiable = { clientId?: string; requireSignedAck?: boolean };
+const assertAckSignatureIfRequired = async (
+    client: AckVerifiable,
+    path: string,
+    response: AxiosResponse,
+): Promise<void> => {
+    if (!client.requireSignedAck) return;
+    if (!client.clientId) {
+        throw new ResponseError(500, "Cannot verify ack: client has no clientId registered");
+    }
+    const { "x-timestamp": timestamp, "x-signature": signature } = response.headers;
+    const ok = await verifyClientAckSignature({
+        clientId: client.clientId,
+        httpMethod: "POST",
+        endpointUrl: path,
+        responseBody: response.data ?? {},
+        timestamp: String(timestamp ?? ""),
+        signature: String(signature ?? ""),
+    });
+    if (!ok) {
+        throw new ResponseError(400, "Invalid ack signature");
+    }
+};
 
 const sendAlert = (message: string): void => {
     logger.warn(`Alert: ${message}`);
@@ -111,6 +140,7 @@ export const forwardCallback = async ({
                 source: "system",
                 target: "client",
                 status: "skipped",
+                clientId: client?._id as Types.ObjectId | undefined,
                 payload,
                 response: { message: "Client has no notifyUrl" },
                 requestId: generateRequestId(),
@@ -155,6 +185,7 @@ export const forwardCallback = async ({
                 });
 
                 await validateResponse(response);
+                await assertAckSignatureIfRequired(client, path, response);
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
 
                 await logCallback({
@@ -162,6 +193,7 @@ export const forwardCallback = async ({
                     source: "system",
                     target: "client",
                     status: "success",
+                    clientId: client._id as Types.ObjectId,
                     payload: JSON.parse(JSON.stringify(payload)),
                     response: response.data,
                     statusCode: response.status,
@@ -206,6 +238,7 @@ export const forwardCallback = async ({
                         source: "system",
                         target: "client",
                         status: "failed",
+                        clientId: client._id as Types.ObjectId,
                         payload: JSON.parse(JSON.stringify(payload)),
                         response: axiosErr.response?.data ?? null,
                         statusCode: axiosErr.response?.status,
@@ -324,6 +357,7 @@ export const forwardCallbackSnap = async ({
                 source: "system",
                 target: "client",
                 status: "skipped",
+                clientId: client?._id as Types.ObjectId | undefined,
                 payload,
                 response: { message: "Client has no notifyUrl" },
                 requestId: generateRequestId(),
@@ -368,6 +402,7 @@ export const forwardCallbackSnap = async ({
                 });
 
                 await validateResponse(response);
+                await assertAckSignatureIfRequired(client, path, response);
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
 
                 await logCallback({
@@ -375,6 +410,7 @@ export const forwardCallbackSnap = async ({
                     source: "system",
                     target: "client",
                     status: "success",
+                    clientId: client._id as Types.ObjectId,
                     payload: JSON.parse(JSON.stringify(payload)),
                     response: response.data,
                     statusCode: response.status,
@@ -420,6 +456,7 @@ export const forwardCallbackSnap = async ({
                         source: "system",
                         target: "client",
                         status: "failed",
+                        clientId: client._id as Types.ObjectId,
                         payload: JSON.parse(JSON.stringify(payload)),
                         response: axiosErr.response?.data ?? null,
                         statusCode: axiosErr.response?.status,
@@ -548,6 +585,7 @@ export const forwardCallbackSnapDelete = async ({
                 source: "system",
                 target: "client",
                 status: "skipped",
+                clientId: client?._id as Types.ObjectId | undefined,
                 payload,
                 response: { message: "Client has no notifyUrl" },
                 requestId: generateRequestId(),
@@ -592,6 +630,7 @@ export const forwardCallbackSnapDelete = async ({
                 });
 
                 await validateResponse(response);
+                await assertAckSignatureIfRequired(client, path, response);
                 logger.info(`Callback successfully forwarded on attempt ${retryAttempt + 1}`);
 
                 await logCallback({
@@ -599,6 +638,7 @@ export const forwardCallbackSnapDelete = async ({
                     source: "system",
                     target: "client",
                     status: "success",
+                    clientId: client._id as Types.ObjectId,
                     payload: JSON.parse(JSON.stringify(payload)),
                     response: response.data,
                     statusCode: response.status,
@@ -644,6 +684,7 @@ export const forwardCallbackSnapDelete = async ({
                         source: "system",
                         target: "client",
                         status: "failed",
+                        clientId: client._id as Types.ObjectId,
                         payload: JSON.parse(JSON.stringify(payload)),
                         response: axiosErr.response?.data ?? null,
                         statusCode: axiosErr.response?.status,
@@ -682,11 +723,45 @@ interface ForceRetryActor {
     ipAddress?: string;
 }
 
+// Drains a single FailedCallback in the background after retryCallbackById
+// has validated and reserved it (status: "processing"). The inner forward*()
+// functions can sleep up to ~52 minutes across their internal retry intervals,
+// so we explicitly do NOT await this from the admin endpoint - it lives the
+// rest of its life detached.
+const drainRetryInBackground = async (
+    callbackId: string,
+    failedCallback: { payload: unknown; deleteOne: () => Promise<unknown> },
+): Promise<void> => {
+    const payload = failedCallback.payload as Record<string, unknown>;
+    try {
+        const virtualAccountData = payload.virtualAccountData as Record<string, unknown> | undefined;
+        let success: boolean | undefined = false;
+        if (virtualAccountData) {
+            success = await forwardCallbackSnapDelete({ payload, callbackId });
+        } else if (payload.trxId) {
+            success = await forwardCallbackSnap({ payload, callbackId });
+        } else {
+            success = await forwardCallback({ payload, callbackId });
+        }
+
+        if (success) {
+            await failedCallback.deleteOne();
+            logger.info(`✅ Callback ${callbackId} retried successfully (async)`);
+            return;
+        }
+        await markRetryFailed(callbackId, "Callback returned false");
+    } catch (err: unknown) {
+        const error = err as Error;
+        logger.error(`❌ Retry error ${callbackId}: ${error.message}`);
+        await markRetryFailed(callbackId, error.message);
+    }
+};
+
 export const retryCallbackById = async (
     callbackId: string,
     force = false,
     actor?: ForceRetryActor,
-): Promise<boolean> => {
+): Promise<{ queued: true; callbackId: string }> => {
     const update: Record<string, unknown> = { status: "processing" };
     if (force) {
         // Reset the counter so the next failure path has a full retry cycle
@@ -736,31 +811,18 @@ export const retryCallbackById = async (
     }
 
     logger.debug("FAILED CALLBACK PAYLOAD:", failedCallback.payload);
-    const payload = failedCallback.payload as Record<string, unknown>;
-    let success: boolean | undefined = false;
 
-    try {
-        const virtualAccountData = payload.virtualAccountData as Record<string, unknown> | undefined;
-        if (virtualAccountData) {
-            success = await forwardCallbackSnapDelete({ payload, callbackId });
-        } else if (payload.trxId) {
-            success = await forwardCallbackSnap({ payload, callbackId });
-        } else {
-            success = await forwardCallback({ payload, callbackId });
-        }
+    // Detach the actual forwarding work. The endpoint returns 202 immediately;
+    // the result becomes visible asynchronously via CallbackLog (success) or
+    // FailedCallback status -> failed/dead (failure). setImmediate prevents
+    // the work from blocking the current event-loop tick so the HTTP response
+    // ships first; the rejection-eater keeps unhandled rejections from
+    // crashing the process if drainRetryInBackground itself throws.
+    setImmediate(() => {
+        drainRetryInBackground(callbackId, failedCallback).catch((e) =>
+            logger.error(`drainRetryInBackground unhandled: ${(e as Error).message}`),
+        );
+    });
 
-        if (success) {
-            await failedCallback.deleteOne();
-            logger.info(`✅ Callback ${callbackId} retried successfully`);
-            return true;
-        }
-
-        await markRetryFailed(callbackId, "Callback returned false");
-        return false;
-    } catch (err: unknown) {
-        const error = err as Error;
-        logger.error(`❌ Retry error ${callbackId}: ${error.message}`);
-        await markRetryFailed(callbackId, error.message);
-        return false;
-    }
+    return { queued: true, callbackId };
 };

@@ -6,11 +6,12 @@ import User from "../models/userModel.js";
 import { logActivity } from "../service/activityLogService.js";
 import * as authService from "../service/authService.js";
 import * as authServiceUser from "../service/authServiceUser.js";
-import { trackFailedLogin } from "../service/blockedIpService.js";
-import { sendAuthAlert } from "../service/discordService.js";
+import { trackEmailAttack, trackFailedLogin } from "../service/blockedIpService.js";
+import { sendAuthAlert, sendAuthAlertDebounced } from "../service/discordService.js";
 import { logSkippedEmailAttempt } from "../service/sendMail.js";
 import { getAuthActivityActor, resolveActivityActor } from "../utils/activityActor.js";
 import { isAdminRole } from "../utils/authRole.js";
+import { clearAuthCookie, setAuthCookie } from "../utils/authCookie.js";
 import {
     acceptCodeSchema,
     acceptFPCodeSchema,
@@ -28,8 +29,11 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     try {
         const { error } = loginSchema.validate({ email, password });
         if (error) {
-            sendAuthAlert("Failed Login (Validation)", req.ip || "Unknown IP", email, error.details[0].message).catch(
-                console.error,
+            sendAuthAlertDebounced(
+                "Failed Login (Validation)",
+                req.ip || "Unknown IP",
+                email,
+                error.details[0].message,
             );
             return res.status(400).json({ success: false, message: error.details[0].message });
         }
@@ -47,13 +51,10 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
             clientIP: req.ip,
         });
 
-        if (role === "user") {
-            res.cookie("Authorization", "Bearer " + token, {
-                expires: new Date(Date.now() + expiresIn * 1000),
-                httpOnly: process.env.NODE_ENV === "production",
-                secure: process.env.NODE_ENV === "production",
-            });
-        }
+        // HttpOnly cookie for all roles — the access token is no longer stored
+        // in client-readable storage. Attributes (HttpOnly/Secure/SameSite/
+        // Domain) are centralized in utils/authCookie.
+        setAuthCookie(res, token, expiresIn);
 
         sendAuthAlert("Successful Login", req.ip || "Unknown IP", email, `Successfully logged in as **${role}**`).catch(
             console.error,
@@ -88,15 +89,22 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
             },
         });
     } catch (error) {
-        sendAuthAlert("Failed Login (Credentials)", req.ip || "Unknown IP", email, (error as Error).message).catch(
-            console.error,
+        sendAuthAlertDebounced(
+            "Failed Login (Credentials)",
+            req.ip || "Unknown IP",
+            email,
+            (error as Error).message,
         );
-        // Track for IP-level brute-force auto-block. Fire-and-forget; failures
+        // Track for IP-level brute-force auto-block AND for per-email
+        // distributed attack detection. Both are fire-and-forget; failures
         // here must never override the original login error sent to the user.
         if (req.ip) {
             trackFailedLogin(req.ip, email).catch((e) =>
                 logger.error(`trackFailedLogin error: ${(e as Error).message}`),
             );
+            if (email) {
+                trackEmailAttack(email, req.ip);
+            }
         }
         logger.error(`Error login: ${(error as Error).message}`);
         next(error);
@@ -114,7 +122,8 @@ export const logout = async (req: Request, res: Response): Promise<any> => {
         }).catch(console.error);
     }
 
-    res.clearCookie("Authorization").status(200).json({
+    clearAuthCookie(res);
+    res.status(200).json({
         success: true,
         message: "logout is successfully",
     });

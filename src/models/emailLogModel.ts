@@ -18,6 +18,6 @@ const emailLogSchema = new mongoose.Schema<IEmailLog>(
     { timestamps: true },
 );
 
-const EmailLog = mongoose.model<IEmailLog>("EmailLogs", emailLogSchema);
+const EmailLog = (mongoose.models.EmailLogs as mongoose.Model<IEmailLog>) || mongoose.model<IEmailLog>("EmailLogs", emailLogSchema);
 
 export default EmailLog;

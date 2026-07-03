@@ -84,9 +84,15 @@ export const getAllCallbackLog = async (req: Request, res: Response, next: NextF
         sort_by = "_id",
         sort = -1,
         countOnly = false,
+        clientId = "",
     } = req.query as Record<string, any>;
 
     try {
+        // Non-admin (merchant) users are scoped to their own clients; admins
+        // may filter by an explicit clientId from the query.
+        const { role, userId } = req.auth ?? {};
+        const isClientUser = role === "user";
+
         const result = await apiLogService.getAllCallbackLogs({
             query,
             limit,
@@ -94,6 +100,8 @@ export const getAllCallbackLog = async (req: Request, res: Response, next: NextF
             sort_by,
             sort,
             countOnly,
+            clientId: isClientUser ? "" : clientId,
+            userId: isClientUser ? userId : undefined,
         });
 
         if (countOnly) {
@@ -112,6 +120,37 @@ export const getAllCallbackLog = async (req: Request, res: Response, next: NextF
     }
 };
 
+export const getCallbackLogById = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
+    const { id } = req.params;
+    const { clientId = "" } = req.query as Record<string, any>;
+
+    try {
+        const { role, userId } = req.auth ?? {};
+        const isClientUser = role === "user";
+
+        const callbackLog = await apiLogService.getCallbackLogById(id, {
+            clientId: isClientUser ? undefined : clientId,
+            userId: isClientUser ? userId : undefined,
+        });
+
+        if (!callbackLog) {
+            return res.status(404).json({
+                success: false,
+                message: "Callback log not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Callback log detail",
+            data: callbackLog,
+        });
+    } catch (error) {
+        logger.error(`Error fetching callback log detail: ${(error as Error).message}`);
+        next(error);
+    }
+};
+
 export const getAllFailedCallbackLog = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const {
         query = "",
@@ -120,6 +159,7 @@ export const getAllFailedCallbackLog = async (req: Request, res: Response, next:
         sort_by = "_id",
         sort = -1,
         countOnly = false,
+        status = "",
     } = req.query as Record<string, any>;
 
     try {
@@ -130,6 +170,7 @@ export const getAllFailedCallbackLog = async (req: Request, res: Response, next:
             sort_by,
             sort,
             countOnly,
+            status,
         });
 
         if (countOnly) {

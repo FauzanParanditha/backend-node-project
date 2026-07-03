@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import cron from "node-cron";
 import logger from "../application/logger.js";
+import FailedCallback from "../models/failedForwardModel.js";
 import Order from "../models/orderModel.js";
 import { convertToDate } from "../service/paylabs.js";
 import { getProviderStatus } from "../service/paymentStatusService.js";
@@ -51,6 +52,14 @@ const withTimeout = (p: Promise<any>, ms: number) =>
 // ===== Locks agar tidak overlap antar tick =====
 let isPrecheckRunning = false;
 let isExpireRunning = false;
+let isStuckCallbackRunning = false;
+
+// Stuck "processing" recovery threshold. A FailedCallback should not stay in
+// "processing" longer than the longest possible retry sequence — and even
+// that is a soft upper bound. 30 minutes is a generous fence: anything beyond
+// it almost certainly crashed mid-retry and needs to go back to "failed" so
+// the next admin retry click (or future cron-based auto-retry) can pick it up.
+const STUCK_PROCESSING_THRESHOLD_MS = 30 * 60 * 1000;
 
 // =======================
 // 1) PRE-CHECK (tiap 1 menit)
@@ -249,6 +258,47 @@ cron.schedule(
             logger.error("[CRON expire] error:", err);
         } finally {
             isExpireRunning = false;
+        }
+    },
+    { timezone: TIMEZONE },
+);
+
+// =======================
+// 3) STUCK PROCESSING RECOVERY (tiap 5 menit)
+// =======================
+// FailedCallback yang ke-set status "processing" oleh retryCallbackById tapi
+// crash di tengah jalan (server restart, network hang, dll) akan stuck
+// permanent karena query retry filter pakai `status: { $ne: "processing" }`.
+// Cron ini reset ke "failed" sehingga next admin retry bisa pick up lagi.
+cron.schedule(
+    "*/5 * * * *",
+    async () => {
+        if (isStuckCallbackRunning) {
+            logger.warn("[STUCK-CALLBACK] previous run still running, skip");
+            return;
+        }
+        isStuckCallbackRunning = true;
+
+        try {
+            const cutoff = new Date(Date.now() - STUCK_PROCESSING_THRESHOLD_MS);
+            const result = await FailedCallback.updateMany(
+                { status: "processing", updatedAt: { $lt: cutoff } },
+                {
+                    $set: {
+                        status: "failed",
+                        errDesc: "Auto-recovered from stuck processing state",
+                    },
+                },
+            );
+            if (result.modifiedCount > 0) {
+                logger.warn(
+                    `[STUCK-CALLBACK] recovered ${result.modifiedCount} stuck "processing" callback(s) older than 30 min`,
+                );
+            }
+        } catch (err) {
+            logger.error("[CRON stuck-callback] error:", err);
+        } finally {
+            isStuckCallbackRunning = false;
         }
     },
     { timezone: TIMEZONE },

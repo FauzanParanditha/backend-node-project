@@ -19,6 +19,8 @@ export interface IAdmin extends Document {
     forgotPasswordCodeValidation?: number;
     forgotPasswordCodeAttempts?: number;
     forgotPasswordCodeLockedUntil?: number;
+    loginAttempts?: number;
+    loginLockedUntil?: number | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -90,11 +92,21 @@ const adminSchema = new mongoose.Schema<IAdmin>(
             type: Number,
             select: false,
         },
+        loginAttempts: {
+            type: Number,
+            default: 0,
+            select: false,
+        },
+        loginLockedUntil: {
+            type: Number,
+            default: null,
+            select: false,
+        },
     },
     {
         timestamps: true,
     },
 );
 
-const Admin = mongoose.model<IAdmin>("Admin", adminSchema);
+const Admin = (mongoose.models.Admin as mongoose.Model<IAdmin>) || mongoose.model<IAdmin>("Admin", adminSchema);
 export default Admin;

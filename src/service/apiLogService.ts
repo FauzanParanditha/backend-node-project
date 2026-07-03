@@ -1,5 +1,7 @@
+import mongoose from "mongoose";
 import ApiLog from "../models/apiLogModel.js";
 import CallbackLog from "../models/callbackLogModel.js";
+import Client from "../models/clientModel.js";
 import EmailLog from "../models/emailLogModel.js";
 import FailedCallback from "../models/failedForwardModel.js";
 import type { ListQueryParams } from "../types/service.js";
@@ -91,8 +93,26 @@ export const getAllEmailLogs = async ({ query, limit, page, sort_by, sort, count
     };
 };
 
-export const getAllCallbackLogs = async ({ query, limit, page, sort_by, sort, countOnly }: ListQueryParams) => {
+export const getAllCallbackLogs = async ({
+    query,
+    limit,
+    page,
+    sort_by,
+    sort,
+    countOnly,
+    clientId,
+    userId,
+}: ListQueryParams & { userId?: string }) => {
     const filter: Record<string, any> = {};
+
+    if (userId) {
+        // Merchant user: restrict to logs of THEIR clients only.
+        const clients = await Client.find({ userIds: { $in: [userId] } }).select("_id");
+        filter["clientId"] = { $in: clients.map((c) => c._id) };
+    } else if (clientId && mongoose.isValidObjectId(clientId)) {
+        // Admin filtering by a specific client.
+        filter["clientId"] = new mongoose.Types.ObjectId(clientId);
+    }
 
     // Apply search term if provided
     if (query && query.trim()) {
@@ -114,6 +134,7 @@ export const getAllCallbackLogs = async ({ query, limit, page, sort_by, sort, co
     }
 
     const callbackLogs = await CallbackLog.find(filter)
+        .populate("clientId", "name clientId")
         .sort({ [sortField]: sortValue } as Record<string, 1 | -1>)
         .limit(limitNum)
         .skip(skip)
@@ -134,7 +155,38 @@ export const getAllCallbackLogs = async ({ query, limit, page, sort_by, sort, co
     };
 };
 
-export const getAllFailedCallbackLogs = async ({ query, limit, page, sort_by, sort, countOnly }: ListQueryParams) => {
+export const getCallbackLogById = async (
+    id: string,
+    { clientId, userId }: { clientId?: string; userId?: string } = {},
+) => {
+    if (!mongoose.isValidObjectId(id)) {
+        return null;
+    }
+
+    const filter: Record<string, any> = { _id: id };
+
+    if (userId) {
+        // Merchant user: only return the log if it belongs to one of their clients.
+        const clients = await Client.find({ userIds: { $in: [userId] } }).select("_id");
+        filter["clientId"] = { $in: clients.map((c) => c._id) };
+    } else if (clientId && mongoose.isValidObjectId(clientId)) {
+        filter["clientId"] = new mongoose.Types.ObjectId(clientId);
+    }
+
+    return CallbackLog.findOne(filter).populate("clientId", "name clientId").exec();
+};
+
+const FAILED_CALLBACK_STATUSES = ["pending", "processing", "failed", "dead", "completed"];
+
+export const getAllFailedCallbackLogs = async ({
+    query,
+    limit,
+    page,
+    sort_by,
+    sort,
+    countOnly,
+    status,
+}: ListQueryParams) => {
     try {
         const limitNum = Math.max(1, Number(limit) || 10);
         const pageNum = Math.max(1, Number(page) || 1);
@@ -147,6 +199,12 @@ export const getAllFailedCallbackLogs = async ({ query, limit, page, sort_by, so
                 { email: { $regex: searchTerm, $options: "i" } },
                 { "client.name": { $regex: searchTerm, $options: "i" } }, // Adjust field names
             ];
+        }
+
+        // Optional status filter. Ignored when absent or "all"; invalid values
+        // are silently dropped so a bad query param cannot break the listing.
+        if (status && status !== "all" && FAILED_CALLBACK_STATUSES.includes(status)) {
+            matchStage["status"] = status;
         }
 
         const aggregationPipeline: any[] = [

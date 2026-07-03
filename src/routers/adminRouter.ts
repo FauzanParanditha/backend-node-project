@@ -6,6 +6,8 @@ import {
     deleteAdmin,
     getAllAdmin,
     register,
+    unlockAdminLogin,
+    unlockUserLogin,
     updateAdmin,
 } from "../controllers/adminController.js";
 import {
@@ -14,6 +16,7 @@ import {
     getAllCallbackLog,
     getAllEmailLog,
     getAllFailedCallbackLog,
+    getCallbackLogById,
 } from "../controllers/apiLogController.js";
 import {
     forceBlock,
@@ -37,11 +40,16 @@ router.get("/admin/:id", jwtUnifiedMiddleware, admin);
 router.post("/register", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.ADMIN_CREATE), register);
 router.put("/admin/:id", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.ADMIN_UPDATE), updateAdmin);
 router.delete("/admin/:id", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.ADMIN_DELETE), deleteAdmin);
+router.post("/admin/:id/unlock-login", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.ADMIN_UPDATE), unlockAdminLogin);
+router.post("/user/:id/unlock-login", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.USER_UPDATE), unlockUserLogin);
 
 // Logs
 router.get("/apilogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_API), getAllApiLog);
 router.get("/emaillogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_EMAIL), getAllEmailLog);
-router.get("/callbacklogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_CALLBACK), getAllCallbackLog);
+// Unified middleware so client (merchant) users can view their OWN callback
+// logs too — the controller scopes non-admin requests to the user's clients.
+router.get("/callbacklogs", jwtUnifiedMiddleware, requirePermission(PERMISSIONS.LOG_CALLBACK), getAllCallbackLog);
+router.get("/callbacklogs/:id", jwtUnifiedMiddleware, requirePermission(PERMISSIONS.LOG_CALLBACK), getCallbackLogById);
 router.get("/failed-callbacklogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_CALLBACK), getAllFailedCallbackLog);
 router.get("/activitylogs", jwtMiddlewareAdmin, requirePermission(PERMISSIONS.LOG_ACTIVITY), getAllActivityLog);
 

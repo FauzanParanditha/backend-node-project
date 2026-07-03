@@ -1,3 +1,4 @@
+import type { Types } from "mongoose";
 import CallbackLog from "../models/callbackLogModel.js";
 
 interface LogCallbackParams {
@@ -5,6 +6,7 @@ interface LogCallbackParams {
     source: string;
     target: string;
     status: string;
+    clientId?: Types.ObjectId | string | null;
     payload: Record<string, unknown>;
     response?: Record<string, unknown> | null;
     statusCode?: number | null;
@@ -19,6 +21,7 @@ export const logCallback = async ({
     source,
     target,
     status,
+    clientId = null,
     payload,
     response = null,
     statusCode = null,
@@ -33,6 +36,7 @@ export const logCallback = async ({
             source,
             target,
             status,
+            clientId,
             payload,
             response,
             statusCode,

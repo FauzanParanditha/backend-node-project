@@ -191,6 +191,56 @@ export const sendIpBlockedAlert = async (params: {
     });
 };
 
+export const sendDistributedAttackAlert = async (params: {
+    email: string;
+    distinctIps: string[];
+    attempts: number;
+    windowSeconds: number;
+}) => {
+    const { email, distinctIps, attempts, windowSeconds } = params;
+    await sendDiscordAlert(process.env.DISCORD_WEBHOOK_URL_SECURITY, {
+        title: "🌐 Distributed Brute-Force Attack Detected",
+        description: `Multiple IPs are targeting a single account - this looks like a coordinated/botnet attack.`,
+        color: 15158332, // Red
+        fields: [
+            { name: "Target Email", value: `\`${email}\``, inline: true },
+            { name: "Distinct IPs", value: `\`${distinctIps.length}\``, inline: true },
+            { name: "Total Attempts", value: `\`${attempts}\``, inline: true },
+            { name: "Time Window", value: `${windowSeconds}s`, inline: true },
+            {
+                name: "Sample IPs",
+                value: distinctIps.slice(0, 10).map((ip) => `\`${ip}\``).join(", "),
+                inline: false,
+            },
+        ],
+    });
+};
+
+export const sendAccountLockAlert = async (params: {
+    accountType: "admin" | "user";
+    email: string;
+    attempts: number;
+    lockedUntil: number;
+    permanent: boolean;
+}) => {
+    const { accountType, email, attempts, lockedUntil, permanent } = params;
+    const durationLabel = permanent
+        ? "PERMANENT (requires manual unlock)"
+        : `until ${new Date(lockedUntil).toISOString()}`;
+
+    await sendDiscordAlert(process.env.DISCORD_WEBHOOK_URL_SECURITY, {
+        title: "🔒 Account Locked",
+        description: `An account has been auto-locked after repeated failed login attempts.`,
+        color: 16753920, // Orange
+        fields: [
+            { name: "Account Type", value: `\`${accountType}\``, inline: true },
+            { name: "Email", value: `\`${email}\``, inline: true },
+            { name: "Failed Attempts", value: `\`${attempts}\``, inline: true },
+            { name: "Lock Duration", value: durationLabel, inline: false },
+        ],
+    });
+};
+
 export const sendForceRetryAlert = async (
     callbackId: string,
     adminEmail: string,
@@ -223,4 +273,111 @@ export const sendAuthAlert = async (status: string, ip: string, email: string, r
         ],
         timestamp: new Date().toISOString(),
     });
+};
+
+// ---------------------------------------------------------------------------
+// Debounced failed-login alert
+// ---------------------------------------------------------------------------
+// Failed login attempts from the same IP burst (rate limiter window of 10/10min
+// alone meant up to 10 individual Discord messages per IP per window). When
+// an attacker is sweeping email dictionaries the AUTH channel drowned in noise
+// and real events got lost. This aggregator buffers per-IP attempts for a
+// short window and flushes one summary message.
+
+interface PendingAuthEvent {
+    status: string;
+    email: string;
+    reason: string;
+    ts: number;
+}
+
+interface PendingAuthFlush {
+    ip: string;
+    events: PendingAuthEvent[];
+    timerId: NodeJS.Timeout;
+}
+
+const AUTH_FLUSH_DELAY_MS = 30 * 1000; // wait 30s after last event before flush
+const AUTH_FLUSH_MAX_EVENTS = 10; // force-flush when we hit 10 in the window
+
+const pendingAuthFlushes = new Map<string, PendingAuthFlush>();
+
+const flushPendingAuth = async (ipKey: string): Promise<void> => {
+    const pending = pendingAuthFlushes.get(ipKey);
+    if (!pending) return;
+    pendingAuthFlushes.delete(ipKey);
+    clearTimeout(pending.timerId);
+
+    const count = pending.events.length;
+    if (count === 0) return;
+
+    // Single event - send the regular non-aggregated alert so signal/noise
+    // is unchanged for low-volume cases.
+    if (count === 1) {
+        const e = pending.events[0];
+        await sendAuthAlert(e.status, pending.ip, e.email, e.reason);
+        return;
+    }
+
+    const emails = [...new Set(pending.events.map((e) => e.email))];
+    const firstTs = pending.events[0].ts;
+    const lastTs = pending.events[count - 1].ts;
+    const windowSeconds = Math.max(1, Math.round((lastTs - firstTs) / 1000));
+
+    await sendDiscordAlert(process.env.DISCORD_WEBHOOK_URL_AUTH, {
+        title: `🔐 AUTH LOG: ${count}x Failed Login (aggregated)`,
+        description: `${count} failed login attempts dari satu IP dalam ${windowSeconds}s.`,
+        color: 15158332, // Red
+        fields: [
+            { name: "IP Address", value: `\`${pending.ip}\``, inline: true },
+            { name: "Attempts", value: `${count}`, inline: true },
+            { name: "Time Window", value: `${windowSeconds}s`, inline: true },
+            {
+                name: `Unique Emails Targeted (${emails.length})`,
+                value: emails.slice(0, 10).map((e) => `\`${e}\``).join(", ") || "(none)",
+                inline: false,
+            },
+            {
+                name: "Sample Reason",
+                value: pending.events[0].reason.substring(0, 200),
+                inline: false,
+            },
+        ],
+    });
+};
+
+export const sendAuthAlertDebounced = (status: string, ip: string, email: string, reason: string): void => {
+    const safeIp = ip || "Unknown";
+    const event: PendingAuthEvent = { status, email, reason, ts: Date.now() };
+
+    let pending = pendingAuthFlushes.get(safeIp);
+    if (!pending) {
+        pending = {
+            ip: safeIp,
+            events: [],
+            timerId: setTimeout(() => {
+                flushPendingAuth(safeIp).catch((e) =>
+                    logger.error(`flushPendingAuth error: ${(e as Error).message}`),
+                );
+            }, AUTH_FLUSH_DELAY_MS),
+        };
+        pendingAuthFlushes.set(safeIp, pending);
+    } else {
+        // Reset the timer on each new event so the flush only fires once
+        // the burst has gone quiet for AUTH_FLUSH_DELAY_MS.
+        clearTimeout(pending.timerId);
+        pending.timerId = setTimeout(() => {
+            flushPendingAuth(safeIp).catch((e) =>
+                logger.error(`flushPendingAuth error: ${(e as Error).message}`),
+            );
+        }, AUTH_FLUSH_DELAY_MS);
+    }
+
+    pending.events.push(event);
+
+    if (pending.events.length >= AUTH_FLUSH_MAX_EVENTS) {
+        flushPendingAuth(safeIp).catch((e) =>
+            logger.error(`flushPendingAuth error: ${(e as Error).message}`),
+        );
+    }
 };

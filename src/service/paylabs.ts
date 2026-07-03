@@ -202,6 +202,69 @@ export const verifySignatureForward = (
 
 const MAX_REQUEST_AGE_MINUTES = 5; // ⏰ Toleransi maksimal 5 menit
 
+// Verify the cryptographic signature on an ack response sent back by a
+// merchant client after we forwarded a callback to them. Uses the same
+// METHOD:URL:SHA256(minified_body):TIMESTAMP convention as outgoing
+// signatures, with the body being the ack response body and method/URL
+// being the request that elicited the ack (POST + their notify path).
+//
+// Returns true on valid signature, false on any failure (missing key,
+// malformed signature, stale timestamp, mismatch).
+export const verifyClientAckSignature = async (params: {
+    clientId: string;
+    httpMethod: string;
+    endpointUrl: string;
+    responseBody: Record<string, unknown>;
+    timestamp: string;
+    signature: string;
+}): Promise<boolean> => {
+    const { clientId, httpMethod, endpointUrl, responseBody, timestamp, signature } = params;
+    if (!clientId || !httpMethod || !endpointUrl || !timestamp || !signature) {
+        logger.error("Missing parameters for ack signature verification");
+        return false;
+    }
+
+    try {
+        const publicKeyPem = await getClientPublicKey(clientId);
+
+        const normalizedMethod = httpMethod.toUpperCase();
+        const normalizedUrl = endpointUrl.split("?")[0];
+
+        const minifiedBody = minifyJson(responseBody);
+        const hashedBody = crypto
+            .createHash("sha256")
+            .update(minifiedBody, "utf8")
+            .digest("hex")
+            .toLowerCase();
+
+        const requestTime = new Date(timestamp);
+        if (isNaN(requestTime.getTime())) {
+            logger.error(`Invalid ack timestamp format from clientId=${clientId}`);
+            return false;
+        }
+        const ageMinutes = Math.abs((Date.now() - requestTime.getTime()) / (1000 * 60));
+        if (ageMinutes > MAX_REQUEST_AGE_MINUTES) {
+            logger.error(`Ack timestamp too old (${ageMinutes.toFixed(2)} min) clientId=${clientId}`);
+            return false;
+        }
+
+        const stringContent = `${normalizedMethod}:${normalizedUrl}:${hashedBody}:${timestamp}`;
+        const verifier = crypto.createVerify("RSA-SHA256");
+        verifier.update(stringContent);
+        verifier.end();
+
+        const ok = verifier.verify(publicKeyPem, Buffer.from(signature, "base64"));
+        if (!ok) {
+            logger.error(`Ack signature mismatch for clientId=${clientId}`);
+        }
+        return ok;
+    } catch (err: unknown) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        logger.error(`Error during ack signature verification: ${error.message}`);
+        return false;
+    }
+};
+
 export const verifySignatureMiddleware = async (
     httpMethod: string,
     endpointUrl: string,
@@ -470,6 +533,16 @@ export const convertToDate = (paymentExpired: string | number): Date | null => {
     }
 
     return null;
+};
+
+// Normalize a provider expiry value (Paylabs compact `yyyyMMddHHmmss` WIB, ISO, or epoch)
+// into an unambiguous ISO-8601 string carrying the +07:00 offset, for client-facing responses.
+// Storage keeps the raw provider value (`yyyyMMddHHmmss`); only the API/iframe payload is normalized.
+export const formatExpiredIso = (paymentExpired?: string | number | null): string | null => {
+    if (paymentExpired === undefined || paymentExpired === null || paymentExpired === "") return null;
+    const d = convertToDate(paymentExpired);
+    if (!d) return null;
+    return dayjs(d).tz("Asia/Jakarta").format(); // e.g. 2026-06-26T12:00:00+07:00
 };
 
 export const convertToDateOld = (paymentExpired: string): Date | null => {

@@ -15,7 +15,8 @@ export const listBlocked = async (req: Request, res: Response, next: NextFunctio
         const activeOnly = req.query.activeOnly !== "false";
         const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 50));
         const page = Math.max(1, Number(req.query.page) || 1);
-        const data = await listBlockedIps({ activeOnly, limit, page });
+        const search = typeof req.query.search === "string" ? req.query.search : "";
+        const data = await listBlockedIps({ activeOnly, limit, page, search });
         return res.status(200).json({ success: true, message: "Blocked IP list", data });
     } catch (error) {
         logger.error(`Error listing blocked IPs: ${(error as Error).message}`);

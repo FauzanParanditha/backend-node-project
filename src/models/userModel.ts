@@ -16,6 +16,8 @@ export interface IUser extends Document {
     forgotPasswordCodeValidation?: number;
     forgotPasswordCodeAttempts?: number;
     forgotPasswordCodeLockedUntil?: number;
+    loginAttempts?: number;
+    loginLockedUntil?: number | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -87,11 +89,21 @@ const userSchema = new mongoose.Schema<IUser>(
             type: Number,
             select: false,
         },
+        loginAttempts: {
+            type: Number,
+            default: 0,
+            select: false,
+        },
+        loginLockedUntil: {
+            type: Number,
+            default: null,
+            select: false,
+        },
     },
     {
         timestamps: true,
     },
 );
 
-const User = mongoose.model<IUser>("User", userSchema);
+const User = (mongoose.models.User as mongoose.Model<IUser>) || mongoose.model<IUser>("User", userSchema);
 export default User;

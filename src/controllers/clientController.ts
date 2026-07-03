@@ -44,7 +44,7 @@ export const getAllClient = async (req: Request, res: Response, next: NextFuncti
 };
 
 export const createClient = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
-    const { name, notifyUrl, userIds, active, availablePaymentIds } = req.body;
+    const { name, notifyUrl, userIds, active, availablePaymentIds, frameOrigins, requireSignedAck } = req.body;
     const { adminId } = req.admin!;
 
     try {
@@ -55,6 +55,8 @@ export const createClient = async (req: Request, res: Response, next: NextFuncti
             active,
             adminId,
             availablePaymentIds,
+            frameOrigins,
+            requireSignedAck,
         });
         if (error) return res.status(400).json({ success: false, message: error.details[0].message });
 
@@ -100,7 +102,7 @@ export const client = async (req: Request, res: Response, next: NextFunction): P
 
 export const updateClient = async (req: Request, res: Response, next: NextFunction): Promise<any> => {
     const { id } = req.params;
-    const { name, notifyUrl, userIds, active, availablePaymentIds } = req.body;
+    const { name, notifyUrl, userIds, active, availablePaymentIds, frameOrigins, requireSignedAck } = req.body;
 
     try {
         const { role, userId, adminId } = req.auth ?? {};
@@ -111,6 +113,8 @@ export const updateClient = async (req: Request, res: Response, next: NextFuncti
                 name,
                 notifyUrl,
                 active,
+                frameOrigins,
+                requireSignedAck,
             });
             if (error) {
                 return res.status(400).json({
@@ -143,6 +147,8 @@ export const updateClient = async (req: Request, res: Response, next: NextFuncti
                 active,
                 adminId,
                 availablePaymentIds,
+                frameOrigins,
+                requireSignedAck,
             });
             if (error) {
                 return res.status(400).json({

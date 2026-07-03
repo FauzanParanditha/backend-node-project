@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import logger from "../application/logger.js";
 import { sendPaymentSuccessAlert, sendSecurityAlert } from "../service/discordService.js";
-import { forwardCallback } from "../service/forwadCallback.js";
+import { forwardCallback } from "../service/forwardCallback.js";
 import { verifySignature } from "../service/paylabs.js";
 import * as paymentService from "../service/paymentService.js";
 import { logCallback } from "../utils/logCallback.js";

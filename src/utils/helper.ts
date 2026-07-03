@@ -80,7 +80,11 @@ export const toObjectId = (value: unknown): mongoose.Types.ObjectId => {
 // Configure multer for image uploads
 const storage = multer.diskStorage({
     destination: (_req, _file, cb) => {
-        cb(null, "./src/public/payment");
+        const dir = "./src/public/payment";
+        // Multer does not create the destination dir; ensure it exists (and any
+        // parents) so uploads don't 500 with ENOENT on a fresh/misconfigured host.
+        fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
     },
     filename: (_req, file, cb) => {
         cb(null, Date.now() + path.extname(file.originalname));
@@ -107,9 +111,11 @@ export const __dirname = dirname(__filename);
 
 // Ensure uploads directory exists
 export const ensureUploadsDirExists = (): void => {
-    const uploadsDir = path.join(__dirname, "../public");
+    // Create the payment uploads dir (and its parents) up front so the first
+    // image upload never hits a missing directory.
+    const uploadsDir = path.join(__dirname, "../public/payment");
     if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir);
+        fs.mkdirSync(uploadsDir, { recursive: true });
     }
 };
 

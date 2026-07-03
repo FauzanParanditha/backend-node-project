@@ -55,5 +55,5 @@ const vaSchema = new mongoose.Schema<IVirtualAccount>(
     { timestamps: true },
 );
 
-const VirtualAccount = mongoose.model<IVirtualAccount>("VirtualAccount", vaSchema);
+const VirtualAccount = (mongoose.models.VirtualAccount as mongoose.Model<IVirtualAccount>) || mongoose.model<IVirtualAccount>("VirtualAccount", vaSchema);
 export default VirtualAccount;

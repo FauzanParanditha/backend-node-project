@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import logger from "../application/logger.js";
+import { formatExpiredIso } from "../service/paylabs.js";
 import * as ccService from "../service/ccService.js";
 import { orderSchema } from "../validators/orderValidator.js";
 
@@ -17,7 +18,7 @@ export const createCreditCard = async (req: Request, res: Response, next: NextFu
         res.status(200).json({
             success: true,
             paymentLink: response.data.paymentActions.payUrl,
-            PaymentExpired: response.data.expiredTime,
+            paymentExpired: formatExpiredIso(response.data.expiredTime),
             paymentId: response.data.merchantTradeNo,
             totalAmount: response.data.amount,
             storeId: response.data.storeId,
