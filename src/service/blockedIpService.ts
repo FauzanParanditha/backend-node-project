@@ -20,6 +20,12 @@ const TRACKER_CLEANUP_MS = 60 * 1000; // sweep stale entries every minute
 export const SUSPICION_POINTS = {
     RECON_PROBE: 1,
     FAILED_LOGIN: 1,
+    // A request that trips a strict auth rate limiter is a stronger signal than
+    // a single failed login: it means the caller already blew past the allowed
+    // attempts for that (IP, email). Weighted so a persistent hammer on one
+    // endpoint eventually crosses the block threshold even when the per-account
+    // rate limiter keeps returning 429.
+    RATE_LIMIT: 2,
     CORS_REJECTION: 2,
     SCANNER_PATH: 5,
 } as const;
@@ -311,16 +317,30 @@ export const unblockIp = async (
     return block;
 };
 
+// Escape user input before using it in a RegExp so a search term like "1.2."
+// (dots are regex metachars) matches literally instead of as "any char".
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 export const listBlockedIps = async ({
     activeOnly = true,
     limit = 50,
     page = 1,
+    search = "",
 }: {
     activeOnly?: boolean;
     limit?: number;
     page?: number;
+    search?: string;
 }) => {
-    const filter = activeOnly ? { isActive: true } : {};
+    const filter: Record<string, unknown> = activeOnly ? { isActive: true } : {};
+
+    // Partial, case-insensitive IP search (e.g. "149.56" matches
+    // "149.56.111.46"). Trimmed; blank search is ignored.
+    const term = search.trim();
+    if (term) {
+        filter.ipAddress = { $regex: escapeRegExp(term), $options: "i" };
+    }
+
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
         BlockedIP.find(filter).sort({ blockedAt: -1 }).skip(skip).limit(limit).lean(),
