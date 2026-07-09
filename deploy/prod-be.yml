@@ -30,7 +30,7 @@ spec:
                 path: .env
         - name: payhub-cert
           persistentVolumeClaim:
-            claimName: pvc-payhub-cert
+            claimName: pvc-payhub-be
       containers:
         - name: payhub-be
           image: 'images.247.or.id/pandi/payment-aggregator-backend:latest'
