@@ -38,14 +38,16 @@ const logger = winston.createLogger({
     ],
 });
 
-// Only log to console in development mode
-if (process.env.NODE_ENV !== "production") {
-    logger.add(
-        new winston.transports.Console({
-            format: winston.format.simple(),
-        }),
-    );
-}
+// Log to stdout in every environment. DevOps captures the container's stdout
+// and persists it to an NFS-backed file, so production MUST emit to stdout too
+// (previously stdout was dev-only, which meant prod stdout was empty and any
+// stdout-capture pipeline caught nothing). The File transports above remain as
+// a direct-to-disk option when LOG_DIR is pointed at a mount.
+logger.add(
+    new winston.transports.Console({
+        format: winston.format.simple(),
+    }),
+);
 
 export default logger;
 
