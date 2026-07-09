@@ -23,8 +23,8 @@ spec:
         # admin creds) — backed by a Secret, not a ConfigMap. Still mounted as
         # /app/.env so dotenv keeps working without code changes.
         - name: payhub-be-env
-          secret:
-            secretName: payhub-be-env
+          configMap:
+            name: payhub-be-config
             items:
               - key: .env
                 path: .env
