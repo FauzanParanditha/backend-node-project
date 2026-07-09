@@ -52,6 +52,16 @@ spec:
               mountPath: /app/public.pem
               subPath: payhub-cert/public.pem
           imagePullPolicy: Always
+      hostAliases:
+        - ip: 10.2.11.66
+          hostnames:
+            - mongo1
+        - ip: 10.2.11.67
+          hostnames:
+            - mongo2
+        - ip: 10.2.11.68
+          hostnames:
+            - mongo3
       restartPolicy: Always
       imagePullSecrets:
         - name: secret-prod
