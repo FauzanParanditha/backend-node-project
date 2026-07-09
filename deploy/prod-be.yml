@@ -1,0 +1,57 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: payhub-be
+  namespace: prod
+  labels:
+    app: proxy-payhub-be
+    env: prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payhub-be
+      env: prod
+  template:
+    metadata:
+      labels:
+        app: payhub-be
+        env: prod
+    spec:
+      volumes:
+        # Env holds secrets (DB URI, mail/Xendit keys, JWT private keys, seed
+        # admin creds) — backed by a Secret, not a ConfigMap. Still mounted as
+        # /app/.env so dotenv keeps working without code changes.
+        - name: payhub-be-env
+          secret:
+            secretName: payhub-be-env
+            items:
+              - key: .env
+                path: .env
+        - name: payhub-cert
+          persistentVolumeClaim:
+            claimName: pvc-payhub-cert
+      containers:
+        - name: payhub-be
+          image: 'images.247.or.id/pandi/payment-aggregator-backend:latest'
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+          volumeMounts:
+            - name: payhub-be-env
+              mountPath: /app/.env
+              subPath: .env
+            - name: payhub-cert
+              mountPath: /app/public-key.pem
+              subPath: payhub-cert/public-key.pem
+            - name: payhub-cert
+              mountPath: /app/private-key.pem
+              subPath: payhub-cert/private-key.pem
+            - name: payhub-cert
+              mountPath: /app/public.pem
+              subPath: payhub-cert/public.pem
+          imagePullPolicy: Always
+      restartPolicy: Always
+      imagePullSecrets:
+        - name: secret-prod

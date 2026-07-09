@@ -1,13 +1,13 @@
 stages:
     - build
     # - test
-    # - tag
+    - tag
     - deploy
 
 ############################ FOR BRANCH dev ###############################
 #build
 build-pa-be:
-    image: docker:stable
+    image: images.247.or.id/pandi/kubernetes/docker:24-cli
     variables:
         DOCKER_TLS_CERTDIR: ""
     services:
@@ -50,3 +50,58 @@ deploy-pa-be:
         - dev
     tags:
         - bogor
+
+############################# FOR BRANCH master ###############################
+build-pg-be-prod:
+    image: images.247.or.id/pandi/kubernetes/docker:24-cli
+    variables:
+        DOCKER_TLS_CERTDIR: ""
+        BUILDKIT_PROGRESS: "plain"
+    services:
+        - images.247.or.id/pandi/kubernetes/docker:24-dind
+    stage: build
+    script:
+        - ls
+        - docker login -u $DOCKER_USER_K8S -p $DOCKER_PASSWORD_K8S $CI_REGISTRY
+        - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+        - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+        - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:latest
+        - docker push $CI_REGISTRY_IMAGE:latest
+    only:
+        - master
+    tags:
+        - bogor
+
+tag-pg-be-prod:
+  image: images.247.or.id/pandi/kubernetes/docker:24-cli
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  services:
+    - images.247.or.id/pandi/kubernetes/docker:24-dind
+  stage: tag
+  script:
+    - echo "$CI_COMMIT_TAG" > version.txt
+    - 'echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" -u "$CI_REGISTRY_USER" --password-stdin'
+    - docker pull $CI_REGISTRY_IMAGE:admin-$CI_COMMIT_SHORT_SHA
+    - docker tag $CI_REGISTRY_IMAGE:admin-$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:admin-$CI_COMMIT_REF_NAME
+    - docker push $CI_REGISTRY_IMAGE:admin-$CI_COMMIT_REF_NAME
+    - echo $CI_COMMIT_TAG
+    - echo $CI_COMMIT_SHORT_SHA
+  artifacts:
+    paths:
+    - version.txt
+  only:
+    - tags
+  tags:
+    - bogor
+
+deploy-pg-be-prod:
+  image: images.247.or.id/pandi/kubectl:bogor
+  stage: deploy
+  script:
+    - sed -i "s/payment-aggregator-backend:latest/payment-aggregator-backend:$(cat version.txt)/g" "deploy/prod-be.yml"
+    - kubectl apply -f deploy/prod-be.yml
+  only:
+    - tags
+  tags:
+    - bogor
