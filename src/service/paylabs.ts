@@ -130,13 +130,22 @@ export const verifySignature = (
         return false;
     }
 
-    const verify = crypto.createVerify("RSA-SHA256");
-    verify.update(stringContent);
+    try {
+        const verify = crypto.createVerify("RSA-SHA256");
+        verify.update(stringContent);
 
-    const isVerified = verify.verify(publicKey, Buffer.from(signature, "base64"));
-    logger.info(`verify result: ${isVerified}`);
-
-    return isVerified;
+        const isVerified = verify.verify(publicKey, Buffer.from(signature, "base64"));
+        logger.info(`verify result: ${isVerified}`);
+        return isVerified;
+    } catch (err: unknown) {
+        // A malformed public key (e.g. OpenSSL 3 "DECODER routines::unsupported")
+        // or a malformed signature makes verify() THROW rather than return false.
+        // Treat it as a failed verification (-> 401) instead of letting it bubble
+        // up to a 500, so a bad key/sig doesn't crash the webhook or page on-call.
+        const message = err instanceof Error ? err.message : String(err);
+        logger.error(`Signature verification threw (treated as invalid): ${message}`);
+        return false;
+    }
 };
 
 export const createSignatureForward = (
