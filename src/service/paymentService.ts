@@ -108,8 +108,17 @@ export const callbackPaylabs = async ({ payload }: { payload: Record<string, any
             return { responseHeaders, payloadResponse };
         }
 
+        const isPaidCallback = notificationData.status === "02" || notificationData.status === "00";
+        const isExpiredByTime = Boolean(expiredDateTime && currentDateTime > expiredDateTime);
+
         const payloadResponseError = responsePayload("orderExpired", "order expired");
-        if (expiredDateTime && currentDateTime > expiredDateTime) {
+        // Expiry only wins when the callback is NOT a successful payment. A paid
+        // callback that arrives after our local expiry window (provider retried a
+        // paid notification, or the callback was delayed — e.g. during an outage)
+        // must still mark the order paid: the money was received, so the local
+        // clock must not override it. Genuinely-unpaid callbacks past expiry are
+        // still treated as expired.
+        if (isExpiredByTime && !isPaidCallback) {
             order.paymentStatus = "expired";
 
             broadcastPaymentUpdate({ paymentId: sanitizedPaymentId, status: "expired" });
@@ -120,11 +129,16 @@ export const callbackPaylabs = async ({ payload }: { payload: Record<string, any
 
         switch (notificationData.status) {
             case "02":
+            case "00":
                 order.paymentStatus = "paid";
                 order.totalAmount = notificationData.amount;
                 order.paymentType = notificationData.paymentType;
                 order.paymentLink = undefined;
-                order.paymentActions = undefined;
+                // Keep an audit marker when a paid callback is accepted after the
+                // local expiry window (consistent with the cron pre-check).
+                order.paymentActions = isExpiredByTime
+                    ? ({ correctedFromExpired: true } as unknown as typeof order.paymentActions)
+                    : undefined;
                 order.qris = undefined;
                 order.va = undefined;
                 order.vaSnap = undefined;
@@ -143,6 +157,9 @@ export const callbackPaylabs = async ({ payload }: { payload: Record<string, any
                 await order.save();
 
                 broadcastPaymentUpdate({ paymentId: sanitizedPaymentId, status: "paid" });
+                if (isExpiredByTime) {
+                    logger.warn(`Order ${paymentId} paid via callback AFTER expiry — corrected expired -> paid`);
+                }
                 break;
 
             case "09":
