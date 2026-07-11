@@ -29,10 +29,13 @@ const validateMailConfig = (): void => {
     }
 };
 
-// Generate the forgot password link
+// Generate the forgot password link.
+// Points to /auth/reset-password (the page that consumes email+code and shows
+// the new-password form), NOT /auth/forgot-password (the send-code step, which
+// ignores the code). Email is URL-encoded so "+", "&", etc. survive.
 export const generateForgotPasswordLink = (email: string, code: string): string => {
     const baseUrl = process.env.FRONTEND_URL;
-    return `${baseUrl}/auth/forgot-password?email=${email}&code=${code}`;
+    return `${baseUrl}/auth/reset-password?email=${encodeURIComponent(email)}&code=${code}`;
 };
 
 // Utility function to encode HTML to Base64

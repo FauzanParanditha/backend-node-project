@@ -490,7 +490,9 @@ export const sendForgotPasswordService = async (email: string) => {
         throw new ResponseError(429, getForgotPasswordLockMessage(existAdmin.forgotPasswordCodeLockedUntil));
     }
 
-    const codeValue = Math.floor(Math.random() * 100000).toString();
+    // Cryptographically secure 6-digit code (100000-999999). Math.random() is
+    // predictable and could produce <5 digits — unsafe for a reset token.
+    const codeValue = crypto.randomInt(100000, 1000000).toString();
     const url = generateForgotPasswordLink(existAdmin.email, codeValue);
     await sendForgotPasswordEmail(url, existAdmin.email, existAdmin.fullName);
 
