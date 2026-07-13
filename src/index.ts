@@ -2,11 +2,16 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { connectDB } from "./application/db.js";
 import logger, { flushLogsAndExit } from "./application/logger.js";
+import { assertStartupConfigOrExit } from "./application/startupCheck.js";
 import { web } from "./application/web.js";
 import { wss } from "./application/websocket_server.js";
 import { refreshBlockCache } from "./service/blockedIpService.js";
 
 dotenv.config();
+
+// Fail fast & loud on missing env / corrupted Paylabs keys instead of serving
+// mystery 500s at request time. Refuses to start (process.exit 1) if invalid.
+await assertStartupConfigOrExit(flushLogsAndExit);
 
 import { activeTask, serverIsClosing, setServerIsClosing } from "./application/serverState.js";
 

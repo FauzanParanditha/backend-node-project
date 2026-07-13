@@ -10,6 +10,7 @@ import path, { dirname } from "path";
 import swaggerUi from "swagger-ui-express";
 import { fileURLToPath } from "url";
 import logger from "../application/logger.js";
+import { getConfigHealth } from "../application/startupCheck.js";
 import { ResponseError } from "../error/responseError.js";
 import apiLogger from "../middlewares/apiLog.js";
 import { blockedIpMiddleware } from "../middlewares/blockedIpMiddleware.js";
@@ -48,6 +49,22 @@ export const web = express();
 
 // K8s: trust 1 hop proxy (Ingress) - paling umum & aman
 web.set("trust proxy", 1);
+
+// Health / readiness probe. Placed FIRST so it is never blocked, rate-limited,
+// or authenticated. Reports DB connectivity plus the boot-time config/key check
+// so k8s probes and on-call can tell at a glance whether the pod is serviceable.
+// 200 = healthy, 503 = degraded (DB down or invalid config/keys).
+web.get(["/healthz", "/readyz"], (_req, res) => {
+    const dbConnected = mongoose.connection.readyState === 1;
+    const config = getConfigHealth();
+    const healthy = dbConnected && config.envOk && config.keysOk;
+    res.status(healthy ? 200 : 503).json({
+        status: healthy ? "ok" : "degraded",
+        db: dbConnected ? "up" : "down",
+        config: { envOk: config.envOk, keysOk: config.keysOk, checkedAt: config.checkedAt },
+        uptimeSeconds: Math.round(process.uptime()),
+    });
+});
 
 // logger.info(`TRUSTED_PROXY_IP=${process.env.TRUSTED_PROXY_IP}`);
 
