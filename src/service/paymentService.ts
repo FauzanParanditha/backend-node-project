@@ -13,6 +13,7 @@ import {
     generateRequestId,
     merchantId,
     paylabsApiUrl,
+    PAYLABS_TIMEOUT_MS,
 } from "./paylabs.js";
 
 interface OrderData {
@@ -50,7 +51,7 @@ export const createPaymentLink = async (order: OrderData) => {
         }
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/h5/createLink", requestBody, requestId);
-        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/h5/createLink`, requestBody, { headers });
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/h5/createLink`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         logger.info("Payment link created successfully: ", response.data);
         return response.data;

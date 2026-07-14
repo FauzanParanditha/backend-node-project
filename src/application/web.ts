@@ -50,16 +50,25 @@ export const web = express();
 // K8s: trust 1 hop proxy (Ingress) - paling umum & aman
 web.set("trust proxy", 1);
 
-// Health / readiness probe. Placed FIRST so it is never blocked, rate-limited,
-// or authenticated. Reports DB connectivity plus the boot-time config/key check
-// so k8s probes and on-call can tell at a glance whether the pod is serviceable.
-// 200 = healthy, 503 = degraded (DB down or invalid config/keys).
-web.get(["/healthz", "/readyz"], (_req, res) => {
+// Health probes. Placed FIRST so they are never blocked, rate-limited, or
+// authenticated.
+//
+// Liveness (/healthz): is the process up and the event loop responsive? It does
+// NOT depend on the DB, so a transient MongoDB outage does not trigger mass pod
+// restarts (restarting wouldn't fix an external dependency anyway).
+web.get("/healthz", (_req, res) => {
+    res.status(200).json({ status: "ok", uptimeSeconds: Math.round(process.uptime()) });
+});
+
+// Readiness (/readyz): only serve traffic when the DB is connected and the
+// boot-time config/key check passed. A 503 pulls the pod out of the load
+// balancer WITHOUT restarting it. 200 = ready, 503 = not ready.
+web.get("/readyz", (_req, res) => {
     const dbConnected = mongoose.connection.readyState === 1;
     const config = getConfigHealth();
-    const healthy = dbConnected && config.envOk && config.keysOk;
-    res.status(healthy ? 200 : 503).json({
-        status: healthy ? "ok" : "degraded",
+    const ready = dbConnected && config.envOk && config.keysOk;
+    res.status(ready ? 200 : 503).json({
+        status: ready ? "ready" : "not-ready",
         db: dbConnected ? "up" : "down",
         config: { envOk: config.envOk, keysOk: config.keysOk, checkedAt: config.checkedAt },
         uptimeSeconds: Math.round(process.uptime()),

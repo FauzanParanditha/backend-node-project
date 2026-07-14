@@ -24,6 +24,7 @@ import {
     generateTimestampSnap,
     merchantId,
     paylabsApiUrl,
+    PAYLABS_TIMEOUT_MS,
 } from "./paylabs.js";
 
 
@@ -104,7 +105,7 @@ export const createVASNAP = async ({
             "X-IP-ADDRESS": clientIp.includes("::ffff:") ? clientIp.split("::ffff:")[1] : clientIp,
         };
 
-        const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/create-va`, requestBody, { headers });
+        const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/create-va`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.responseCode.charAt(0) !== "2") {
             logger.error("Paylabs error: ", response.data ? response.data.responseMessage : "failed to create payment");
@@ -173,7 +174,7 @@ export const vaSNAPOrderStatus = async ({ id }: { id: string }) => {
             "X-REQUEST-ID": requestId,
         };
 
-        const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/status`, requestBody, { headers });
+        const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/status`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.responseCode.charAt(0) !== "2") {
             logger.error(
@@ -388,7 +389,7 @@ export const updateVASNAP = async ({
             "X-IP-ADDRESS": clientIp.includes("::ffff:") ? clientIp.split("::ffff:")[1] : clientIp,
         };
 
-        const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/update-va`, requestBody, { headers });
+        const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/update-va`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.responseCode.charAt(0) !== "2") {
             logger.error("Paylabs error: ", response.data ? response.data.responseMessage : "failed to update payment");
@@ -474,7 +475,7 @@ export const deleteVASNAP = async ({ id, req }: { id: string; req: Request }) =>
             "X-IP-ADDRESS": clientIp.includes("::ffff:") ? clientIp.split("::ffff:")[1] : clientIp,
         };
 
-        const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/delete-va`, requestBody, { headers });
+        const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/delete-va`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.responseCode.charAt(0) !== "2") {
             logger.error("Paylabs error: ", response.data ? response.data.responseMessage : "failed to delete payment");

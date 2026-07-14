@@ -13,6 +13,7 @@ import {
     generateRequestId,
     merchantId,
     paylabsApiUrl,
+    PAYLABS_TIMEOUT_MS,
 } from "./paylabs.js";
 
 export const createQris = async ({
@@ -82,7 +83,7 @@ export const createQris = async ({
         }
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/qris/create", requestBody, requestId);
-        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/qris/create`, requestBody, { headers });
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/qris/create`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.errCode !== "0") {
             const errMsg = response.data ? `error: ${response.data.errCode}` : "failed to create payment";
@@ -141,7 +142,7 @@ export const qrisOrderStatus = async ({ id }: { id: string }) => {
         }
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/qris/query", requestBody, requestId);
-        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/qris/query`, requestBody, { headers });
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/qris/query`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.errCode !== "0") {
             logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to query payment status");
@@ -214,7 +215,7 @@ export const cancelQris = async ({ id }: { id: string }) => {
         }
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/qris/cancel", requestBody, requestId);
-        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/qris/cancel`, requestBody, { headers });
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/qris/cancel`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.errCode !== "0") {
             logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to cancel payment");

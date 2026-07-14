@@ -17,6 +17,11 @@ dayjs.extend(timezone);
 dotenv.config();
 export const paylabsApiUrl: string | undefined = process.env.PAYLABS_API_URL;
 export const merchantId: string | undefined = process.env.PAYLABS_MERCHANT_ID;
+
+// Hard timeout for outbound calls to Paylabs. Without it a hung Paylabs endpoint
+// would leave create/query/cancel requests pending indefinitely — connections
+// pile up and the customer waits forever. Overridable via env for tuning.
+export const PAYLABS_TIMEOUT_MS: number = Number(process.env.PAYLABS_TIMEOUT_MS) || 15000;
 export const generateRequestId = (): string => uuid4();
 export const generateMerchantTradeNo = (): string => `PL-${crypto.randomBytes(8).toString("hex")}`;
 

@@ -5,7 +5,7 @@ import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
 import { generateOrderId, validateOrderProducts } from "../utils/helper.js";
 import { validateEMoneyRefund, validateEMoneyRequest, validateEmoneyStatus } from "../validators/paymentValidator.js";
-import { generateHeaders, generateMerchantTradeNo, generateRequestId, merchantId, paylabsApiUrl } from "./paylabs.js";
+import { generateHeaders, generateMerchantTradeNo, generateRequestId, merchantId, paylabsApiUrl, PAYLABS_TIMEOUT_MS } from "./paylabs.js";
 
 
 export const createEMoney = async ({
@@ -79,7 +79,7 @@ export const createEMoney = async ({
         }
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/ewallet/create", requestBody, requestId);
-        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/ewallet/create`, requestBody, { headers });
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/ewallet/create`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.errCode !== "0") {
             logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to create payment");
@@ -134,7 +134,7 @@ export const eMoneyOrderStatus = async ({ id }: { id: string }) => {
         }
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/ewallet/query", requestBody, requestId);
-        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/ewallet/query`, requestBody, { headers });
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/ewallet/query`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.errCode !== "0") {
             logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to query payment status");
@@ -208,7 +208,7 @@ export const refundEmoney = async ({ id, validatedRequest }: { id: string; valid
         }
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/ewallet/refund", requestBody, requestId);
-        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/ewallet/refund`, requestBody, { headers });
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/ewallet/refund`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.errCode !== "0") {
             logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to process refund");

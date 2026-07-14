@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import fs from "fs";
+import { sendDiscordAlert } from "../service/discordService.js";
 import logger from "./logger.js";
 
 // Boot-time configuration validation.
@@ -117,6 +118,27 @@ export const assertStartupConfigOrExit = async (
     if (!result.ok) {
         logger.error("[startup-check] FATAL: configuration invalid, refusing to start:");
         for (const f of result.fatal) logger.error(`[startup-check]   - ${f}`);
+
+        // Proactively notify on-call: a refuse-to-start crash-loops silently in
+        // k8s otherwise. Best-effort and time-bounded so a slow/unreachable
+        // webhook never delays the exit.
+        await Promise.race([
+            sendDiscordAlert(process.env.DISCORD_WEBHOOK_URL_ERROR, {
+                title: "🚨 Backend refused to start (invalid configuration)",
+                description:
+                    "The backend failed its boot-time config/key check and will crash-loop until fixed. See ONCALL-RUNBOOK §3.",
+                color: 15158332, // Red
+                fields: [
+                    {
+                        name: "Problems",
+                        value: "```\n" + result.fatal.slice(0, 10).join("\n").substring(0, 900) + "\n```",
+                        inline: false,
+                    },
+                ],
+            }).catch(() => undefined),
+            new Promise((resolve) => setTimeout(resolve, 4000)),
+        ]);
+
         await flushAndExit(1);
         return;
     }

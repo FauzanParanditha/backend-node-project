@@ -7,7 +7,7 @@ import type { PaymentPartner } from "../types/express.js";
 import { generateOrderId, validateOrderProducts } from "../utils/helper.js";
 import { validateGenerateVA, validateStaticVA, validateVaStatus } from "../validators/paymentValidator.js";
 import { sendPartnerApiErrorAlert } from "./discordService.js";
-import { generateHeaders, generateMerchantTradeNo, generateRequestId, merchantId, paylabsApiUrl } from "./paylabs.js";
+import { generateHeaders, generateMerchantTradeNo, generateRequestId, merchantId, paylabsApiUrl, PAYLABS_TIMEOUT_MS } from "./paylabs.js";
 
 export const createVa = async ({
     validatedProduct,
@@ -77,7 +77,7 @@ export const createVa = async ({
         }
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/va/create", requestBody, requestId);
-        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/va/create`, requestBody, { headers });
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/va/create`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.errCode !== "0") {
             const errMsg = response.data ? `error: ${response.data.errCode}` : "failed to create payment";
@@ -136,7 +136,7 @@ export const vaOrderStatus = async ({ id }: { id: string }) => {
         }
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/va/query", requestBody, requestId);
-        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/va/query`, requestBody, { headers });
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/va/query`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.errCode !== "0") {
             logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to query payment status");
@@ -201,7 +201,7 @@ export const createVaStatic = async ({
         }
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/staticva/create", requestBody, requestId);
-        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/staticva/create`, requestBody, { headers });
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/staticva/create`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.errCode !== "0") {
             logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to create static VA");
