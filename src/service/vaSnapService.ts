@@ -106,6 +106,8 @@ export const createVASNAP = async ({
         };
 
         const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/create-va`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
+        // Full raw Paylabs response (incl. fee/vatFee breakdown) for inspection.
+        logger.info(`VA SNAP create raw response: ${JSON.stringify(response.data)}`);
 
         if (!response.data || response.data.responseCode.charAt(0) !== "2") {
             logger.error("Paylabs error: ", response.data ? response.data.responseMessage : "failed to create payment");

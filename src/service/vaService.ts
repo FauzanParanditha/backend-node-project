@@ -78,6 +78,8 @@ export const createVa = async ({
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/va/create", requestBody, requestId);
         const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/va/create`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
+        // Full raw Paylabs response (incl. fee/vatFee breakdown) for inspection.
+        logger.info(`VA create raw response: ${JSON.stringify(response.data)}`);
 
         if (!response.data || response.data.errCode !== "0") {
             const errMsg = response.data ? `error: ${response.data.errCode}` : "failed to create payment";
@@ -202,6 +204,8 @@ export const createVaStatic = async ({
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/staticva/create", requestBody, requestId);
         const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/staticva/create`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
+        // Full raw Paylabs response (incl. fee/vatFee breakdown) for inspection.
+        logger.info(`Static VA create raw response: ${JSON.stringify(response.data)}`);
 
         if (!response.data || response.data.errCode !== "0") {
             logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to create static VA");

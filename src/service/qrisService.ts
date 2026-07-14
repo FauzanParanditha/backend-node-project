@@ -84,6 +84,8 @@ export const createQris = async ({
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/qris/create", requestBody, requestId);
         const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/qris/create`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
+        // Full raw Paylabs response (incl. fee/vatFee breakdown) for inspection.
+        logger.info(`QRIS create raw response: ${JSON.stringify(response.data)}`);
 
         if (!response.data || response.data.errCode !== "0") {
             const errMsg = response.data ? `error: ${response.data.errCode}` : "failed to create payment";
