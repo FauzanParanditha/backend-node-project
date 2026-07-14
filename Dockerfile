@@ -35,6 +35,6 @@ COPY --from=builder /app/src/application/mail ./dist/application/mail
 # Copy public assets (SVGs, images served via /public route) into dist/public
 COPY --from=builder /app/src/public ./dist/public
 
-EXPOSE 5000
+EXPOSE 3000
 
 CMD ["node", "dist/index.js"]
