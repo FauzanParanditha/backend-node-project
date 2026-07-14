@@ -36,7 +36,7 @@ spec:
           image: 'images.247.or.id/pandi/payment-aggregator-backend:latest'
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 3000
               protocol: TCP
           volumeMounts:
             - name: payhub-be-env
