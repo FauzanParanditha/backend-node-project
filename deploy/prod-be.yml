@@ -51,9 +51,9 @@ spec:
             - name: payhub-cert
               mountPath: /app/public.pem
               subPath: payhub-cert/public.pem
-            - name: payhub-cert
-              mountPath: /app/logs
-              subPath: logs
+            # - name: payhub-cert
+            #   mountPath: /app/logs
+            #   subPath: logs
           imagePullPolicy: Always
       hostAliases:
         - ip: 10.2.11.66
