@@ -15,7 +15,6 @@ import {
     validateVaSNAPStatus,
 } from "../validators/paymentValidator.js";
 import {
-    addMinutesToTimestamp,
     createSignature,
     generateCustomerNumber,
     generateMerchantTradeNo,
@@ -360,7 +359,11 @@ export const updateVASNAP = async ({
             paymentStatus: validatedUpdateData.paymentStatus || existingOrder.paymentStatus,
         };
 
-        const newExpired = addMinutesToTimestamp(existingOrder.paymentExpired as string, 30);
+        // Set a fresh expiry from now based on the client's `expire` (minutes,
+        // unified across rails); default 24h. Replaces the old hardcoded +30 min
+        // so update genuinely lets the merchant reset the VA's validity window.
+        const expireMinutes = validatedUpdateData.expire ? Number(validatedUpdateData.expire) : 1440;
+        const newExpired = generateTimestampSnap(expireMinutes);
 
         const timestamp = generateTimestamp();
         const requestId = uuid4();
@@ -373,7 +376,8 @@ export const updateVASNAP = async ({
             virtualAccountPhone: updatedOrderData.phoneNumber,
             trxId: generateMerchantTradeNo(),
             totalAmount: {
-                value: String(updatedOrderData.totalAmount),
+                // 2-decimal string per Paylabs spec, consistent with create.
+                value: Number(updatedOrderData.totalAmount).toFixed(2),
                 currency: "IDR",
             },
             expiredDate: newExpired,
