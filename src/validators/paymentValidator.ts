@@ -405,10 +405,14 @@ export const validatePaymentVASNAP = (data: Record<string, unknown>): joi.Valida
                 paymentType: joi.string().max(20).optional(),
                 storeId: joi.string().max(30).optional(),
             })
+            .unknown(true)
             .optional(),
     });
 
-    return schema.validate(data);
+    // Same rationale as validateCallback: SNAP payment notifications come from
+    // Paylabs (signature-verified) and may gain new fields over time — tolerate
+    // unknown keys so a new field never rejects a paid-VA notification.
+    return schema.validate(data, { allowUnknown: true });
 };
 
 export const validateCreditCardRequest = (data: Record<string, unknown>): joi.ValidationResult => {
