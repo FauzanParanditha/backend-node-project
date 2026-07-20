@@ -1,11 +1,10 @@
 import type { PaymentPartner } from "../types/express.js";
-import axios from "axios";
 import logger from "../application/logger.js";
 import { ResponseError } from "../error/responseError.js";
 import Order from "../models/orderModel.js";
 import { generateOrderId, validateOrderProducts } from "../utils/helper.js";
 import { validateCCStatus, validateCreditCardRequest } from "../validators/paymentValidator.js";
-import { generateHeaders, generateMerchantTradeNo, generateRequestId, merchantId, paylabsApiUrl, PAYLABS_TIMEOUT_MS } from "./paylabs.js";
+import { generateHeaders, generateMerchantTradeNo, generateRequestId, merchantId, paylabsApiUrl, PAYLABS_TIMEOUT_MS, paylabsHttp } from "./paylabs.js";
 
 
 export const createCC = async ({
@@ -76,9 +75,7 @@ export const createCC = async ({
         }
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/cc/create", requestBody, requestId);
-        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/cc/create`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
-        // Full raw Paylabs response (incl. fee/vatFee breakdown) for inspection.
-        logger.info(`CC create raw response: ${JSON.stringify(response.data)}`);
+        const response = await paylabsHttp.post(`${paylabsApiUrl}/payment/v2.1/cc/create`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.errCode !== "0") {
             logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to create payment");
@@ -133,7 +130,7 @@ export const ccOrderStatus = async ({ id }: { id: string }) => {
         }
 
         const { headers } = generateHeaders("POST", "/payment/v2.1/cc/query", requestBody, requestId);
-        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/cc/query`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
+        const response = await paylabsHttp.post(`${paylabsApiUrl}/payment/v2.1/cc/query`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
 
         if (!response.data || response.data.errCode !== "0") {
             logger.error("Paylabs error: ", response.data ? response.data.errCode : "failed to query payment status");

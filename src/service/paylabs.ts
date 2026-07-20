@@ -1,3 +1,4 @@
+import axios from "axios";
 import crypto from "crypto";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";
@@ -22,6 +23,30 @@ export const merchantId: string | undefined = process.env.PAYLABS_MERCHANT_ID;
 // would leave create/query/cancel requests pending indefinitely — connections
 // pile up and the customer waits forever. Overridable via env for tuning.
 export const PAYLABS_TIMEOUT_MS: number = Number(process.env.PAYLABS_TIMEOUT_MS) || 15000;
+
+// Shared HTTP client for ALL outbound Paylabs calls (create/query/cancel/refund/
+// update/delete/SNAP). Centralizes the timeout and optional raw request/response
+// logging. Set PAYLABS_LOG_RAW=true to log method/url/status/body of every call
+// — OFF by default so prod logs stay clean; enable only while investigating.
+export const paylabsHttp = axios.create({ timeout: PAYLABS_TIMEOUT_MS });
+paylabsHttp.interceptors.response.use(
+    (response) => {
+        if (process.env.PAYLABS_LOG_RAW === "true") {
+            const { method, url } = response.config;
+            logger.info(
+                `Paylabs ${String(method).toUpperCase()} ${url} -> ${response.status}: ${JSON.stringify(response.data)}`,
+            );
+        }
+        return response;
+    },
+    (error: unknown) => {
+        const cfg = (error as { config?: { method?: string; url?: string } }).config;
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error(`Paylabs request failed ${String(cfg?.method).toUpperCase()} ${cfg?.url}: ${message}`);
+        return Promise.reject(error);
+    },
+);
+
 export const generateRequestId = (): string => uuid4();
 export const generateMerchantTradeNo = (): string => `PL-${crypto.randomBytes(8).toString("hex")}`;
 
