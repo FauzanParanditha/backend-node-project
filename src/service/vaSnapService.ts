@@ -67,18 +67,29 @@ export const createVASNAP = async ({
         const merchantTradeNo = generateMerchantTradeNo();
         const customerNo = generateCustomerNumber();
 
-        const requestBody = {
-            partnerServiceId: `  ${merchantId}`,
+        // Expiry (minutes from now) is client-configurable via `expire`; default
+        // 300. Emitted as ISO-8601, matching the Paylabs SNAP spec.
+        const expireMinutes = validatedProduct.expire ? Number(validatedProduct.expire) : 300;
+
+        const requestBody: Record<string, any> = {
+            // partnerServiceId is 8 chars, space-padded on the left (Paylabs spec).
+            partnerServiceId: String(merchantId).padStart(8, " "),
             customerNo,
             virtualAccountNo: `${merchantId}${customerNo}`,
             virtualAccountName: requestBodyForm.payer,
             virtualAccountPhone: requestBodyForm.phoneNumber,
             trxId: merchantTradeNo,
             totalAmount: {
-                value: String(requestBodyForm.totalAmount),
+                // Paylabs expects a 2-decimal string, e.g. "10000.00".
+                value: Number(requestBodyForm.totalAmount).toFixed(2),
                 currency: "IDR",
             },
-            expiredDate: generateTimestampSnap(300),
+            // Client-selectable VA transaction type (single/multiple/static);
+            // only sent when provided, otherwise Paylabs applies its default.
+            ...(validatedProduct.virtualAccountTrxType && {
+                virtualAccountTrxType: validatedProduct.virtualAccountTrxType,
+            }),
+            expiredDate: generateTimestampSnap(expireMinutes),
             additionalInfo: {
                 paymentType: requestBodyForm.paymentType,
                 ...(requestBodyForm.storeId && { storeId: requestBodyForm.storeId }),
@@ -106,6 +117,8 @@ export const createVASNAP = async ({
         };
 
         const response = await axios.post(`${paylabsApiUrl}/api/v1.0/transfer-va/create-va`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
+        // Full raw Paylabs response (incl. fee/vatFee breakdown) for inspection.
+        logger.info(`VA SNAP create raw response: ${JSON.stringify(response.data)}`);
 
         if (!response.data || response.data.responseCode.charAt(0) !== "2") {
             logger.error("Paylabs error: ", response.data ? response.data.responseMessage : "failed to create payment");

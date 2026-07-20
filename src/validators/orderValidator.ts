@@ -25,6 +25,10 @@ export const orderSchema = joi.object({
     paymentMethod: joi.string().required(),
     storeId: joi.string().optional(),
     expire: joi.number().min(1).max(1440).optional(),
+    // VA SNAP only: lets the client choose the VA transaction type
+    // (e.g. "C" close/single-use). Single char per Paylabs spec; ignored by
+    // other rails. Omitted downstream when not provided (Paylabs uses default).
+    virtualAccountTrxType: joi.string().max(1).optional(),
     paymentType: joi.string().required(),
 })
     // Silently drop fields that are not part of the order payload. The merchant
