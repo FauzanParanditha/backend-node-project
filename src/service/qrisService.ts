@@ -82,15 +82,15 @@ export const createQris = async ({
             throw new ResponseError(400, error.details.map((err: Record<string, any>) => err.message).join(", "));
         }
 
-        const { headers } = generateHeaders("POST", "/payment/v2.1/qris/create", requestBody, requestId);
-        const response = await axios.post(`${paylabsApiUrl}/payment/v2.1/qris/create`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
+        const { headers } = generateHeaders("POST", "/payment/v2.3/qris/create", requestBody, requestId);
+        const response = await axios.post(`${paylabsApiUrl}/payment/v2.3/qris/create`, requestBody, { headers, timeout: PAYLABS_TIMEOUT_MS });
         // Full raw Paylabs response (incl. fee/vatFee breakdown) for inspection.
         logger.info(`QRIS create raw response: ${JSON.stringify(response.data)}`);
 
         if (!response.data || response.data.errCode !== "0") {
             const errMsg = response.data ? `error: ${response.data.errCode}` : "failed to create payment";
             logger.error(`Paylabs error: ${errMsg}`);
-            sendPartnerApiErrorAlert("Paylabs (QRIS)", "/payment/v2.1/qris/create", errMsg, requestBody).catch(console.error);
+            sendPartnerApiErrorAlert("Paylabs (QRIS)", "/payment/v2.3/qris/create", errMsg, requestBody).catch(console.error);
             throw new ResponseError(400, errMsg);
         }
 
@@ -108,7 +108,7 @@ export const createQris = async ({
         return { response, result };
     } catch (error: any) {
         if (axios.isAxiosError(error)) {
-            sendPartnerApiErrorAlert("Paylabs Network (QRIS)", "/payment/v2.1/qris/create", error.message, requestBody).catch(
+            sendPartnerApiErrorAlert("Paylabs Network (QRIS)", "/payment/v2.3/qris/create", error.message, requestBody).catch(
                 console.error,
             );
         }
