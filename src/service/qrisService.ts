@@ -43,7 +43,8 @@ export const createQris = async ({
             phoneNumber: validatedProduct.phoneNumber,
             paymentStatus: "pending",
             payer: partnerId.name,
-            paymentExpired: validatedProduct.expire ? validatedProduct.expire : 300,
+            // expire is unified as MINUTES across rails; default 5 min for QRIS.
+            paymentExpired: validatedProduct.expire ? Number(validatedProduct.expire) : 5,
             paymentMethod: validatedProduct.paymentMethod,
             paymentType: validatedProduct.paymentType,
             clientId: partnerId.clientId,
@@ -61,7 +62,8 @@ export const createQris = async ({
             amount: requestBodyForm.totalAmount,
             merchantTradeNo,
             notifyUrl: process.env.NOTIFY_URL,
-            expire: requestBodyForm.paymentExpired,
+            // Paylabs QRIS expects `expire` in SECONDS; our API unit is minutes.
+            expire: requestBodyForm.paymentExpired * 60,
             feeType: "OUR",
             productName: requestBodyForm.items.map((p: Record<string, any>) => p.name).join(", "),
             productInfo: requestBodyForm.items.map((product: Record<string, any>) => ({

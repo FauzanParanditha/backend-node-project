@@ -68,8 +68,8 @@ export const createVASNAP = async ({
         const customerNo = generateCustomerNumber();
 
         // Expiry (minutes from now) is client-configurable via `expire`; default
-        // 300. Emitted as ISO-8601, matching the Paylabs SNAP spec.
-        const expireMinutes = validatedProduct.expire ? Number(validatedProduct.expire) : 300;
+        // 1440 (24h) for VA. Emitted as ISO-8601, matching the Paylabs SNAP spec.
+        const expireMinutes = validatedProduct.expire ? Number(validatedProduct.expire) : 1440;
 
         const requestBody: Record<string, any> = {
             // partnerServiceId is 8 chars, space-padded on the left (Paylabs spec).

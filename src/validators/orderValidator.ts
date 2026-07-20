@@ -24,6 +24,10 @@ export const orderSchema = joi.object({
         .required(),
     paymentMethod: joi.string().required(),
     storeId: joi.string().optional(),
+    // Expiry in MINUTES (unified across rails), 1..1440 (max 24h). QRIS converts
+    // to seconds internally; VA SNAP builds an ISO-8601 expiredDate. Default when
+    // omitted: QRIS 5 min, VA SNAP 1440 min. Ignored by dynamic VA (Paylabs
+    // does not support VA expiry).
     expire: joi.number().min(1).max(1440).optional(),
     // VA SNAP only: lets the client choose the VA transaction type
     // (e.g. "C" close/single-use). Single char per Paylabs spec; ignored by
