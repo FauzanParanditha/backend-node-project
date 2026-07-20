@@ -100,7 +100,11 @@ export const validateCallback = (data: Record<string, unknown>): joi.ValidationR
         expiredTime: joi.string().max(16).when("status", { is: "06", then: joi.required() }),
         qrCode: joi.string().max(256).when("status", { is: "06", then: joi.required() }),
     });
-    return schema.validate(data, { abortEarly: false });
+    // allowUnknown: Paylabs adds fields over time (e.g. requestAmount in v2.2,
+    // payer/accountNo in v2.3). Callbacks are signature-verified and trusted, so
+    // tolerate unknown/new keys instead of rejecting the whole notification with
+    // 400 — a strict schema would silently drop payments when Paylabs evolves.
+    return schema.validate(data, { abortEarly: false, allowUnknown: true });
 };
 
 export const validateQrisRequest = (data: Record<string, unknown>): joi.ValidationResult => {
